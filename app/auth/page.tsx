@@ -42,7 +42,6 @@ export default function AuthPage() {
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24
     }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
-        {/* Logo */}
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div style={{ fontSize: 48, marginBottom: 12 }}>🧭</div>
           <h1 style={{ fontFamily: 'Georgia, serif', fontSize: 28, color: '#1E1B2E', marginBottom: 6 }}>
@@ -53,7 +52,6 @@ export default function AuthPage() {
           </p>
         </div>
 
-        {/* Card */}
         <div style={{ background: 'white', borderRadius: 24, padding: 32, border: '2px solid #E4E0F5', boxShadow: '0 4px 24px rgba(99,91,255,0.08)' }}>
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 22, marginBottom: 24, color: '#1E1B2E' }}>
             {isLogin ? 'Welcome back 👋' : 'Create your account 🚀'}
@@ -81,14 +79,14 @@ export default function AuthPage() {
 
           <button
             onClick={handleAuth} disabled={loading || !email || !password}
-            style={{ width: '100%', padding: '15px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 16, fontWeight: 800, cursor: 'pointer', opacity: loading ? 0.6 : 1 }}
+            style={{ width: '100%', padding: '15px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 16, fontWeight: 800, cursor: 'pointer', opacity: loading ? 0.6 : 1, fontFamily: 'inherit' }}
           >
             {loading ? 'Loading...' : isLogin ? 'Sign in →' : 'Create account →'}
           </button>
 
           <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: '#8B87A8', fontWeight: 600 }}>
             {isLogin ? "Don't have an account? " : 'Already have an account? '}
-            <button onClick={() => setIsLogin(!isLogin)} style={{ background: 'none', border: 'none', color: '#635BFF', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
+            <button onClick={() => setIsLogin(!isLogin)} style={{ background: 'none', border: 'none', color: '#635BFF', cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>
               {isLogin ? 'Sign up free' : 'Sign in'}
             </button>
           </p>
