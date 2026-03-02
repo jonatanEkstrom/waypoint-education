@@ -9,43 +9,44 @@ export async function POST(request: NextRequest) {
   try {
     const { name, age_group, subjects, curriculum, learn_style, city, country, notes } = await request.json()
 
-    const prompt = `You are an expert homeschooling curriculum designer. Create a 5-day week plan for a child with these details:
+    const prompt = `Create a 5-day homeschool week plan. Return ONLY valid JSON, no other text.
 
-- Name: ${name}
-- Age group: ${age_group}
-- Location: ${city}, ${country}
-- Teaching philosophy: ${curriculum}
-- Learning style: ${learn_style}
-- Priority subjects: ${subjects.join(', ')}
-- Additional notes: ${notes || 'None'}
+Child: ${name}, ${age_group}, in ${city} ${country}
+Philosophy: ${curriculum}, Learning style: ${learn_style}
+Subjects: ${subjects.slice(0, 3).join(', ')}
 
-Create 3 unique, engaging lessons per day (Monday to Friday). Each lesson must:
-1. Be deeply rooted in the ${city} location — use local landmarks, culture, food, history
-2. Follow the ${curriculum} philosophy authentically
-3. Be age-appropriate for ${age_group}
-4. Connect to real international learning milestones
-
-Respond ONLY with a valid JSON object in this exact format, no other text:
+Return this exact JSON structure:
 {
-  "week_theme": "theme title here",
+  "week_theme": "short theme title",
   "days": [
     {
       "day": "Monday",
-      "focus": "focus description",
+      "focus": "one sentence",
       "lessons": [
         {
           "subject": "Math",
           "title": "lesson title",
-          "duration": "45 min",
+          "duration": "30 min",
           "method": "teaching method",
-          "description": "detailed lesson description",
-          "milestone": "Cambridge milestone name",
-          "local_tip": "specific local tip using ${city}"
+          "description": "2 sentences max",
+          "milestone": "skill name",
+          "local_tip": "one sentence about ${city}"
+        },
+        {
+          "subject": "Science",
+          "title": "lesson title",
+          "duration": "30 min",
+          "method": "teaching method",
+          "description": "2 sentences max",
+          "milestone": "skill name",
+          "local_tip": "one sentence about ${city}"
         }
       ]
     }
   ]
-}`
+}
+
+Create all 5 days (Monday-Friday) with 2 lessons each. Keep descriptions short.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
