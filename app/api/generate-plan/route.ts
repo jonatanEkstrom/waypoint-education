@@ -30,23 +30,24 @@ Return this exact JSON structure:
           "method": "teaching method",
           "description": "2 sentences max",
           "milestone": "skill name",
-          "local_tip": "one sentence about ${city}"
-        },
-        {
-          "subject": "Science",
-          "title": "lesson title",
-          "duration": "30 min",
-          "method": "teaching method",
-          "description": "2 sentences max",
-          "milestone": "skill name",
-          "local_tip": "one sentence about ${city}"
+          "local_tip": "one sentence about ${city}",
+          "youtube_search": "specific youtube search query for this lesson",
+          "resources": [
+            { "title": "Resource name", "url": "https://example.com", "type": "website" }
+          ]
         }
       ]
     }
   ]
 }
 
-Create all 5 days (Monday-Friday) with 2 lessons each. Keep descriptions short.`
+Rules for resources:
+- youtube_search: a specific search query a parent would type into YouTube (e.g. "Khan Academy fractions for kids")
+- resources: 1-2 real, well-known websites relevant to the lesson (Khan Academy, National Geographic Kids, BBC Bitesize, Britannica, DK Find Out, NASA Kids Club, etc.)
+- Only use real, well-known educational websites
+- Keep descriptions short
+
+Create all 5 days (Monday-Friday) with 2 lessons each.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',

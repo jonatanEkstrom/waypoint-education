@@ -140,9 +140,28 @@ export default function DashboardPage() {
                   </div>
                   <p style={{ color: '#4B5563', fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>{lesson.description}</p>
                   {lesson.local_tip && (
-                    <div style={{ background: '#F8F6FF', borderLeft: '3px solid #635BFF', borderRadius: '0 12px 12px 0', padding: '10px 14px', marginBottom: 16 }}>
+                    <div style={{ background: '#F8F6FF', borderLeft: '3px solid #635BFF', borderRadius: '0 12px 12px 0', padding: '10px 14px', marginBottom: 12 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>📍 Local tip — {child?.city}</div>
                       <p style={{ fontSize: 13, color: '#4B5563', margin: 0 }}>{lesson.local_tip}</p>
+                    </div>
+                  )}
+                  {(lesson.youtube_search || (lesson.resources && lesson.resources.length > 0)) && (
+                    <div style={{ marginBottom: 16 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#8B87A8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>📚 Resources</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                        {lesson.youtube_search && (
+                          <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(lesson.youtube_search)}`} target="_blank" rel="noopener noreferrer"
+                            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 100, background: '#FEE2E2', color: '#DC2626', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+                            ▶ YouTube
+                          </a>
+                        )}
+                        {lesson.resources?.map((r: any, ri: number) => (
+                          <a key={ri} href={r.url} target="_blank" rel="noopener noreferrer"
+                            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 100, background: '#E0F2FE', color: '#0369A1', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
+                            🔗 {r.title}
+                          </a>
+                        ))}
+                      </div>
                     </div>
                   )}
                   <button onClick={() => toggleComplete(id)} style={{ width: '100%', padding: '12px', borderRadius: 12, border: `2px solid ${done ? '#10B981' : '#E4E0F5'}`, background: done ? '#ECFDF5' : 'white', color: done ? '#10B981' : '#8B87A8', cursor: 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }}>
