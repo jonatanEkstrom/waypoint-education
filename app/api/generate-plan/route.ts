@@ -28,26 +28,23 @@ Return this exact JSON structure:
           "title": "lesson title",
           "duration": "30 min",
           "method": "teaching method",
-          "description": "2 sentences max",
+          "description": "2 sentences describing the lesson",
           "milestone": "skill name",
-          "local_tip": "one sentence about ${city}",
-          "youtube_search": "specific youtube search query for this lesson",
-          "resources": [
-            { "title": "Resource name", "url": "https://example.com", "type": "website" }
-          ]
+          "local_tip": "one sentence connecting lesson to ${city}",
+          "reading": "A short 3-4 sentence educational text written for ${age_group} about the lesson topic. Make it engaging and age-appropriate.",
+          "questions": [
+            "Discussion question 1?",
+            "Discussion question 2?",
+            "Discussion question 3?"
+          ],
+          "activity": "A specific hands-on activity the child can do right now, using simple materials. 2-3 sentences."
         }
       ]
     }
   ]
 }
 
-Rules for resources:
-- youtube_search: a specific search query a parent would type into YouTube (e.g. "Khan Academy fractions for kids")
-- resources: 1-2 real, well-known websites relevant to the lesson (Khan Academy, National Geographic Kids, BBC Bitesize, Britannica, DK Find Out, NASA Kids Club, etc.)
-- Only use real, well-known educational websites
-- Keep descriptions short
-
-Create all 5 days (Monday-Friday) with 2 lessons each.`
+Create all 5 days (Monday-Friday) with 2 lessons each. Keep all text concise and age-appropriate for ${age_group}.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
