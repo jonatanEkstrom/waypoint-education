@@ -8,6 +8,7 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [activeDay, setActiveDay] = useState('Monday')
   const [completed, setCompleted] = useState<string[]>([])
+  const [expanded, setExpanded] = useState<string[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -15,7 +16,6 @@ export default function DashboardPage() {
     if (!stored) { router.push('/onboarding'); return }
     const childData = JSON.parse(stored)
     setChild(childData)
-
     const cachedPlan = localStorage.getItem('cachedPlan')
     if (cachedPlan) {
       setPlan(JSON.parse(cachedPlan))
@@ -48,6 +48,10 @@ export default function DashboardPage() {
     setCompleted(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
+  function toggleExpand(id: string) {
+    setExpanded(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
   const totalLessons = plan ? plan.days.reduce((acc: number, d: any) => acc + d.lessons.length, 0) : 0
   const activeDay_ = plan?.days?.find((d: any) => d.day === activeDay)
@@ -69,7 +73,7 @@ export default function DashboardPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8F6FF' }}>
-      <style>{`@media print { .no-print { display: none !important; } .print-only { display: block !important; } .day-content { display: block !important; } }`}</style>
+      <style>{`@media print { .no-print { display: none !important; } }`}</style>
 
       <div className="no-print" style={{ background: 'white', borderBottom: '2px solid #E4E0F5', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -126,44 +130,69 @@ export default function DashboardPage() {
             {activeDay_.lessons.map((lesson: any, i: number) => {
               const id = `${activeDay}-${i}`
               const done = completed.includes(id)
+              const isExpanded = expanded.includes(id)
               const color = subjectColors[lesson.subject] || '#635BFF'
               return (
-                <div key={i} style={{ background: 'white', borderRadius: 20, padding: 24, marginBottom: 16, border: `2px solid ${done ? '#10B981' : '#E4E0F5'}`, opacity: done ? 0.8 : 1 }}>
+                <div key={i} style={{ background: 'white', borderRadius: 20, padding: 24, marginBottom: 16, border: `2px solid ${done ? '#10B981' : '#E4E0F5'}`, opacity: done ? 0.85 : 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <span style={{ padding: '4px 12px', borderRadius: 100, background: `${color}20`, color: color, fontSize: 12, fontWeight: 700 }}>{lesson.subject}</span>
                     <span style={{ fontSize: 12, color: '#8B87A8', fontWeight: 600 }}>⏱ {lesson.duration}</span>
                   </div>
+
                   <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 19, color: '#1E1B2E', marginBottom: 10 }}>{lesson.title}</h3>
+
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
                     {lesson.milestone && <span style={{ padding: '4px 10px', borderRadius: 100, background: '#FEF3C7', color: '#D97706', fontSize: 11, fontWeight: 700 }}>📍 {lesson.milestone}</span>}
                     {lesson.method && <span style={{ padding: '4px 10px', borderRadius: 100, background: '#F3F4F6', color: '#6B7280', fontSize: 11, fontWeight: 700 }}>🏛 {lesson.method}</span>}
                   </div>
+
                   <p style={{ color: '#4B5563', fontSize: 14, lineHeight: 1.6, marginBottom: 12 }}>{lesson.description}</p>
+
                   {lesson.local_tip && (
                     <div style={{ background: '#F8F6FF', borderLeft: '3px solid #635BFF', borderRadius: '0 12px 12px 0', padding: '10px 14px', marginBottom: 12 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>📍 Local tip — {child?.city}</div>
                       <p style={{ fontSize: 13, color: '#4B5563', margin: 0 }}>{lesson.local_tip}</p>
                     </div>
                   )}
-                  {(lesson.youtube_search || (lesson.resources && lesson.resources.length > 0)) && (
-                    <div style={{ marginBottom: 16 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#8B87A8', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>📚 Resources</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                        {lesson.youtube_search && (
-                          <a href={`https://www.youtube.com/results?search_query=${encodeURIComponent(lesson.youtube_search)}`} target="_blank" rel="noopener noreferrer"
-                            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 100, background: '#FEE2E2', color: '#DC2626', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
-                            ▶ YouTube
-                          </a>
-                        )}
-                        {lesson.resources?.map((r: any, ri: number) => (
-                          <a key={ri} href={r.url} target="_blank" rel="noopener noreferrer"
-                            style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '7px 14px', borderRadius: 100, background: '#E0F2FE', color: '#0369A1', fontSize: 12, fontWeight: 700, textDecoration: 'none' }}>
-                            🔗 {r.title}
-                          </a>
-                        ))}
-                      </div>
+
+                  {/* Expand/collapse learning material */}
+                  <button onClick={() => toggleExpand(id)} style={{ width: '100%', padding: '10px', borderRadius: 12, border: '2px solid #E4E0F5', background: '#F8F6FF', color: '#635BFF', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 12 }}>
+                    {isExpanded ? '▲ Hide learning material' : '▼ Show learning material'}
+                  </button>
+
+                  {isExpanded && (
+                    <div style={{ marginBottom: 12 }}>
+                      {/* Reading */}
+                      {lesson.reading && (
+                        <div style={{ background: '#F0FDF4', borderRadius: 14, padding: 16, marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>📖 Read</div>
+                          <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0 }}>{lesson.reading}</p>
+                        </div>
+                      )}
+
+                      {/* Questions */}
+                      {lesson.questions && lesson.questions.length > 0 && (
+                        <div style={{ background: '#FEF9EE', borderRadius: 14, padding: 16, marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>💬 Discuss</div>
+                          {lesson.questions.map((q: string, qi: number) => (
+                            <div key={qi} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
+                              <span style={{ color: '#D97706', fontWeight: 700, fontSize: 14 }}>{qi + 1}.</span>
+                              <p style={{ fontSize: 14, color: '#4B5563', margin: 0, lineHeight: 1.5 }}>{q}</p>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Activity */}
+                      {lesson.activity && (
+                        <div style={{ background: '#EEF2FF', borderRadius: 14, padding: 16, marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>🎯 Activity</div>
+                          <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0 }}>{lesson.activity}</p>
+                        </div>
+                      )}
                     </div>
                   )}
+
                   <button onClick={() => toggleComplete(id)} style={{ width: '100%', padding: '12px', borderRadius: 12, border: `2px solid ${done ? '#10B981' : '#E4E0F5'}`, background: done ? '#ECFDF5' : 'white', color: done ? '#10B981' : '#8B87A8', cursor: 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }}>
                     {done ? '✓ Completed!' : '○ Mark as completed'}
                   </button>
