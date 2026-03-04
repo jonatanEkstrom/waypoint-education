@@ -15,7 +15,14 @@ export default function DashboardPage() {
     if (!stored) { router.push('/onboarding'); return }
     const childData = JSON.parse(stored)
     setChild(childData)
-    generatePlan(childData)
+
+    const cachedPlan = localStorage.getItem('cachedPlan')
+    if (cachedPlan) {
+      setPlan(JSON.parse(cachedPlan))
+      setLoading(false)
+    } else {
+      generatePlan(childData)
+    }
   }, [])
 
   async function generatePlan(childData: any) {
@@ -29,6 +36,7 @@ export default function DashboardPage() {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       setPlan(data.plan)
+      localStorage.setItem('cachedPlan', JSON.stringify(data.plan))
     } catch (e) {
       console.error(e)
     } finally {
@@ -63,7 +71,6 @@ export default function DashboardPage() {
     <div style={{ minHeight: '100vh', background: '#F8F6FF' }}>
       <style>{`@media print { .no-print { display: none !important; } .print-only { display: block !important; } .day-content { display: block !important; } }`}</style>
 
-      {/* Header */}
       <div className="no-print" style={{ background: 'white', borderBottom: '2px solid #E4E0F5', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 24 }}>🧭</span>
@@ -73,15 +80,14 @@ export default function DashboardPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={() => window.print()} style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid #E4E0F5', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#635BFF', fontFamily: 'inherit' }}>🖨️ Print</button>
-          <button onClick={() => { localStorage.removeItem('activeChild'); router.push('/onboarding') }} style={{ padding: '8px 16px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }}>+ New plan</button>
           <button onClick={() => router.push('/journal')} style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid #E4E0F5', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#8B87A8', fontFamily: 'inherit' }}>📖 Journal</button>
+          <button onClick={() => window.print()} style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid #E4E0F5', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#635BFF', fontFamily: 'inherit' }}>🖨️ Print</button>
+          <button onClick={() => { localStorage.removeItem('activeChild'); localStorage.removeItem('cachedPlan'); router.push('/onboarding') }} style={{ padding: '8px 16px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }}>+ New plan</button>
         </div>
       </div>
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
 
-        {/* Week theme */}
         {plan?.week_theme && (
           <div style={{ background: 'linear-gradient(135deg, #635BFF, #8B5CF6)', borderRadius: 20, padding: '20px 24px', marginBottom: 24, color: 'white' }}>
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.8 }}>This week's theme</div>
@@ -89,7 +95,6 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* Progress */}
         <div className="no-print" style={{ background: 'white', borderRadius: 16, padding: '16px 20px', marginBottom: 24, border: '2px solid #E4E0F5', display: 'flex', alignItems: 'center', gap: 16 }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 13, color: '#8B87A8', fontWeight: 600, marginBottom: 6 }}>{completed.length} of {totalLessons} lessons completed</div>
@@ -100,7 +105,6 @@ export default function DashboardPage() {
           <div style={{ fontSize: 28 }}>{completed.length === totalLessons && totalLessons > 0 ? '🎉' : '📚'}</div>
         </div>
 
-        {/* Day tabs */}
         <div className="no-print" style={{ display: 'flex', gap: 8, marginBottom: 24, overflowX: 'auto' }}>
           {days.map(day => {
             const dayData = plan?.days?.find((d: any) => d.day === day)
@@ -114,7 +118,6 @@ export default function DashboardPage() {
           })}
         </div>
 
-        {/* Lessons */}
         {activeDay_ && (
           <div>
             {activeDay_.focus && (
