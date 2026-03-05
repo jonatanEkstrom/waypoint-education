@@ -9,6 +9,9 @@ export default function DashboardPage() {
   const [activeDay, setActiveDay] = useState('Monday')
   const [completed, setCompleted] = useState<string[]>([])
   const [expanded, setExpanded] = useState<string[]>([])
+  const [quizActive, setQuizActive] = useState<string | null>(null)
+  const [quizAnswers, setQuizAnswers] = useState<{[key: string]: number}>({})
+  const [quizSubmitted, setQuizSubmitted] = useState<string[]>([])
   const router = useRouter()
 
   useEffect(() => {
@@ -131,6 +134,8 @@ export default function DashboardPage() {
               const id = `${activeDay}-${i}`
               const done = completed.includes(id)
               const isExpanded = expanded.includes(id)
+              const isQuizActive = quizActive === id
+              const isQuizDone = quizSubmitted.includes(id)
               const color = subjectColors[lesson.subject] || '#635BFF'
               return (
                 <div key={i} style={{ background: 'white', borderRadius: 20, padding: 24, marginBottom: 16, border: `2px solid ${done ? '#10B981' : '#E4E0F5'}`, opacity: done ? 0.85 : 1 }}>
@@ -155,14 +160,19 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {/* Expand/collapse learning material */}
+                  {lesson.parent_tip && (
+                    <div style={{ background: '#FFF7ED', borderLeft: '3px solid #EA580C', borderRadius: '0 12px 12px 0', padding: '10px 14px', marginBottom: 12 }}>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: '#EA580C', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
+                      <p style={{ fontSize: 13, color: '#4B5563', margin: 0 }}>{lesson.parent_tip}</p>
+                    </div>
+                  )}
+
                   <button onClick={() => toggleExpand(id)} style={{ width: '100%', padding: '10px', borderRadius: 12, border: '2px solid #E4E0F5', background: '#F8F6FF', color: '#635BFF', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 12 }}>
                     {isExpanded ? '▲ Hide learning material' : '▼ Show learning material'}
                   </button>
 
                   {isExpanded && (
                     <div style={{ marginBottom: 12 }}>
-                      {/* Reading */}
                       {lesson.reading && (
                         <div style={{ background: '#F0FDF4', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>📖 Read</div>
@@ -170,7 +180,6 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* Questions */}
                       {lesson.questions && lesson.questions.length > 0 && (
                         <div style={{ background: '#FEF9EE', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>💬 Discuss</div>
@@ -183,11 +192,61 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {/* Activity */}
                       {lesson.activity && (
                         <div style={{ background: '#EEF2FF', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>🎯 Activity</div>
                           <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0 }}>{lesson.activity}</p>
+                        </div>
+                      )}
+
+                      {lesson.quiz && lesson.quiz.length > 0 && (
+                        <div style={{ background: '#F8F6FF', borderRadius: 14, padding: 16, marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>🧠 Mini Quiz</div>
+                          {!isQuizActive && !isQuizDone && (
+                            <button onClick={() => setQuizActive(id)} style={{ padding: '10px 20px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                              Start quiz →
+                            </button>
+                          )}
+                          {isQuizActive && !isQuizDone && (
+                            <div>
+                              {lesson.quiz.map((q: any, qi: number) => (
+                                <div key={qi} style={{ marginBottom: 16 }}>
+                                  <p style={{ fontSize: 14, fontWeight: 700, color: '#1E1B2E', marginBottom: 8 }}>{qi + 1}. {q.question}</p>
+                                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                                    {q.options.map((opt: string, oi: number) => (
+                                      <button key={oi} onClick={() => setQuizAnswers(prev => ({ ...prev, [`${id}-${qi}`]: oi }))}
+                                        style={{ padding: '10px 14px', borderRadius: 10, border: `2px solid ${quizAnswers[`${id}-${qi}`] === oi ? '#635BFF' : '#E4E0F5'}`, background: quizAnswers[`${id}-${qi}`] === oi ? '#E8E6FF' : 'white', color: quizAnswers[`${id}-${qi}`] === oi ? '#635BFF' : '#4B5563', cursor: 'pointer', fontSize: 13, fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}>
+                                        {opt}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </div>
+                              ))}
+                              <button onClick={() => setQuizSubmitted(prev => [...prev, id])}
+                                style={{ padding: '10px 20px', borderRadius: 100, border: 'none', background: '#10B981', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                                Submit answers →
+                              </button>
+                            </div>
+                          )}
+                          {isQuizDone && (
+                            <div>
+                              {lesson.quiz.map((q: any, qi: number) => {
+                                const userAnswer = quizAnswers[`${id}-${qi}`]
+                                const correct = userAnswer === q.correct
+                                return (
+                                  <div key={qi} style={{ marginBottom: 12, padding: 12, borderRadius: 10, background: correct ? '#F0FDF4' : '#FFF1F2', border: `2px solid ${correct ? '#10B981' : '#F43F5E'}` }}>
+                                    <p style={{ fontSize: 13, fontWeight: 700, color: '#1E1B2E', marginBottom: 4 }}>{q.question}</p>
+                                    <p style={{ fontSize: 13, color: correct ? '#059669' : '#E11D48', margin: 0 }}>
+                                      {correct ? '✓ Correct!' : `✗ Correct answer: ${q.options[q.correct]}`}
+                                    </p>
+                                  </div>
+                                )
+                              })}
+                              <p style={{ fontSize: 13, fontWeight: 700, color: '#635BFF', marginTop: 8 }}>
+                                Score: {lesson.quiz.filter((q: any, qi: number) => quizAnswers[`${id}-${qi}`] === q.correct).length} / {lesson.quiz.length}
+                              </p>
+                            </div>
+                          )}
                         </div>
                       )}
                     </div>

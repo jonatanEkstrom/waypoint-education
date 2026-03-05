@@ -37,7 +37,13 @@ Return this exact JSON structure:
             "Discussion question 2?",
             "Discussion question 3?"
           ],
-          "activity": "A specific hands-on activity the child can do right now, using simple materials. 2-3 sentences."
+          "activity": "A specific hands-on activity the child can do right now, using simple materials. 2-3 sentences.",
+          "parent_tip": "A practical tip for the parent on HOW to teach this lesson. What to say, what to watch for, common mistakes to avoid. 2-3 sentences.",
+          "quiz": [
+            { "question": "Quiz question?", "options": ["Option A", "Option B", "Option C", "Option D"], "correct": 0 },
+            { "question": "Quiz question?", "options": ["Option A", "Option B", "Option C", "Option D"], "correct": 2 },
+            { "question": "Quiz question?", "options": ["Option A", "Option B", "Option C", "Option D"], "correct": 1 }
+          ]
         }
       ]
     }
