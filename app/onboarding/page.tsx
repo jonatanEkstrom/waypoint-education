@@ -35,16 +35,18 @@ export default function OnboardingPage() {
     setLoading(true)
     try {
       const childData = {
-        name,
+        name: name,
         age_group: age,
         subjects: selectedSubjects,
-        curriculum,
+        curriculum: curriculum,
         learn_style: learnStyle,
-        notes,
-        country,
-        city,
+        notes: notes,
+        country: country,
+        city: city,
         profile_id: 'guest'
       }
+      localStorage.removeItem('cachedPlan')
+      localStorage.removeItem('cachedPlanChild')
       localStorage.setItem('activeChild', JSON.stringify(childData))
       router.push('/dashboard')
     } catch (e) {
