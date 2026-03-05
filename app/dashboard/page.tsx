@@ -8,8 +8,9 @@ export default function DashboardPage() {
   const [loading, setLoading] = useState(true)
   const [activeDay, setActiveDay] = useState('Monday')
   const [completed, setCompleted] = useState<string[]>([])
+  const [lessonMaterial, setLessonMaterial] = useState<{[key: string]: any}>({})
+  const [loadingMaterial, setLoadingMaterial] = useState<string[]>([])
   const [expanded, setExpanded] = useState<string[]>([])
-  const [quizActive, setQuizActive] = useState<string | null>(null)
   const [quizAnswers, setQuizAnswers] = useState<{[key: string]: number}>({})
   const [quizSubmitted, setQuizSubmitted] = useState<string[]>([])
   const router = useRouter()
@@ -47,12 +48,42 @@ export default function DashboardPage() {
     }
   }
 
-  function toggleComplete(id: string) {
-    setCompleted(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  async function loadMaterial(id: string, lesson: any) {
+    if (lessonMaterial[id] || loadingMaterial.includes(id)) return
+    setLoadingMaterial(prev => [...prev, id])
+    try {
+      const res = await fetch('/api/generate-lesson', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          subject: lesson.subject,
+          title: lesson.title,
+          description: lesson.description,
+          age_group: child?.age_group,
+          city: child?.city,
+          curriculum: child?.curriculum
+        })
+      })
+      const data = await res.json()
+      if (data.material) {
+        setLessonMaterial(prev => ({ ...prev, [id]: data.material }))
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setLoadingMaterial(prev => prev.filter(x => x !== id))
+    }
   }
 
-  function toggleExpand(id: string) {
+  function toggleExpand(id: string, lesson: any) {
+    if (!expanded.includes(id)) {
+      loadMaterial(id, lesson)
+    }
     setExpanded(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  function toggleComplete(id: string) {
+    setCompleted(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -134,9 +165,11 @@ export default function DashboardPage() {
               const id = `${activeDay}-${i}`
               const done = completed.includes(id)
               const isExpanded = expanded.includes(id)
-              const isQuizActive = quizActive === id
+              const isLoadingMaterial = loadingMaterial.includes(id)
+              const material = lessonMaterial[id]
               const isQuizDone = quizSubmitted.includes(id)
               const color = subjectColors[lesson.subject] || '#635BFF'
+
               return (
                 <div key={i} style={{ background: 'white', borderRadius: 20, padding: 24, marginBottom: 16, border: `2px solid ${done ? '#10B981' : '#E4E0F5'}`, opacity: done ? 0.85 : 1 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
@@ -160,30 +193,30 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  {lesson.parent_tip && (
-                    <div style={{ background: '#FFF7ED', borderLeft: '3px solid #EA580C', borderRadius: '0 12px 12px 0', padding: '10px 14px', marginBottom: 12 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: '#EA580C', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
-                      <p style={{ fontSize: 13, color: '#4B5563', margin: 0 }}>{lesson.parent_tip}</p>
-                    </div>
-                  )}
-
-                  <button onClick={() => toggleExpand(id)} style={{ width: '100%', padding: '10px', borderRadius: 12, border: '2px solid #E4E0F5', background: '#F8F6FF', color: '#635BFF', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 12 }}>
-                    {isExpanded ? '▲ Hide learning material' : '▼ Show learning material'}
+                  <button onClick={() => toggleExpand(id, lesson)} style={{ width: '100%', padding: '10px', borderRadius: 12, border: '2px solid #E4E0F5', background: '#F8F6FF', color: '#635BFF', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 12 }}>
+                    {isLoadingMaterial ? '✨ Loading material...' : isExpanded ? '▲ Hide learning material' : '▼ Show learning material'}
                   </button>
 
-                  {isExpanded && (
+                  {isExpanded && material && (
                     <div style={{ marginBottom: 12 }}>
-                      {lesson.reading && (
-                        <div style={{ background: '#F0FDF4', borderRadius: 14, padding: 16, marginBottom: 12 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>📖 Read</div>
-                          <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0 }}>{lesson.reading}</p>
+                      {material.parent_tip && (
+                        <div style={{ background: '#FFF7ED', borderLeft: '3px solid #EA580C', borderRadius: '0 12px 12px 0', padding: '10px 14px', marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#EA580C', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
+                          <p style={{ fontSize: 13, color: '#4B5563', margin: 0 }}>{material.parent_tip}</p>
                         </div>
                       )}
 
-                      {lesson.questions && lesson.questions.length > 0 && (
+                      {material.reading && (
+                        <div style={{ background: '#F0FDF4', borderRadius: 14, padding: 16, marginBottom: 12 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>📖 Read</div>
+                          <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0 }}>{material.reading}</p>
+                        </div>
+                      )}
+
+                      {material.questions && material.questions.length > 0 && (
                         <div style={{ background: '#FEF9EE', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>💬 Discuss</div>
-                          {lesson.questions.map((q: string, qi: number) => (
+                          {material.questions.map((q: string, qi: number) => (
                             <div key={qi} style={{ display: 'flex', gap: 8, marginBottom: 6 }}>
                               <span style={{ color: '#D97706', fontWeight: 700, fontSize: 14 }}>{qi + 1}.</span>
                               <p style={{ fontSize: 14, color: '#4B5563', margin: 0, lineHeight: 1.5 }}>{q}</p>
@@ -192,24 +225,19 @@ export default function DashboardPage() {
                         </div>
                       )}
 
-                      {lesson.activity && (
+                      {material.activity && (
                         <div style={{ background: '#EEF2FF', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>🎯 Activity</div>
-                          <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0 }}>{lesson.activity}</p>
+                          <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0 }}>{material.activity}</p>
                         </div>
                       )}
 
-                      {lesson.quiz && lesson.quiz.length > 0 && (
+                      {material.quiz && material.quiz.length > 0 && (
                         <div style={{ background: '#F8F6FF', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>🧠 Mini Quiz</div>
-                          {!isQuizActive && !isQuizDone && (
-                            <button onClick={() => setQuizActive(id)} style={{ padding: '10px 20px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                              Start quiz →
-                            </button>
-                          )}
-                          {isQuizActive && !isQuizDone && (
+                          {!isQuizDone ? (
                             <div>
-                              {lesson.quiz.map((q: any, qi: number) => (
+                              {material.quiz.map((q: any, qi: number) => (
                                 <div key={qi} style={{ marginBottom: 16 }}>
                                   <p style={{ fontSize: 14, fontWeight: 700, color: '#1E1B2E', marginBottom: 8 }}>{qi + 1}. {q.question}</p>
                                   <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
@@ -227,10 +255,9 @@ export default function DashboardPage() {
                                 Submit answers →
                               </button>
                             </div>
-                          )}
-                          {isQuizDone && (
+                          ) : (
                             <div>
-                              {lesson.quiz.map((q: any, qi: number) => {
+                              {material.quiz.map((q: any, qi: number) => {
                                 const userAnswer = quizAnswers[`${id}-${qi}`]
                                 const correct = userAnswer === q.correct
                                 return (
@@ -243,7 +270,7 @@ export default function DashboardPage() {
                                 )
                               })}
                               <p style={{ fontSize: 13, fontWeight: 700, color: '#635BFF', marginTop: 8 }}>
-                                Score: {lesson.quiz.filter((q: any, qi: number) => quizAnswers[`${id}-${qi}`] === q.correct).length} / {lesson.quiz.length}
+                                Score: {material.quiz.filter((q: any, qi: number) => quizAnswers[`${id}-${qi}`] === q.correct).length} / {material.quiz.length}
                               </p>
                             </div>
                           )}
