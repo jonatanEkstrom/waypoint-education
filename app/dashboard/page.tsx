@@ -20,8 +20,11 @@ export default function DashboardPage() {
     if (!stored) { router.push('/onboarding'); return }
     const childData = JSON.parse(stored)
     setChild(childData)
+
     const cachedPlan = localStorage.getItem('cachedPlan')
-    if (cachedPlan) {
+    const cachedPlanChild = localStorage.getItem('cachedPlanChild')
+
+    if (cachedPlan && cachedPlanChild === childData.name + childData.city) {
       setPlan(JSON.parse(cachedPlan))
       setLoading(false)
     } else {
@@ -41,6 +44,7 @@ export default function DashboardPage() {
       if (data.error) throw new Error(data.error)
       setPlan(data.plan)
       localStorage.setItem('cachedPlan', JSON.stringify(data.plan))
+      localStorage.setItem('cachedPlanChild', childData.name + childData.city)
     } catch (e) {
       console.error(e)
     } finally {
@@ -120,7 +124,7 @@ export default function DashboardPage() {
         <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => router.push('/journal')} style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid #E4E0F5', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#8B87A8', fontFamily: 'inherit' }}>📖 Journal</button>
           <button onClick={() => window.print()} style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid #E4E0F5', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#635BFF', fontFamily: 'inherit' }}>🖨️ Print</button>
-          <button onClick={() => { localStorage.removeItem('activeChild'); localStorage.removeItem('cachedPlan'); router.push('/onboarding') }} style={{ padding: '8px 16px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }}>+ New plan</button>
+          <button onClick={() => { localStorage.removeItem('activeChild'); localStorage.removeItem('cachedPlan'); localStorage.removeItem('cachedPlanChild'); router.push('/onboarding') }} style={{ padding: '8px 16px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }}>+ New plan</button>
         </div>
       </div>
 
