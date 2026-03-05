@@ -28,6 +28,8 @@ export default function AuthPage() {
           })
         }
       }
+      localStorage.removeItem('cachedPlan')
+localStorage.removeItem('activeChild')
       router.push('/onboarding')
     } catch (e: any) {
       setError(e.message)
