@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
 
     const colors = subjectColors[subject] || { accent: '#635BFF', light: '#E8E6FF' }
 
-    const prompt = `Create a fun printable worksheet as a complete HTML page.
+    const prompt = `Create a fully interactive fun worksheet as a complete HTML page with JavaScript.
 
 Child name: ${name}
 Age: ${age_group}
@@ -34,19 +34,38 @@ City: ${city}
 
 IMPORTANT: Return ONLY raw HTML starting with <!DOCTYPE html>. No markdown, no backticks, no explanation.
 
-The worksheet must include ALL of these sections with FULL content:
+Use accent color: ${colors.accent} and light color: ${colors.light}
 
-1. A colorful header with title, child name field, date field
-2. Exercise 1: Match the pairs (list 5 word pairs with lines to draw between them)
-3. Exercise 2: Fill in the blank (5 sentences with blanks)
-4. Exercise 3: True or False (5 statements)
-5. Exercise 4: Short answer question (2-3 questions with lines to write on)
-6. A "Great job!" section with 5 empty stars to color in
+The worksheet MUST include ALL of these interactive sections:
 
-Use these colors: accent color ${colors.accent}, light color ${colors.light}
-Make it fun, age-appropriate for ${age_group}, and connect content to ${theme || subject} and ${city}.
+1. HEADER: Colorful title with emoji, child name "${name}" pre-filled, date input field
 
-Use only inline CSS. Make it print-friendly with white background. Font size minimum 14px. Plenty of space for writing answers.`
+2. MATCHING EXERCISE: 
+- Show 5 items in LEFT column and 5 items in RIGHT column (shuffled)
+- User clicks one item on left (it highlights), then clicks matching item on right
+- If correct: both turn green with checkmark
+- If wrong: both flash red briefly then reset
+- Use JavaScript click handlers for this
+- Items must be clearly styled as clickable buttons
+
+3. FILL IN THE BLANK:
+- 5 sentences with <input> fields inline where the blank should be
+- Each input styled with border-bottom only, no box
+- A "Check answers" button that highlights correct answers green and wrong ones red
+
+4. TRUE OR FALSE:
+- 5 statements, each with two clickable buttons "TRUE" and "FALSE"
+- Clicking selects it (highlighted), clicking Check shows correct/wrong
+
+5. SHORT ANSWER:
+- 2 open questions with <textarea> fields to type in
+
+6. SCORE & CELEBRATION:
+- "Check my score!" button that counts correct answers across all exercises
+- Shows fun emoji celebration message based on score
+- 5 star icons that fill in based on score
+
+All JavaScript must be inline in <script> tags. Make it colorful, fun and age-appropriate for ${age_group}. White background for printing. Minimum font size 15px.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
