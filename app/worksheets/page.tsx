@@ -57,10 +57,14 @@ export default function WorksheetsPage() {
       })
       const data = await res.json()
       if (data.worksheet) {
-        setWorksheet(data.worksheet)
-        const rights = data.worksheet.matching.pairs.map((p: any) => p.right)
-        setShuffledRight([...rights].sort(() => Math.random() - 0.5))
-      }
+  console.log('Worksheet data:', JSON.stringify(data.worksheet))
+  setWorksheet(data.worksheet)
+  const rights = data.worksheet.matching.pairs.map((p: any) => p.right)
+  setShuffledRight([...rights].sort(() => Math.random() - 0.5))
+} else {
+  console.log('Error:', JSON.stringify(data))
+  alert('Error: ' + JSON.stringify(data))
+}
     } catch (e) {
       console.error(e)
     } finally {
