@@ -10,39 +10,43 @@ export async function POST(request: NextRequest) {
     const { subject, theme, age_group, name, city } = await request.json()
 
     const subjectColors: any = {
-      'Math': { bg: '#F0FDFA', accent: '#0D9488', light: '#CCFBF1' },
-      'Science': { bg: '#F0FDF4', accent: '#059669', light: '#BBF7D0' },
-      'Language Arts': { bg: '#FFFBEB', accent: '#D97706', light: '#FDE68A' },
-      'History': { bg: '#F5F3FF', accent: '#7C3AED', light: '#DDD6FE' },
-      'Geography': { bg: '#EFF6FF', accent: '#2563EB', light: '#BFDBFE' },
-      'Art': { bg: '#FDF2F8', accent: '#DB2777', light: '#FBCFE8' },
-      'Music': { bg: '#FFF7ED', accent: '#EA580C', light: '#FED7AA' },
-      'Physical Education': { bg: '#F0FDF4', accent: '#16A34A', light: '#BBF7D0' },
-      'Coding': { bg: '#F0F9FF', accent: '#0891B2', light: '#BAE6FD' },
-      'Life Skills': { bg: '#F7FEE7', accent: '#65A30D', light: '#D9F99D' },
+      'Math': { accent: '#0D9488', light: '#CCFBF1' },
+      'Science': { accent: '#059669', light: '#BBF7D0' },
+      'Language Arts': { accent: '#D97706', light: '#FDE68A' },
+      'History': { accent: '#7C3AED', light: '#DDD6FE' },
+      'Geography': { accent: '#2563EB', light: '#BFDBFE' },
+      'Art': { accent: '#DB2777', light: '#FBCFE8' },
+      'Music': { accent: '#EA580C', light: '#FED7AA' },
+      'Physical Education': { accent: '#16A34A', light: '#BBF7D0' },
+      'Coding': { accent: '#0891B2', light: '#BAE6FD' },
+      'Life Skills': { accent: '#65A30D', light: '#D9F99D' },
     }
 
-    const colors = subjectColors[subject] || { bg: '#F8F6FF', accent: '#635BFF', light: '#E8E6FF' }
+    const colors = subjectColors[subject] || { accent: '#635BFF', light: '#E8E6FF' }
 
-    const prompt = `Create a fun, colorful worksheet for a child.
+    const prompt = `Create a fun printable worksheet as a complete HTML page.
 
-Child: ${name}, ${age_group}, currently in ${city}
+Child name: ${name}
+Age: ${age_group}
 Subject: ${subject}
 Theme: ${theme || subject}
+City: ${city}
 
-Generate a complete HTML worksheet. Requirements:
-- Colorful and fun design using these colors: background ${colors.bg}, accent ${colors.accent}, light ${colors.light}
-- Age-appropriate for ${age_group}
-- Include the child's name "${name}" and a date line at the top
-- Include a fun emoji title related to ${theme || subject}
-- 4-6 varied exercises (mix of: fill in the blank, draw & label, match the pairs, short answer, circle the correct answer, true/false)
-- Each exercise clearly numbered with fun icons
-- Blank lines or boxes for answers
-- A "Great job!" encouragement section at the bottom with stars to color in
-- Connected to ${city} or the theme "${theme || subject}" where possible
-- Print-friendly but visually engaging
+IMPORTANT: Return ONLY raw HTML starting with <!DOCTYPE html>. No markdown, no backticks, no explanation.
 
-Return ONLY the complete HTML with inline CSS. No explanations. Start with <!DOCTYPE html>`
+The worksheet must include ALL of these sections with FULL content:
+
+1. A colorful header with title, child name field, date field
+2. Exercise 1: Match the pairs (list 5 word pairs with lines to draw between them)
+3. Exercise 2: Fill in the blank (5 sentences with blanks)
+4. Exercise 3: True or False (5 statements)
+5. Exercise 4: Short answer question (2-3 questions with lines to write on)
+6. A "Great job!" section with 5 empty stars to color in
+
+Use these colors: accent color ${colors.accent}, light color ${colors.light}
+Make it fun, age-appropriate for ${age_group}, and connect content to ${theme || subject} and ${city}.
+
+Use only inline CSS. Make it print-friendly with white background. Font size minimum 14px. Plenty of space for writing answers.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
@@ -53,7 +57,12 @@ Return ONLY the complete HTML with inline CSS. No explanations. Start with <!DOC
     const content = message.content[0]
     if (content.type !== 'text') throw new Error('Unexpected response type')
 
-    const html = content.text.replace(/```html|```/g, '').trim()
+    let html = content.text.trim()
+    html = html.replace(/```html/g, '').replace(/```/g, '').trim()
+
+    if (!html.startsWith('<!DOCTYPE') && !html.startsWith('<html')) {
+      throw new Error('Invalid HTML response')
+    }
 
     return NextResponse.json({ html })
   } catch (error: any) {
