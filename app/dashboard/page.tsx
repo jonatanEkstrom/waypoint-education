@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '../lib/supabase'
 
 export default function DashboardPage() {
   const [child, setChild] = useState<any>(null)
@@ -80,14 +81,18 @@ export default function DashboardPage() {
   }
 
   function toggleExpand(id: string, lesson: any) {
-    if (!expanded.includes(id)) {
-      loadMaterial(id, lesson)
-    }
+    if (!expanded.includes(id)) loadMaterial(id, lesson)
     setExpanded(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
 
   function toggleComplete(id: string) {
     setCompleted(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut()
+    localStorage.clear()
+    router.push('/auth')
   }
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -121,11 +126,12 @@ export default function DashboardPage() {
             <div style={{ fontSize: 12, color: '#8B87A8', fontWeight: 600 }}>{child?.name} · {child?.city}, {child?.country}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           <button onClick={() => router.push('/journal')} style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid #E4E0F5', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#8B87A8', fontFamily: 'inherit' }}>📖 Journal</button>
           <button onClick={() => router.push('/worksheets')} style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid #E4E0F5', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#8B87A8', fontFamily: 'inherit' }}>📄 Worksheets</button>
           <button onClick={() => window.print()} style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid #E4E0F5', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#635BFF', fontFamily: 'inherit' }}>🖨️ Print</button>
           <button onClick={() => { localStorage.removeItem('activeChild'); localStorage.removeItem('cachedPlan'); localStorage.removeItem('cachedPlanChild'); router.push('/onboarding') }} style={{ padding: '8px 16px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }}>+ New plan</button>
+          <button onClick={handleLogout} style={{ padding: '8px 16px', borderRadius: 100, border: '2px solid #F43F5E', background: 'white', cursor: 'pointer', fontSize: 13, fontWeight: 700, color: '#F43F5E', fontFamily: 'inherit' }}>Logout</button>
         </div>
       </div>
 
@@ -210,14 +216,12 @@ export default function DashboardPage() {
                           <p style={{ fontSize: 13, color: '#4B5563', margin: 0 }}>{material.parent_tip}</p>
                         </div>
                       )}
-
                       {material.reading && (
                         <div style={{ background: '#F0FDF4', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>📖 Read</div>
                           <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0 }}>{material.reading}</p>
                         </div>
                       )}
-
                       {material.questions && material.questions.length > 0 && (
                         <div style={{ background: '#FEF9EE', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>💬 Discuss</div>
@@ -229,14 +233,12 @@ export default function DashboardPage() {
                           ))}
                         </div>
                       )}
-
                       {material.activity && (
                         <div style={{ background: '#EEF2FF', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>🎯 Activity</div>
                           <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0 }}>{material.activity}</p>
                         </div>
                       )}
-
                       {material.quiz && material.quiz.length > 0 && (
                         <div style={{ background: '#F8F6FF', borderRadius: 14, padding: 16, marginBottom: 12 }}>
                           <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 12 }}>🧠 Mini Quiz</div>
