@@ -1,34 +1,35 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { supabase } from '../lib/supabase'
 
 export default function JournalPage() {
   const [child, setChild] = useState<any>(null)
-  const [keywords, setKeywords] = useState('')
-  const [story, setStory] = useState('')
-  const [loading, setLoading] = useState(false)
   const [entries, setEntries] = useState<any[]>([])
+  const [text, setText] = useState('')
+  const [loading, setLoading] = useState(false)
+  const [storyLoading, setStoryLoading] = useState<string | null>(null)
+  const [saving, setSaving] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
     const stored = localStorage.getItem('activeChild')
     if (!stored) { router.push('/onboarding'); return }
-    setChild(JSON.parse(stored))
-    const saved = localStorage.getItem('journalEntries')
-    if (saved) setEntries(JSON.parse(saved))
+    const childData = JSON.parse(stored)
+    setChild(childData)
+    loadEntries(childData.profile_id || 'guest')
   }, [])
 
-  async function generateStory() {
-    if (!keywords.trim()) return
+  async function loadEntries(userId: string) {
     setLoading(true)
     try {
-      const res = await fetch('/api/generate-story', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ keywords, name: child?.name, city: child?.city, age_group: child?.age_group })
-      })
-      const data = await res.json()
-      setStory(data.story)
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false })
+      if (error) throw error
+      setEntries(data || [])
     } catch (e) {
       console.error(e)
     } finally {
@@ -36,25 +37,74 @@ export default function JournalPage() {
     }
   }
 
-  function saveEntry() {
-    if (!story) return
-    const entry = {
-      id: Date.now(),
-      date: new Date().toLocaleDateString('en-GB'),
-      keywords,
-      story,
-      city: child?.city
+  async function saveEntry() {
+    if (!text.trim()) return
+    setSaving(true)
+    try {
+      const entry = {
+        user_id: child?.profile_id || 'guest',
+        city: child?.city,
+        country: child?.country,
+        date: new Date().toLocaleDateString(),
+        text: text.trim(),
+        story: null
+      }
+      const { data, error } = await supabase
+        .from('journal_entries')
+        .insert(entry)
+        .select()
+        .single()
+      if (error) throw error
+      setEntries(prev => [data, ...prev])
+      setText('')
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setSaving(false)
     }
-    const updated = [entry, ...entries]
-    setEntries(updated)
-    localStorage.setItem('journalEntries', JSON.stringify(updated))
-    setKeywords('')
-    setStory('')
+  }
+
+  async function generateStory(entry: any) {
+    setStoryLoading(entry.id)
+    try {
+      const res = await fetch('/api/generate-story', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: entry.text,
+          city: entry.city,
+          country: entry.country,
+          name: child?.name,
+          age_group: child?.age_group
+        })
+      })
+      const data = await res.json()
+      if (data.story) {
+        const { error } = await supabase
+          .from('journal_entries')
+          .update({ story: data.story })
+          .eq('id', entry.id)
+        if (error) throw error
+        setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, story: data.story } : e))
+      }
+    } catch (e) {
+      console.error(e)
+    } finally {
+      setStoryLoading(null)
+    }
+  }
+
+  async function deleteEntry(id: string) {
+    try {
+      await supabase.from('journal_entries').delete().eq('id', id)
+      setEntries(prev => prev.filter(e => e.id !== id))
+    } catch (e) {
+      console.error(e)
+    }
   }
 
   return (
     <div style={{ minHeight: '100vh', background: '#F8F6FF' }}>
-      {/* Header */}
       <div style={{ background: 'white', borderBottom: '2px solid #E4E0F5', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20 }}>←</button>
@@ -64,57 +114,56 @@ export default function JournalPage() {
       </div>
 
       <div style={{ maxWidth: 700, margin: '0 auto', padding: 24 }}>
-
-        {/* New entry */}
         <div style={{ background: 'white', borderRadius: 20, padding: 24, border: '2px solid #E4E0F5', marginBottom: 24 }}>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 20, color: '#1E1B2E', marginBottom: 6 }}>Today's adventure ✨</h2>
-          <p style={{ color: '#8B87A8', fontSize: 13, marginBottom: 16 }}>What did {child?.name} see, do or learn today? Write a few keywords.</p>
-
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 20, color: '#1E1B2E', marginBottom: 6 }}>New entry ✍️</h2>
+          <p style={{ color: '#8B87A8', fontSize: 13, marginBottom: 16 }}>What did {child?.name} experience today in {child?.city}?</p>
           <textarea
-            value={keywords}
-            onChange={e => setKeywords(e.target.value)}
-            placeholder="e.g. temple, street food, counting money, butterflies..."
-            style={{ width: '100%', padding: '13px 16px', borderRadius: 14, border: '2px solid #E4E0F5', fontSize: 14, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', minHeight: 80, resize: 'vertical' }}
+            value={text}
+            onChange={e => setText(e.target.value)}
+            placeholder="Write about today's adventure..."
+            rows={4}
+            style={{ width: '100%', padding: '13px 16px', borderRadius: 14, border: '2px solid #E4E0F5', fontSize: 15, fontFamily: 'inherit', outline: 'none', resize: 'vertical', boxSizing: 'border-box' as const, marginBottom: 12 }}
           />
-
-          <button
-            onClick={generateStory}
-            disabled={loading || !keywords.trim()}
-            style={{ marginTop: 12, padding: '12px 24px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', opacity: loading || !keywords.trim() ? 0.4 : 1, fontFamily: 'inherit' }}
-          >
-            {loading ? '✨ Writing story...' : '✨ Turn into a story'}
+          <button onClick={saveEntry} disabled={saving || !text.trim()}
+            style={{ width: '100%', padding: 14, borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 15, fontWeight: 800, cursor: saving || !text.trim() ? 'not-allowed' : 'pointer', opacity: saving || !text.trim() ? 0.4 : 1, fontFamily: 'inherit' }}>
+            {saving ? 'Saving...' : 'Save entry 💾'}
           </button>
         </div>
 
-        {/* Generated story */}
-        {story && (
-          <div style={{ background: 'linear-gradient(135deg, #635BFF10, #8B5CF610)', borderRadius: 20, padding: 24, border: '2px solid #635BFF30', marginBottom: 24 }}>
-            <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 18, color: '#1E1B2E', marginBottom: 12 }}>📝 {child?.name}'s story</h3>
-            <p style={{ color: '#4B5563', fontSize: 15, lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>{story}</p>
-            <button
-              onClick={saveEntry}
-              style={{ marginTop: 16, padding: '10px 20px', borderRadius: 100, border: 'none', background: '#10B981', color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}
-            >
-              💾 Save to journal
-            </button>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: 40 }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>📖</div>
+            <p style={{ color: '#8B87A8' }}>Loading journal...</p>
           </div>
-        )}
-
-        {/* Past entries */}
-        {entries.length > 0 && (
-          <div>
-            <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 18, color: '#1E1B2E', marginBottom: 16 }}>Past entries</h3>
-            {entries.map(entry => (
-              <div key={entry.id} style={{ background: 'white', borderRadius: 16, padding: 20, border: '2px solid #E4E0F5', marginBottom: 12 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8 }}>
-                  <span style={{ fontSize: 12, fontWeight: 700, color: '#635BFF' }}>📍 {entry.city}</span>
-                  <span style={{ fontSize: 12, color: '#8B87A8', fontWeight: 600 }}>{entry.date}</span>
+        ) : entries.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 40, color: '#8B87A8' }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>✍️</div>
+            <p style={{ fontSize: 15 }}>No entries yet — write your first memory!</p>
+          </div>
+        ) : (
+          entries.map(entry => (
+            <div key={entry.id} style={{ background: 'white', borderRadius: 20, padding: 24, border: '2px solid #E4E0F5', marginBottom: 16 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                  <span style={{ padding: '4px 12px', borderRadius: 100, background: '#E8E6FF', color: '#635BFF', fontSize: 12, fontWeight: 700 }}>📍 {entry.city}</span>
+                  <span style={{ padding: '4px 12px', borderRadius: 100, background: '#F3F4F6', color: '#6B7280', fontSize: 12, fontWeight: 700 }}>📅 {entry.date}</span>
                 </div>
-                <p style={{ color: '#4B5563', fontSize: 14, lineHeight: 1.6 }}>{entry.story}</p>
-                <div style={{ marginTop: 8, fontSize: 12, color: '#C4BFDA' }}>Keywords: {entry.keywords}</div>
+                <button onClick={() => deleteEntry(entry.id)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: '#D1D5DB' }}>🗑</button>
               </div>
-            ))}
-          </div>
+              <p style={{ fontSize: 15, color: '#1E1B2E', lineHeight: 1.7, marginBottom: 16 }}>{entry.text}</p>
+              {entry.story ? (
+                <div style={{ background: 'linear-gradient(135deg, #F8F6FF, #EEF2FF)', borderRadius: 14, padding: 16, borderLeft: '3px solid #635BFF' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 8 }}>✨ AI Story</div>
+                  <p style={{ fontSize: 14, color: '#1E1B2E', lineHeight: 1.7, margin: 0, fontStyle: 'italic' }}>{entry.story}</p>
+                </div>
+              ) : (
+                <button onClick={() => generateStory(entry)} disabled={storyLoading === entry.id}
+                  style={{ width: '100%', padding: '10px', borderRadius: 12, border: '2px solid #E4E0F5', background: '#F8F6FF', color: '#635BFF', cursor: storyLoading === entry.id ? 'not-allowed' : 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', opacity: storyLoading === entry.id ? 0.6 : 1 }}>
+                  {storyLoading === entry.id ? '✨ Generating story...' : '✨ Generate AI story'}
+                </button>
+              )}
+            </div>
+          ))
         )}
       </div>
     </div>
