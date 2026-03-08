@@ -1,6 +1,210 @@
 'use client'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
+
+function Globe() {
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+
+  useEffect(() => {
+    const canvas = canvasRef.current
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    if (!ctx) return
+
+    let animFrame: number
+    let rotation = 0
+
+    const waypoints = [
+      { lat: 13.7, lng: 100.5, label: '🏛 Bangkok' },
+      { lat: 41.9, lng: 12.5, label: '🏟 Rome' },
+      { lat: 35.7, lng: 139.7, label: '⛩ Tokyo' },
+      { lat: -33.9, lng: 18.4, label: '🦁 Cape Town' },
+      { lat: 40.4, lng: -3.7, label: '🎨 Madrid' },
+      { lat: 27.2, lng: 78.0, label: '🕌 Agra' },
+      { lat: 51.5, lng: -0.1, label: '🎡 London' },
+      { lat: 48.8, lng: 2.3, label: '🗼 Paris' },
+      { lat: -13.5, lng: -71.9, label: '🏔 Machu Picchu' },
+      { lat: 30.0, lng: 31.2, label: '🐪 Cairo' },
+    ]
+
+    function latLngTo3D(lat: number, lng: number, radius: number, rot: number) {
+      const phi = (90 - lat) * (Math.PI / 180)
+      const theta = (lng + rot) * (Math.PI / 180)
+      return {
+        x: radius * Math.sin(phi) * Math.cos(theta),
+        y: radius * Math.cos(phi),
+        z: radius * Math.sin(phi) * Math.sin(theta)
+      }
+    }
+
+    function drawGlobe() {
+      const w = canvas!.width
+      const h = canvas!.height
+      const cx = w / 2
+      const cy = h / 2
+      const r = Math.min(w, h) * 0.42
+
+      ctx!.clearRect(0, 0, w, h)
+
+      // Glow
+      const glow = ctx!.createRadialGradient(cx, cy, r * 0.5, cx, cy, r * 1.2)
+      glow.addColorStop(0, 'rgba(99,91,255,0.15)')
+      glow.addColorStop(1, 'rgba(99,91,255,0)')
+      ctx!.fillStyle = glow
+      ctx!.beginPath()
+      ctx!.arc(cx, cy, r * 1.2, 0, Math.PI * 2)
+      ctx!.fill()
+
+      // Ocean
+      const ocean = ctx!.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 0, cx, cy, r)
+      ocean.addColorStop(0, '#4F46E5')
+      ocean.addColorStop(1, '#1E1B4B')
+      ctx!.fillStyle = ocean
+      ctx!.beginPath()
+      ctx!.arc(cx, cy, r, 0, Math.PI * 2)
+      ctx!.fill()
+
+      // Grid lines
+      ctx!.strokeStyle = 'rgba(139,92,246,0.2)'
+      ctx!.lineWidth = 0.5
+
+      for (let lat = -80; lat <= 80; lat += 20) {
+        ctx!.beginPath()
+        let first = true
+        for (let lng = -180; lng <= 180; lng += 2) {
+          const p = latLngTo3D(lat, lng, r, rotation)
+          if (p.z > 0) {
+            const sx = cx + p.x
+            const sy = cy - p.y
+            if (first) { ctx!.moveTo(sx, sy); first = false }
+            else ctx!.lineTo(sx, sy)
+          } else { first = true }
+        }
+        ctx!.stroke()
+      }
+
+      for (let lng = -180; lng <= 180; lng += 20) {
+        ctx!.beginPath()
+        let first = true
+        for (let lat = -90; lat <= 90; lat += 2) {
+          const p = latLngTo3D(lat, lng, r, rotation)
+          if (p.z > 0) {
+            const sx = cx + p.x
+            const sy = cy - p.y
+            if (first) { ctx!.moveTo(sx, sy); first = false }
+            else ctx!.lineTo(sx, sy)
+          } else { first = true }
+        }
+        ctx!.stroke()
+      }
+
+      // Globe edge
+      const edge = ctx!.createLinearGradient(cx - r, cy, cx + r, cy)
+      edge.addColorStop(0, 'rgba(99,91,255,0.8)')
+      edge.addColorStop(0.5, 'transparent')
+      edge.addColorStop(1, 'rgba(99,91,255,0.4)')
+      ctx!.strokeStyle = edge
+      ctx!.lineWidth = 2
+      ctx!.beginPath()
+      ctx!.arc(cx, cy, r, 0, Math.PI * 2)
+      ctx!.stroke()
+
+      // Shine
+      const shine = ctx!.createRadialGradient(cx - r * 0.35, cy - r * 0.35, 0, cx - r * 0.35, cy - r * 0.35, r * 0.6)
+      shine.addColorStop(0, 'rgba(255,255,255,0.12)')
+      shine.addColorStop(1, 'rgba(255,255,255,0)')
+      ctx!.fillStyle = shine
+      ctx!.beginPath()
+      ctx!.arc(cx, cy, r, 0, Math.PI * 2)
+      ctx!.fill()
+
+      // Waypoints
+      waypoints.forEach(wp => {
+        const p = latLngTo3D(wp.lat, wp.lng, r, rotation)
+        if (p.z > 0) {
+          const sx = cx + p.x
+          const sy = cy - p.y
+          const size = 4 + (p.z / r) * 4
+          const alpha = 0.4 + (p.z / r) * 0.6
+
+          // Pulse
+          ctx!.beginPath()
+          ctx!.arc(sx, sy, size * 2.5, 0, Math.PI * 2)
+          ctx!.fillStyle = `rgba(251,191,36,${alpha * 0.2})`
+          ctx!.fill()
+
+          ctx!.beginPath()
+          ctx!.arc(sx, sy, size, 0, Math.PI * 2)
+          ctx!.fillStyle = `rgba(251,191,36,${alpha})`
+          ctx!.fill()
+
+          if (p.z > r * 0.3) {
+            ctx!.font = `bold ${10 + (p.z / r) * 4}px system-ui`
+            ctx!.fillStyle = `rgba(255,255,255,${alpha})`
+            ctx!.fillText(wp.label, sx + size + 4, sy + 4)
+          }
+        }
+      })
+
+      rotation += 0.15
+      animFrame = requestAnimationFrame(drawGlobe)
+    }
+
+    drawGlobe()
+    return () => cancelAnimationFrame(animFrame)
+  }, [])
+
+  return (
+    <canvas ref={canvasRef} width={440} height={440}
+      style={{ width: '100%', maxWidth: 440, height: 'auto' }} />
+  )
+}
+
+function VintageMap() {
+  const stops = [
+    { city: 'New York', emoji: '🗽', x: 20, y: 35 },
+    { city: 'London', emoji: '🎡', x: 45, y: 20 },
+    { city: 'Rome', emoji: '🏛', x: 52, y: 28 },
+    { city: 'Cairo', emoji: '🐪', x: 55, y: 42 },
+    { city: 'Bangkok', emoji: '🛕', x: 75, y: 48 },
+    { city: 'Tokyo', emoji: '⛩', x: 85, y: 30 },
+    { city: 'Sydney', emoji: '🦘', x: 88, y: 72 },
+  ]
+
+  return (
+    <div style={{ background: '#FDF6E3', borderRadius: 20, padding: 24, border: '3px solid #D4A853', position: 'relative', overflow: 'hidden', minHeight: 280 }}>
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.05, backgroundImage: 'repeating-linear-gradient(0deg, #8B6914 0px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #8B6914 0px, transparent 1px, transparent 40px)' }}/>
+      <div style={{ fontSize: 13, fontWeight: 700, color: '#8B6914', textAlign: 'center', marginBottom: 16, fontFamily: 'Georgia,serif', letterSpacing: '0.1em' }}>✦ WAYPOINT LEARNING JOURNEY ✦</div>
+      <svg width="100%" height="200" viewBox="0 0 100 80" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <marker id="arrow" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto">
+            <path d="M0,0 L4,2 L0,4 Z" fill="#D4A853"/>
+          </marker>
+        </defs>
+        {stops.slice(0, -1).map((stop, i) => (
+          <line key={i}
+            x1={stop.x} y1={stop.y}
+            x2={stops[i+1].x} y2={stops[i+1].y}
+            stroke="#D4A853" strokeWidth="0.8" strokeDasharray="2,1.5"
+            markerEnd="url(#arrow)" opacity="0.7"/>
+        ))}
+        {stops.map((stop, i) => (
+          <g key={stop.city}>
+            <circle cx={stop.x} cy={stop.y} r="3" fill="#D4A853" opacity="0.9"/>
+            <circle cx={stop.x} cy={stop.y} r="5" fill="none" stroke="#D4A853" strokeWidth="0.5" opacity="0.5"/>
+            <text x={stop.x} y={stop.y - 5} textAnchor="middle" fontSize="5" fill="#8B6914" fontFamily="Georgia,serif">{stop.emoji}</text>
+            <text x={stop.x} y={stop.y + 9} textAnchor="middle" fontSize="3.5" fill="#8B6914" fontFamily="Georgia,serif">{stop.city}</text>
+          </g>
+        ))}
+      </svg>
+      <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8 }}>
+        {['📚 Math in Tokyo', '🌿 Science in Bangkok', '🎨 Art in Rome'].map(t => (
+          <span key={t} style={{ fontSize: 11, color: '#8B6914', fontWeight: 600, fontFamily: 'Georgia,serif' }}>{t}</span>
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function LandingPage() {
   const router = useRouter()
@@ -11,7 +215,7 @@ export default function LandingPage() {
   const extraChildren = Math.max(0, children - 1) * 6
   const totalMonthly = basePrice + extraChildren
   const totalYearly = (totalMonthly * 12).toFixed(2)
-  const savings = billing === 'yearly' ? ((12.99 + extraChildren - totalMonthly) * 12).toFixed(0) : billing === 'quarterly' ? ((12.99 + extraChildren - totalMonthly) * 12).toFixed(0) : null
+  const savings = billing !== 'monthly' ? ((12.99 + extraChildren - totalMonthly) * 12).toFixed(0) : null
 
   const features = [
     { icon: '🗺️', title: 'Location-based lessons', desc: 'Every lesson connects to where you are right now — markets, temples, beaches and more.' },
@@ -44,27 +248,29 @@ export default function LandingPage() {
       </nav>
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #F8F6FF 0%, #EEF2FF 100%)', padding: '80px 24px', textAlign: 'center' }}>
-        <div style={{ maxWidth: 720, margin: '0 auto' }}>
-          <div style={{ display: 'inline-block', background: '#E8E6FF', color: '#635BFF', padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 24 }}>
-            ✨ AI-powered homeschooling for worldschooling families
+      <div style={{ background: 'linear-gradient(135deg, #0F0C29 0%, #1E1B4B 50%, #24243e 100%)', padding: '80px 24px' }}>
+        <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ flex: 1, minWidth: 300, maxWidth: 540 }}>
+            <div style={{ display: 'inline-block', background: 'rgba(99,91,255,0.3)', color: '#A5B4FC', padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 24, border: '1px solid rgba(99,91,255,0.4)' }}>
+              ✨ AI-powered homeschooling for worldschooling families
+            </div>
+            <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 48, lineHeight: 1.15, marginBottom: 24, color: 'white' }}>
+              The world is their classroom.<br/>
+              <span style={{ color: '#A5B4FC' }}>We write the lesson plans.</span>
+            </h1>
+            <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: 40 }}>
+              AI-generated weekly lesson plans tailored to your child's age, location and learning style. From Bangkok to Barcelona — school follows you.
+            </p>
+            <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
+              <button onClick={() => router.push('/auth')} style={{ padding: '16px 36px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(99,91,255,0.5)' }}>
+                Start 10-day free trial →
+              </button>
+            </div>
+            <p style={{ marginTop: 16, fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Credit card required · Cancel before day 10 to avoid charges</p>
           </div>
-          <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 52, lineHeight: 1.15, marginBottom: 24, color: '#1E1B2E' }}>
-            The world is their classroom.<br/>
-            <span style={{ color: '#635BFF' }}>We write the lesson plans.</span>
-          </h1>
-          <p style={{ fontSize: 20, color: '#6B7280', lineHeight: 1.6, marginBottom: 40, maxWidth: 560, margin: '0 auto 40px' }}>
-            AI-generated weekly lesson plans tailored to your child's age, location and learning style. From Bangkok to Barcelona — school follows you.
-          </p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <button onClick={() => router.push('/auth')} style={{ padding: '16px 36px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(99,91,255,0.35)' }}>
-              Start 10-day free trial →
-            </button>
-            <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })} style={{ padding: '16px 36px', borderRadius: 100, border: '2px solid #E4E0F5', background: 'white', color: '#635BFF', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
-              See how it works
-            </button>
+          <div style={{ flex: 1, minWidth: 280, maxWidth: 440, display: 'flex', justifyContent: 'center' }}>
+            <Globe />
           </div>
-          <p style={{ marginTop: 16, fontSize: 13, color: '#8B87A8', fontWeight: 600 }}>No credit card required · Cancel anytime</p>
         </div>
       </div>
 
@@ -82,6 +288,12 @@ export default function LandingPage() {
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, textAlign: 'center', marginBottom: 16 }}>Everything you need to homeschool anywhere</h2>
           <p style={{ textAlign: 'center', color: '#6B7280', fontSize: 17, marginBottom: 56 }}>No planning stress. No missed school days. Just learning that moves with you.</p>
+
+          {/* Vintage map */}
+          <div style={{ marginBottom: 48 }}>
+            <VintageMap />
+          </div>
+
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
             {features.map(f => (
               <div key={f.title} style={{ background: 'white', borderRadius: 20, padding: 28, border: '2px solid #E4E0F5' }}>
@@ -124,9 +336,8 @@ export default function LandingPage() {
       <div id="pricing" style={{ background: '#F8F6FF', padding: '80px 24px' }}>
         <div style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, marginBottom: 16 }}>Simple, transparent pricing</h2>
-          <p style={{ color: '#6B7280', fontSize: 17, marginBottom: 40 }}>Start free for 10 days. No credit card required.</p>
+          <p style={{ color: '#6B7280', fontSize: 17, marginBottom: 40 }}>Start free for 10 days. Cancel before day 10 to avoid charges.</p>
 
-          {/* Billing toggle */}
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 32, background: 'white', borderRadius: 100, padding: 6, border: '2px solid #E4E0F5', width: 'fit-content', margin: '0 auto 32px' }}>
             {(['monthly', 'quarterly', 'yearly'] as const).map(b => (
               <button key={b} onClick={() => setBilling(b)} style={{ padding: '8px 20px', borderRadius: 100, border: 'none', background: billing === b ? '#635BFF' : 'transparent', color: billing === b ? 'white' : '#8B87A8', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }}>
@@ -139,7 +350,6 @@ export default function LandingPage() {
 
           <div style={{ background: 'white', borderRadius: 24, padding: 40, border: '2px solid #635BFF', boxShadow: '0 8px 32px rgba(99,91,255,0.12)' }}>
             <div style={{ fontSize: 48, marginBottom: 8 }}>🧭</div>
-
             <div style={{ marginBottom: 24 }}>
               <span style={{ fontFamily: 'Georgia,serif', fontSize: 48, fontWeight: 700, color: '#1E1B2E' }}>${totalMonthly.toFixed(2)}</span>
               <span style={{ color: '#8B87A8', fontSize: 16 }}>/month</span>
@@ -147,7 +357,6 @@ export default function LandingPage() {
               {billing === 'yearly' && <div style={{ fontSize: 13, color: '#8B87A8', marginTop: 4 }}>Billed as ${totalYearly}/year</div>}
             </div>
 
-            {/* Children selector */}
             <div style={{ background: '#F8F6FF', borderRadius: 16, padding: 16, marginBottom: 24 }}>
               <div style={{ fontSize: 13, color: '#8B87A8', fontWeight: 700, marginBottom: 12 }}>NUMBER OF CHILDREN</div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
@@ -155,11 +364,18 @@ export default function LandingPage() {
                   <button key={n} onClick={() => setChildren(n)} style={{ width: 48, height: 48, borderRadius: 12, border: `2px solid ${children === n ? '#635BFF' : '#E4E0F5'}`, background: children === n ? '#635BFF' : 'white', color: children === n ? 'white' : '#8B87A8', cursor: 'pointer', fontSize: 16, fontWeight: 700, fontFamily: 'inherit' }}>{n}</button>
                 ))}
               </div>
-              {children > 1 && <div style={{ fontSize: 12, color: '#8B87A8', marginTop: 8 }}>Base ${ billing === 'monthly' ? '12.99' : billing === 'quarterly' ? '10.99' : '8.99'} + {children - 1} extra {children === 2 ? 'child' : 'children'} × $6</div>}
+              {children > 1 && <div style={{ fontSize: 12, color: '#8B87A8', marginTop: 8 }}>Base ${billing === 'monthly' ? '12.99' : billing === 'quarterly' ? '10.99' : '8.99'} + {children - 1} extra {children === 2 ? 'child' : 'children'} × $6</div>}
             </div>
 
             <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', textAlign: 'left' }}>
-              {['AI-generated weekly lesson plans', 'Interactive worksheets with AI grading', 'Travel journal with AI stories', 'Works in every country & city', 'Up to ' + children + (children === 1 ? ' child' : ' children'), '10-day free trial included'].map(item => (
+              {[
+                'AI-generated weekly lesson plans',
+                'Interactive worksheets with AI grading',
+                'Travel journal with AI stories',
+                'Works in every country & city',
+                `Up to ${children} ${children === 1 ? 'child' : 'children'}`,
+                '10-day free trial included'
+              ].map(item => (
                 <li key={item} style={{ padding: '8px 0', fontSize: 15, color: '#4B5563', display: 'flex', gap: 10, alignItems: 'center', borderBottom: '1px solid #F3F4F6' }}>
                   <span style={{ color: '#10B981', fontWeight: 700 }}>✓</span> {item}
                 </li>
@@ -169,7 +385,7 @@ export default function LandingPage() {
             <button onClick={() => router.push('/auth')} style={{ width: '100%', padding: '16px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 16, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(99,91,255,0.35)' }}>
               Start 10-day free trial →
             </button>
-            <p style={{ fontSize: 12, color: '#8B87A8', marginTop: 12, fontWeight: 600 }}>No credit card required · Cancel anytime</p>
+            <p style={{ fontSize: 12, color: '#8B87A8', marginTop: 12, fontWeight: 600 }}>Credit card required · Cancel before day 10 to avoid charges</p>
           </div>
         </div>
       </div>
@@ -188,22 +404,22 @@ export default function LandingPage() {
       </div>
 
       {/* CTA */}
-      <div style={{ background: 'linear-gradient(135deg, #635BFF, #8B5CF6)', padding: '80px 24px', textAlign: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg, #0F0C29, #1E1B4B)', padding: '80px 24px', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <div style={{ fontSize: 48, marginBottom: 24 }}>🌍</div>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 40, color: 'white', marginBottom: 16 }}>Ready to start your worldschooling journey?</h2>
-          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, marginBottom: 40 }}>Join families in 50+ countries who never skip a school day.</p>
-          <button onClick={() => router.push('/auth')} style={{ padding: '18px 48px', borderRadius: 100, border: 'none', background: 'white', color: '#635BFF', fontSize: 18, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
+          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 18, marginBottom: 40 }}>Join families in 50+ countries who never skip a school day.</p>
+          <button onClick={() => router.push('/auth')} style={{ padding: '18px 48px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 18, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(99,91,255,0.5)' }}>
             Start free for 10 days →
           </button>
-          <p style={{ color: 'rgba(255,255,255,0.7)', marginTop: 16, fontSize: 13, fontWeight: 600 }}>No credit card required · Cancel anytime</p>
+          <p style={{ color: 'rgba(255,255,255,0.4)', marginTop: 16, fontSize: 13, fontWeight: 600 }}>Credit card required · Cancel before day 10 to avoid charges</p>
         </div>
       </div>
 
       {/* Footer */}
-      <div style={{ background: '#1E1B2E', padding: '32px 24px', textAlign: 'center' }}>
+      <div style={{ background: '#0F0C29', padding: '32px 24px', textAlign: 'center' }}>
         <span style={{ fontFamily: 'Georgia,serif', fontSize: 18, fontWeight: 700, color: 'white' }}>🧭 Waypoint <span style={{ color: '#635BFF' }}>Education</span></span>
-        <p style={{ color: '#8B87A8', fontSize: 13, marginTop: 8 }}>© 2026 Waypoint Education · The world is their classroom.</p>
+        <p style={{ color: '#4B5563', fontSize: 13, marginTop: 8 }}>© 2026 Waypoint Education · The world is their classroom.</p>
       </div>
 
     </div>
