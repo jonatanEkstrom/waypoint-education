@@ -25,6 +25,8 @@ function Globe() {
       { lat: 48.8, lng: 2.3, label: '🗼 Paris' },
       { lat: -13.5, lng: -71.9, label: '🏔 Machu Picchu' },
       { lat: 30.0, lng: 31.2, label: '🐪 Cairo' },
+      { lat: 40.7, lng: -74.0, label: '🗽 New York' },
+      { lat: -8.4, lng: 115.2, label: '🌺 Bali' },
     ]
 
     function latLngTo3D(lat: number, lng: number, radius: number, rot: number) {
@@ -46,27 +48,28 @@ function Globe() {
 
       ctx!.clearRect(0, 0, w, h)
 
-      // Glow
-      const glow = ctx!.createRadialGradient(cx, cy, r * 0.5, cx, cy, r * 1.2)
-      glow.addColorStop(0, 'rgba(99,91,255,0.15)')
-      glow.addColorStop(1, 'rgba(99,91,255,0)')
+      // Soft outer glow
+      const glow = ctx!.createRadialGradient(cx, cy, r * 0.6, cx, cy, r * 1.3)
+      glow.addColorStop(0, 'rgba(147,197,253,0.2)')
+      glow.addColorStop(1, 'rgba(147,197,253,0)')
       ctx!.fillStyle = glow
       ctx!.beginPath()
-      ctx!.arc(cx, cy, r * 1.2, 0, Math.PI * 2)
+      ctx!.arc(cx, cy, r * 1.3, 0, Math.PI * 2)
       ctx!.fill()
 
-      // Ocean
+      // Ocean — bright blue
       const ocean = ctx!.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 0, cx, cy, r)
-      ocean.addColorStop(0, '#4F46E5')
-      ocean.addColorStop(1, '#1E1B4B')
+      ocean.addColorStop(0, '#60A5FA')
+      ocean.addColorStop(0.6, '#3B82F6')
+      ocean.addColorStop(1, '#1D4ED8')
       ctx!.fillStyle = ocean
       ctx!.beginPath()
       ctx!.arc(cx, cy, r, 0, Math.PI * 2)
       ctx!.fill()
 
-      // Grid lines
-      ctx!.strokeStyle = 'rgba(139,92,246,0.2)'
-      ctx!.lineWidth = 0.5
+      // Grid lines — light
+      ctx!.strokeStyle = 'rgba(255,255,255,0.25)'
+      ctx!.lineWidth = 0.6
 
       for (let lat = -80; lat <= 80; lat += 20) {
         ctx!.beginPath()
@@ -98,20 +101,57 @@ function Globe() {
         ctx!.stroke()
       }
 
+      // Continents (simplified blobs)
+      const continents = [
+        // Europe
+        { lat: 50, lng: 10, w: 18, h: 14 },
+        // Africa
+        { lat: 5, lng: 20, w: 22, h: 30 },
+        // Asia
+        { lat: 50, lng: 90, w: 50, h: 30 },
+        // North America
+        { lat: 45, lng: -100, w: 40, h: 30 },
+        // South America
+        { lat: -15, lng: -60, w: 22, h: 30 },
+        // Australia
+        { lat: -25, lng: 135, w: 20, h: 16 },
+      ]
+
+      continents.forEach(c => {
+        const center = latLngTo3D(c.lat, c.lng, r, rotation)
+        if (center.z > -r * 0.3) {
+          const visible = Math.max(0, center.z / r)
+          ctx!.save()
+          ctx!.globalAlpha = 0.5 + visible * 0.4
+
+          const grad = ctx!.createRadialGradient(
+            cx + center.x, cy - center.y, 0,
+            cx + center.x, cy - center.y, (c.w / 100) * r
+          )
+          grad.addColorStop(0, '#86EFAC')
+          grad.addColorStop(1, '#4ADE80')
+          ctx!.fillStyle = grad
+          ctx!.beginPath()
+          ctx!.ellipse(cx + center.x, cy - center.y, (c.w / 100) * r, (c.h / 100) * r, 0, 0, Math.PI * 2)
+          ctx!.fill()
+          ctx!.restore()
+        }
+      })
+
       // Globe edge
       const edge = ctx!.createLinearGradient(cx - r, cy, cx + r, cy)
-      edge.addColorStop(0, 'rgba(99,91,255,0.8)')
+      edge.addColorStop(0, 'rgba(96,165,250,0.9)')
       edge.addColorStop(0.5, 'transparent')
-      edge.addColorStop(1, 'rgba(99,91,255,0.4)')
+      edge.addColorStop(1, 'rgba(29,78,216,0.6)')
       ctx!.strokeStyle = edge
-      ctx!.lineWidth = 2
+      ctx!.lineWidth = 3
       ctx!.beginPath()
       ctx!.arc(cx, cy, r, 0, Math.PI * 2)
       ctx!.stroke()
 
       // Shine
-      const shine = ctx!.createRadialGradient(cx - r * 0.35, cy - r * 0.35, 0, cx - r * 0.35, cy - r * 0.35, r * 0.6)
-      shine.addColorStop(0, 'rgba(255,255,255,0.12)')
+      const shine = ctx!.createRadialGradient(cx - r * 0.35, cy - r * 0.35, 0, cx - r * 0.35, cy - r * 0.35, r * 0.7)
+      shine.addColorStop(0, 'rgba(255,255,255,0.35)')
       shine.addColorStop(1, 'rgba(255,255,255,0)')
       ctx!.fillStyle = shine
       ctx!.beginPath()
@@ -125,12 +165,11 @@ function Globe() {
           const sx = cx + p.x
           const sy = cy - p.y
           const size = 4 + (p.z / r) * 4
-          const alpha = 0.4 + (p.z / r) * 0.6
+          const alpha = 0.5 + (p.z / r) * 0.5
 
-          // Pulse
           ctx!.beginPath()
           ctx!.arc(sx, sy, size * 2.5, 0, Math.PI * 2)
-          ctx!.fillStyle = `rgba(251,191,36,${alpha * 0.2})`
+          ctx!.fillStyle = `rgba(251,191,36,${alpha * 0.25})`
           ctx!.fill()
 
           ctx!.beginPath()
@@ -138,15 +177,23 @@ function Globe() {
           ctx!.fillStyle = `rgba(251,191,36,${alpha})`
           ctx!.fill()
 
-          if (p.z > r * 0.3) {
-            ctx!.font = `bold ${10 + (p.z / r) * 4}px system-ui`
+          ctx!.beginPath()
+          ctx!.arc(sx, sy, size * 0.4, 0, Math.PI * 2)
+          ctx!.fillStyle = 'white'
+          ctx!.fill()
+
+          if (p.z > r * 0.25) {
+            ctx!.font = `bold ${10 + (p.z / r) * 3}px system-ui`
             ctx!.fillStyle = `rgba(255,255,255,${alpha})`
-            ctx!.fillText(wp.label, sx + size + 4, sy + 4)
+            ctx!.shadowColor = 'rgba(0,0,0,0.5)'
+            ctx!.shadowBlur = 4
+            ctx!.fillText(wp.label, sx + size + 5, sy + 4)
+            ctx!.shadowBlur = 0
           }
         }
       })
 
-      rotation += 0.15
+      rotation += 0.12
       animFrame = requestAnimationFrame(drawGlobe)
     }
 
@@ -156,52 +203,92 @@ function Globe() {
 
   return (
     <canvas ref={canvasRef} width={440} height={440}
-      style={{ width: '100%', maxWidth: 440, height: 'auto' }} />
+      style={{ width: '100%', maxWidth: 440, height: 'auto', filter: 'drop-shadow(0 20px 60px rgba(59,130,246,0.4))' }} />
   )
 }
 
 function VintageMap() {
-  const stops = [
-    { city: 'New York', emoji: '🗽', x: 20, y: 35 },
-    { city: 'London', emoji: '🎡', x: 45, y: 20 },
-    { city: 'Rome', emoji: '🏛', x: 52, y: 28 },
-    { city: 'Cairo', emoji: '🐪', x: 55, y: 42 },
-    { city: 'Bangkok', emoji: '🛕', x: 75, y: 48 },
-    { city: 'Tokyo', emoji: '⛩', x: 85, y: 30 },
-    { city: 'Sydney', emoji: '🦘', x: 88, y: 72 },
+  const thinkers = [
+    { name: 'Leonardo da Vinci', emoji: '🎨', subject: 'Art & Science', x: 50, y: 32, country: 'Italy' },
+    { name: 'Albert Einstein', emoji: '⚛️', subject: 'Physics', x: 51, y: 26, country: 'Germany' },
+    { name: 'Thor Heyerdahl', emoji: '🚢', subject: 'Exploration', x: 48, y: 18, country: 'Norway' },
+    { name: 'Marie Curie', emoji: '🔬', subject: 'Chemistry', x: 52, y: 24, country: 'Poland' },
+    { name: 'Ibn Battuta', emoji: '🗺️', subject: 'Geography', x: 54, y: 40, country: 'Morocco' },
+    { name: 'Confucius', emoji: '📜', subject: 'Philosophy', x: 80, y: 35, country: 'China' },
+    { name: 'Nikola Tesla', emoji: '⚡', subject: 'Electricity', x: 53, y: 28, country: 'Serbia' },
+    { name: 'Cleopatra', emoji: '👑', subject: 'History', x: 56, y: 40, country: 'Egypt' },
+    { name: 'Darwin', emoji: '🦋', subject: 'Biology', x: 44, y: 22, country: 'England' },
+    { name: 'Galileo', emoji: '🔭', subject: 'Astronomy', x: 50, y: 33, country: 'Italy' },
+    { name: 'Maya Angelou', emoji: '✍️', subject: 'Literature', x: 18, y: 38, country: 'USA' },
+    { name: 'Pythagoras', emoji: '📐', subject: 'Math', x: 56, y: 34, country: 'Greece' },
   ]
 
+  const [hovered, setHovered] = useState<string | null>(null)
+
   return (
-    <div style={{ background: '#FDF6E3', borderRadius: 20, padding: 24, border: '3px solid #D4A853', position: 'relative', overflow: 'hidden', minHeight: 280 }}>
-      <div style={{ position: 'absolute', inset: 0, opacity: 0.05, backgroundImage: 'repeating-linear-gradient(0deg, #8B6914 0px, transparent 1px, transparent 40px), repeating-linear-gradient(90deg, #8B6914 0px, transparent 1px, transparent 40px)' }}/>
-      <div style={{ fontSize: 13, fontWeight: 700, color: '#8B6914', textAlign: 'center', marginBottom: 16, fontFamily: 'Georgia,serif', letterSpacing: '0.1em' }}>✦ WAYPOINT LEARNING JOURNEY ✦</div>
-      <svg width="100%" height="200" viewBox="0 0 100 80" preserveAspectRatio="xMidYMid meet">
-        <defs>
-          <marker id="arrow" markerWidth="4" markerHeight="4" refX="2" refY="2" orient="auto">
-            <path d="M0,0 L4,2 L0,4 Z" fill="#D4A853"/>
-          </marker>
-        </defs>
-        {stops.slice(0, -1).map((stop, i) => (
-          <line key={i}
-            x1={stop.x} y1={stop.y}
-            x2={stops[i+1].x} y2={stops[i+1].y}
-            stroke="#D4A853" strokeWidth="0.8" strokeDasharray="2,1.5"
-            markerEnd="url(#arrow)" opacity="0.7"/>
-        ))}
-        {stops.map((stop, i) => (
-          <g key={stop.city}>
-            <circle cx={stop.x} cy={stop.y} r="3" fill="#D4A853" opacity="0.9"/>
-            <circle cx={stop.x} cy={stop.y} r="5" fill="none" stroke="#D4A853" strokeWidth="0.5" opacity="0.5"/>
-            <text x={stop.x} y={stop.y - 5} textAnchor="middle" fontSize="5" fill="#8B6914" fontFamily="Georgia,serif">{stop.emoji}</text>
-            <text x={stop.x} y={stop.y + 9} textAnchor="middle" fontSize="3.5" fill="#8B6914" fontFamily="Georgia,serif">{stop.city}</text>
-          </g>
-        ))}
-      </svg>
-      <div style={{ display: 'flex', justifyContent: 'center', gap: 16, marginTop: 8 }}>
-        {['📚 Math in Tokyo', '🌿 Science in Bangkok', '🎨 Art in Rome'].map(t => (
-          <span key={t} style={{ fontSize: 11, color: '#8B6914', fontWeight: 600, fontFamily: 'Georgia,serif' }}>{t}</span>
-        ))}
+    <div style={{ background: '#FDF6E3', borderRadius: 24, padding: 28, border: '3px solid #D4A853', position: 'relative', overflow: 'hidden' }}>
+      {/* Paper texture */}
+      <div style={{ position: 'absolute', inset: 0, opacity: 0.04, backgroundImage: 'repeating-linear-gradient(0deg, #8B6914 0px, transparent 1px, transparent 32px), repeating-linear-gradient(90deg, #8B6914 0px, transparent 1px, transparent 32px)' }}/>
+
+      <div style={{ fontSize: 15, fontWeight: 700, color: '#8B6914', textAlign: 'center', marginBottom: 20, fontFamily: 'Georgia,serif', letterSpacing: '0.12em' }}>
+        ✦ GREAT MINDS OF THE WORLD ✦
       </div>
+
+      <div style={{ position: 'relative', width: '100%', paddingBottom: '50%', background: 'rgba(139,105,20,0.05)', borderRadius: 12, border: '2px solid #D4A85355', overflow: 'visible' }}>
+        <svg style={{ position: 'absolute', inset: 0, width: '100%', height: '100%' }} viewBox="0 0 100 50" preserveAspectRatio="xMidYMid meet">
+          {/* Simplified world outline */}
+          <ellipse cx="50" cy="25" rx="48" ry="23" fill="#C8E6FA" opacity="0.4"/>
+
+          {/* Continent blobs */}
+          <ellipse cx="22" cy="22" rx="12" ry="9" fill="#B8D4A0" opacity="0.6"/>
+          <ellipse cx="22" cy="34" rx="7" ry="9" fill="#B8D4A0" opacity="0.6"/>
+          <ellipse cx="50" cy="22" rx="10" ry="7" fill="#B8D4A0" opacity="0.6"/>
+          <ellipse cx="57" cy="33" rx="8" ry="9" fill="#B8D4A0" opacity="0.6"/>
+          <ellipse cx="75" cy="25" rx="13" ry="9" fill="#B8D4A0" opacity="0.6"/>
+          <ellipse cx="85" cy="37" rx="6" ry="5" fill="#B8D4A0" opacity="0.6"/>
+
+          {thinkers.map(t => (
+            <g key={t.name} style={{ cursor: 'pointer' }}
+              onMouseEnter={() => setHovered(t.name)}
+              onMouseLeave={() => setHovered(null)}>
+              <circle cx={t.x} cy={t.y} r="2.5" fill="#D4A853" opacity="0.9"/>
+              <circle cx={t.x} cy={t.y} r="4" fill="none" stroke="#D4A853" strokeWidth="0.5" opacity="0.5"/>
+              <text x={t.x} y={t.y - 3} textAnchor="middle" fontSize="4">{t.emoji}</text>
+            </g>
+          ))}
+        </svg>
+      </div>
+
+      {/* Hover tooltip */}
+      {hovered && (() => {
+        const t = thinkers.find(t => t.name === hovered)!
+        return (
+          <div style={{ position: 'absolute', top: 8, right: 8, background: '#1E1B2E', color: 'white', borderRadius: 12, padding: '10px 14px', fontSize: 13, zIndex: 10, pointerEvents: 'none', maxWidth: 180 }}>
+            <div style={{ fontSize: 20, marginBottom: 4 }}>{t.emoji}</div>
+            <div style={{ fontWeight: 700 }}>{t.name}</div>
+            <div style={{ fontSize: 11, color: '#A5B4FC' }}>{t.subject} · {t.country}</div>
+          </div>
+        )
+      })()}
+
+      {/* Legend */}
+      <div style={{ marginTop: 16, display: 'flex', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+        {thinkers.slice(0, 6).map(t => (
+          <span key={t.name}
+            onMouseEnter={() => setHovered(t.name)}
+            onMouseLeave={() => setHovered(null)}
+            style={{ padding: '4px 10px', borderRadius: 100, background: hovered === t.name ? '#1E1B2E' : '#FEF3C7', color: hovered === t.name ? 'white' : '#8B6914', fontSize: 12, fontWeight: 700, cursor: 'pointer', transition: 'all 0.2s', border: '1px solid #D4A85355' }}>
+            {t.emoji} {t.name.split(' ').pop()}
+          </span>
+        ))}
+        <span style={{ padding: '4px 10px', borderRadius: 100, background: '#FEF3C7', color: '#8B6914', fontSize: 12, fontWeight: 700, border: '1px solid #D4A85355' }}>
+          +{thinkers.length - 6} more
+        </span>
+      </div>
+
+      <p style={{ textAlign: 'center', fontSize: 12, color: '#8B6914', marginTop: 12, fontFamily: 'Georgia,serif', fontStyle: 'italic' }}>
+        Hover over a dot to discover a great mind 🌍
+      </p>
     </div>
   )
 }
@@ -247,26 +334,26 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #0F0C29 0%, #1E1B4B 50%, #24243e 100%)', padding: '80px 24px' }}>
+      {/* Hero — bright & child-friendly */}
+      <div style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #DBEAFE 50%, #E0F2FE 100%)', padding: '80px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap', justifyContent: 'center' }}>
           <div style={{ flex: 1, minWidth: 300, maxWidth: 540 }}>
-            <div style={{ display: 'inline-block', background: 'rgba(99,91,255,0.3)', color: '#A5B4FC', padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 24, border: '1px solid rgba(99,91,255,0.4)' }}>
+            <div style={{ display: 'inline-block', background: '#E8E6FF', color: '#635BFF', padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 24, border: '1px solid #C7D2FE' }}>
               ✨ AI-powered homeschooling for worldschooling families
             </div>
-            <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 48, lineHeight: 1.15, marginBottom: 24, color: 'white' }}>
+            <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 48, lineHeight: 1.15, marginBottom: 24, color: '#1E1B2E' }}>
               The world is their classroom.<br/>
-              <span style={{ color: '#A5B4FC' }}>We write the lesson plans.</span>
+              <span style={{ color: '#635BFF' }}>We write the lesson plans.</span>
             </h1>
-            <p style={{ fontSize: 18, color: 'rgba(255,255,255,0.7)', lineHeight: 1.7, marginBottom: 40 }}>
+            <p style={{ fontSize: 18, color: '#4B5563', lineHeight: 1.7, marginBottom: 40 }}>
               AI-generated weekly lesson plans tailored to your child's age, location and learning style. From Bangkok to Barcelona — school follows you.
             </p>
             <div style={{ display: 'flex', gap: 16, flexWrap: 'wrap' }}>
-              <button onClick={() => router.push('/auth')} style={{ padding: '16px 36px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(99,91,255,0.5)' }}>
+              <button onClick={() => router.push('/auth')} style={{ padding: '16px 36px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 17, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(99,91,255,0.35)' }}>
                 Start 10-day free trial →
               </button>
             </div>
-            <p style={{ marginTop: 16, fontSize: 13, color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Credit card required · Cancel before day 10 to avoid charges</p>
+            <p style={{ marginTop: 16, fontSize: 13, color: '#8B87A8', fontWeight: 600 }}>Credit card required · Cancel before day 10 to avoid charges</p>
           </div>
           <div style={{ flex: 1, minWidth: 280, maxWidth: 440, display: 'flex', justifyContent: 'center' }}>
             <Globe />
@@ -287,9 +374,8 @@ export default function LandingPage() {
       <div id="features" style={{ background: '#F8F6FF', padding: '80px 24px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, textAlign: 'center', marginBottom: 16 }}>Everything you need to homeschool anywhere</h2>
-          <p style={{ textAlign: 'center', color: '#6B7280', fontSize: 17, marginBottom: 56 }}>No planning stress. No missed school days. Just learning that moves with you.</p>
+          <p style={{ textAlign: 'center', color: '#6B7280', fontSize: 17, marginBottom: 48 }}>No planning stress. No missed school days. Just learning that moves with you.</p>
 
-          {/* Vintage map */}
           <div style={{ marginBottom: 48 }}>
             <VintageMap />
           </div>
@@ -340,7 +426,7 @@ export default function LandingPage() {
 
           <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 32, background: 'white', borderRadius: 100, padding: 6, border: '2px solid #E4E0F5', width: 'fit-content', margin: '0 auto 32px' }}>
             {(['monthly', 'quarterly', 'yearly'] as const).map(b => (
-              <button key={b} onClick={() => setBilling(b)} style={{ padding: '8px 20px', borderRadius: 100, border: 'none', background: billing === b ? '#635BFF' : 'transparent', color: billing === b ? 'white' : '#8B87A8', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }}>
+              <button key={b} onClick={() => setBilling(b)} style={{ padding: '8px 20px', borderRadius: 100, border: 'none', background: billing === b ? '#635BFF' : 'transparent', color: billing === b ? 'white' : '#8B87A8', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', position: 'relative' }}>
                 {b === 'monthly' ? 'Monthly' : b === 'quarterly' ? 'Quarterly' : 'Yearly'}
                 {b === 'quarterly' && <span style={{ marginLeft: 6, background: '#FEF3C7', color: '#D97706', padding: '2px 6px', borderRadius: 100, fontSize: 10 }}>-15%</span>}
                 {b === 'yearly' && <span style={{ marginLeft: 6, background: '#DCFCE7', color: '#16A34A', padding: '2px 6px', borderRadius: 100, fontSize: 10 }}>-31%</span>}
@@ -404,20 +490,20 @@ export default function LandingPage() {
       </div>
 
       {/* CTA */}
-      <div style={{ background: 'linear-gradient(135deg, #0F0C29, #1E1B4B)', padding: '80px 24px', textAlign: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg, #635BFF, #8B5CF6)', padding: '80px 24px', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <div style={{ fontSize: 48, marginBottom: 24 }}>🌍</div>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 40, color: 'white', marginBottom: 16 }}>Ready to start your worldschooling journey?</h2>
-          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 18, marginBottom: 40 }}>Join families in 50+ countries who never skip a school day.</p>
-          <button onClick={() => router.push('/auth')} style={{ padding: '18px 48px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 18, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(99,91,255,0.5)' }}>
+          <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: 18, marginBottom: 40 }}>Join families in 50+ countries who never skip a school day.</p>
+          <button onClick={() => router.push('/auth')} style={{ padding: '18px 48px', borderRadius: 100, border: 'none', background: 'white', color: '#635BFF', fontSize: 18, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(0,0,0,0.2)' }}>
             Start free for 10 days →
           </button>
-          <p style={{ color: 'rgba(255,255,255,0.4)', marginTop: 16, fontSize: 13, fontWeight: 600 }}>Credit card required · Cancel before day 10 to avoid charges</p>
+          <p style={{ color: 'rgba(255,255,255,0.6)', marginTop: 16, fontSize: 13, fontWeight: 600 }}>Credit card required · Cancel before day 10 to avoid charges</p>
         </div>
       </div>
 
       {/* Footer */}
-      <div style={{ background: '#0F0C29', padding: '32px 24px', textAlign: 'center' }}>
+      <div style={{ background: '#1E1B2E', padding: '32px 24px', textAlign: 'center' }}>
         <span style={{ fontFamily: 'Georgia,serif', fontSize: 18, fontWeight: 700, color: 'white' }}>🧭 Waypoint <span style={{ color: '#635BFF' }}>Education</span></span>
         <p style={{ color: '#4B5563', fontSize: 13, marginTop: 8 }}>© 2026 Waypoint Education · The world is their classroom.</p>
       </div>
