@@ -121,6 +121,96 @@ export default function WorksheetsPage() {
     return Object.values(matchedPairs).includes(rightIndex)
   }
 
+  function printWorksheet() {
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>${worksheet.title}</title>
+        <style>
+          body { font-family: Georgia, serif; max-width: 800px; margin: 0 auto; padding: 32px; color: #1E1B2E; }
+          h1 { font-size: 28px; margin-bottom: 8px; }
+          h2 { font-size: 18px; margin: 24px 0 12px 0; border-bottom: 2px solid #eee; padding-bottom: 8px; }
+          .header { background: ${color}22; border-radius: 16px; padding: 20px; margin-bottom: 24px; text-align: center; }
+          .info { display: flex; gap: 24px; justify-content: center; margin-top: 12px; font-size: 14px; }
+          .pair-row { display: flex; justify-content: space-between; margin-bottom: 16px; }
+          .pair-item { border: 2px solid #E4E0F5; border-radius: 8px; padding: 8px 16px; width: 45%; }
+          .blank-line { display: inline-block; border-bottom: 2px solid #333; width: 120px; margin: 0 8px; }
+          .tf-item { margin-bottom: 16px; }
+          .tf-boxes { display: flex; gap: 16px; margin-top: 8px; }
+          .tf-box { border: 2px solid #333; border-radius: 8px; padding: 8px 24px; font-weight: bold; }
+          .answer-lines { margin-top: 8px; }
+          .answer-line { border-bottom: 1px solid #ccc; height: 28px; margin-bottom: 4px; }
+          .stars { font-size: 24px; margin-top: 16px; }
+          @media print { body { padding: 16px; } }
+        </style>
+      </head>
+      <body>
+        <div class="header">
+          <h1>${worksheet.title}</h1>
+          <p>${worksheet.subtitle}</p>
+          <div class="info">
+            <span>👤 Name: ${child?.name}</span>
+            <span>📅 Date: ${new Date().toLocaleDateString()}</span>
+            <span>⭐ Score: _____ / ${worksheet.matching.pairs.length + worksheet.fillblank.sentences.length + worksheet.truefalse.statements.length + worksheet.shortanswer.questions.length}</span>
+          </div>
+        </div>
+
+        <h2>🔗 Match the pairs</h2>
+        <p>${worksheet.matching.instruction}</p>
+        ${worksheet.matching.pairs.map((p: any) => `
+          <div class="pair-row">
+            <div class="pair-item">${p.left}</div>
+            <div class="pair-item">${p.right}</div>
+          </div>
+        `).join('')}
+
+        <h2>✏️ Fill in the blank</h2>
+        <p>${worksheet.fillblank.instruction}</p>
+        ${worksheet.fillblank.sentences.map((s: any, i: number) => `
+          <p>${i + 1}. ${s.before} <span class="blank-line"></span> ${s.after}</p>
+        `).join('')}
+
+        <h2>🤔 True or False?</h2>
+        <p>${worksheet.truefalse.instruction}</p>
+        ${worksheet.truefalse.statements.map((s: any, i: number) => `
+          <div class="tf-item">
+            <p>${i + 1}. ${s.text}</p>
+            <div class="tf-boxes">
+              <div class="tf-box">TRUE</div>
+              <div class="tf-box">FALSE</div>
+            </div>
+          </div>
+        `).join('')}
+
+        <h2>💬 Short answer</h2>
+        <p>${worksheet.shortanswer.instruction}</p>
+        ${worksheet.shortanswer.questions.map((q: string, i: number) => `
+          <div style="margin-bottom: 20px">
+            <p>${i + 1}. ${q}</p>
+            <div class="answer-lines">
+              <div class="answer-line"></div>
+              <div class="answer-line"></div>
+              <div class="answer-line"></div>
+            </div>
+          </div>
+        `).join('')}
+
+        <div style="text-align: center; margin-top: 32px; border: 2px solid ${color}; border-radius: 16px; padding: 20px;">
+          <p style="font-size: 20px; font-weight: bold;">⭐ Great job, ${child?.name}! ⭐</p>
+          <div class="stars">☆ ☆ ☆ ☆ ☆</div>
+        </div>
+      </body>
+      </html>
+    `
+    const win = window.open('', '_blank')
+    if (win) {
+      win.document.write(printContent)
+      win.document.close()
+      win.print()
+    }
+  }
+
   const color = subjectColors[subject] || '#635BFF'
 
   const shortScore = Object.values(shortFeedback).filter((f: any) => f.correct).length
@@ -200,9 +290,10 @@ export default function WorksheetsPage() {
             <div style={{ background: `linear-gradient(135deg, ${color}, ${color}99)`, borderRadius: 20, padding: '24px', marginBottom: 20, color: 'white', textAlign: 'center' }}>
               <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 24, margin: '0 0 8px 0' }}>{worksheet.title}</h1>
               <p style={{ margin: '0 0 16px 0', opacity: 0.9, fontSize: 14 }}>{worksheet.subtitle}</p>
-              <div style={{ display: 'flex', gap: 12, justifyContent: 'center' }}>
+              <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
                 <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 12, padding: '8px 16px', fontSize: 13, fontWeight: 700 }}>👤 {child?.name}</div>
                 <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 12, padding: '8px 16px', fontSize: 13, fontWeight: 700 }}>📅 {new Date().toLocaleDateString()}</div>
+                <button onClick={printWorksheet} style={{ background: 'rgba(255,255,255,0.9)', borderRadius: 12, padding: '8px 16px', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', color: color }}>🖨️ Print / Save PDF</button>
               </div>
             </div>
 
