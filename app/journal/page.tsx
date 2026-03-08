@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabase'
 
 export default function JournalPage() {
   const [child, setChild] = useState<any>(null)
+  const [userId, setUserId] = useState<string>('guest')
   const [entries, setEntries] = useState<any[]>([])
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -15,18 +16,22 @@ export default function JournalPage() {
   useEffect(() => {
     const stored = localStorage.getItem('activeChild')
     if (!stored) { router.push('/onboarding'); return }
-    const childData = JSON.parse(stored)
-    setChild(childData)
-    loadEntries(childData.profile_id || 'guest')
+    setChild(JSON.parse(stored))
+
+    supabase.auth.getUser().then(({ data }) => {
+      const id = data?.user?.id || 'guest'
+      setUserId(id)
+      loadEntries(id)
+    })
   }, [])
 
-  async function loadEntries(userId: string) {
+  async function loadEntries(uid: string) {
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('journal_entries')
         .select('*')
-        .eq('user_id', userId)
+        .eq('user_id', uid)
         .order('created_at', { ascending: false })
       if (error) throw error
       setEntries(data || [])
@@ -42,7 +47,7 @@ export default function JournalPage() {
     setSaving(true)
     try {
       const entry = {
-        user_id: child?.profile_id || 'guest',
+        user_id: userId,
         city: child?.city,
         country: child?.country,
         date: new Date().toLocaleDateString(),
