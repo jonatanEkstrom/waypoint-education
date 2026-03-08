@@ -1,6 +1,7 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
+import { Country, City } from 'country-state-city'
 
 const ageGroups = ["4–6 years","7–9 years","10–12 years","13–15 years","16–18 years"]
 const subjects = ["Math","Science","Language Arts","History","Geography","Art","Music","Physical Education","Coding","Life Skills"]
@@ -13,6 +14,8 @@ const curricula = [
   {id:"eclectic",icon:"🎨",name:"Eclectic / Mix it up",desc:"Take the best from every philosophy."},
 ]
 
+const allCountries = Country.getAllCountries()
+
 export default function OnboardingPage() {
   const [step, setStep] = useState(1)
   const [name, setName] = useState('')
@@ -20,8 +23,12 @@ export default function OnboardingPage() {
   const [selectedSubjects, setSelectedSubjects] = useState<string[]>([])
   const [curriculum, setCurriculum] = useState('')
   const [learnStyle, setLearnStyle] = useState('')
-  const [country, setCountry] = useState('')
-  const [city, setCity] = useState('')
+  const [countrySearch, setCountrySearch] = useState('')
+  const [selectedCountry, setSelectedCountry] = useState<any>(null)
+  const [citySearch, setCitySearch] = useState('')
+  const [selectedCity, setSelectedCity] = useState('')
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false)
+  const [showCityDropdown, setShowCityDropdown] = useState(false)
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
   const router = useRouter()
@@ -31,18 +38,41 @@ export default function OnboardingPage() {
     else if (selectedSubjects.length < 5) setSelectedSubjects([...selectedSubjects, s])
   }
 
+  const filteredCountries = allCountries.filter(c =>
+    c.name.toLowerCase().includes(countrySearch.toLowerCase())
+  ).slice(0, 8)
+
+  const allCities = selectedCountry ? City.getCitiesOfCountry(selectedCountry.isoCode) || [] : []
+  const filteredCities = allCities.filter(c =>
+    c.name.toLowerCase().includes(citySearch.toLowerCase())
+  ).slice(0, 8)
+
+  function selectCountry(country: any) {
+    setSelectedCountry(country)
+    setCountrySearch(country.name)
+    setShowCountryDropdown(false)
+    setSelectedCity('')
+    setCitySearch('')
+  }
+
+  function selectCity(city: any) {
+    setSelectedCity(city.name)
+    setCitySearch(city.name)
+    setShowCityDropdown(false)
+  }
+
   async function handleFinish() {
     setLoading(true)
     try {
       const childData = {
-        name: name,
+        name,
         age_group: age,
         subjects: selectedSubjects,
-        curriculum: curriculum,
+        curriculum,
         learn_style: learnStyle,
-        notes: notes,
-        country: country,
-        city: city,
+        notes,
+        country: selectedCountry?.name || countrySearch,
+        city: selectedCity || citySearch,
         profile_id: 'guest'
       }
       localStorage.removeItem('cachedPlan')
@@ -64,6 +94,8 @@ export default function OnboardingPage() {
     btn: { width:'100%', padding:15, borderRadius:100, border:'none', background:'#635BFF', color:'white', fontSize:16, fontWeight:800, cursor:'pointer', marginTop:24, fontFamily:'inherit' },
     tag: (sel: boolean) => ({ padding:'8px 16px', borderRadius:100, border:`2px solid ${sel?'#635BFF':'#E4E0F5'}`, background:sel?'#E8E6FF':'white', color:sel?'#635BFF':'#8B87A8', cursor:'pointer', fontSize:13, fontWeight:600, fontFamily:'inherit' }),
     ccard: (sel: boolean) => ({ width:'100%', padding:'16px 20px', borderRadius:18, border:`2px solid ${sel?'#635BFF':'#E4E0F5'}`, background:sel?'#E8E6FF':'white', cursor:'pointer', textAlign:'left' as const, marginBottom:10, fontFamily:'inherit' }),
+    dropdown: { position:'absolute' as const, top:'100%', left:0, right:0, background:'white', border:'2px solid #E4E0F5', borderRadius:14, marginTop:4, zIndex:100, boxShadow:'0 4px 16px rgba(0,0,0,0.1)', maxHeight:280, overflowY:'auto' as const },
+    dropdownItem: { padding:'12px 16px', cursor:'pointer', fontSize:14, borderBottom:'1px solid #F3F4F6', fontFamily:'inherit' },
   }
 
   return (
@@ -131,17 +163,61 @@ export default function OnboardingPage() {
             <>
               <h2 style={{ fontFamily:'Georgia,serif', fontSize:24, marginBottom:6 }}>Where are you right now? 📍</h2>
               <p style={{ color:'#8B87A8', marginBottom:24, fontSize:15 }}>We'll weave your location into every lesson.</p>
+
               <div style={{ marginBottom:16 }}>
                 <label style={s.label}>Country</label>
-                <input style={s.input} placeholder="e.g. Thailand" value={country} onChange={e => setCountry(e.target.value)}/>
+                <div style={{ position:'relative' }}>
+                  <input
+                    style={s.input}
+                    placeholder="Search country..."
+                    value={countrySearch}
+                    onChange={e => { setCountrySearch(e.target.value); setShowCountryDropdown(true); setSelectedCountry(null) }}
+                    onFocus={() => setShowCountryDropdown(true)}
+                  />
+                  {showCountryDropdown && countrySearch.length > 0 && filteredCountries.length > 0 && (
+                    <div style={s.dropdown}>
+                      {filteredCountries.map(c => (
+                        <div key={c.isoCode} style={s.dropdownItem}
+                          onMouseDown={() => selectCountry(c)}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#F8F6FF')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
+                          {c.flag} {c.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
               <div style={{ marginBottom:8 }}>
                 <label style={s.label}>City</label>
-                <input style={s.input} placeholder="e.g. Chiang Mai" value={city} onChange={e => setCity(e.target.value)}/>
+                <div style={{ position:'relative' }}>
+                  <input
+                    style={{ ...s.input, opacity: selectedCountry ? 1 : 0.5 }}
+                    placeholder={selectedCountry ? "Search city..." : "Select a country first"}
+                    value={citySearch}
+                    disabled={!selectedCountry}
+                    onChange={e => { setCitySearch(e.target.value); setShowCityDropdown(true); setSelectedCity('') }}
+                    onFocus={() => setShowCityDropdown(true)}
+                  />
+                  {showCityDropdown && citySearch.length > 0 && filteredCities.length > 0 && (
+                    <div style={s.dropdown}>
+                      {filteredCities.map((c, i) => (
+                        <div key={i} style={s.dropdownItem}
+                          onMouseDown={() => selectCity(c)}
+                          onMouseEnter={e => (e.currentTarget.style.background = '#F8F6FF')}
+                          onMouseLeave={e => (e.currentTarget.style.background = 'white')}>
+                          {c.name}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
+
               <div style={{ display:'flex', gap:12, marginTop:24 }}>
                 <button style={{ ...s.btn, background:'white', color:'#1E1B2E', border:'2px solid #E4E0F5', width:'auto', padding:'14px 24px', marginTop:0 }} onClick={() => setStep(2)}>←</button>
-                <button style={{ ...s.btn, opacity: country&&city?1:0.4, marginTop:0 }} onClick={() => { if(country&&city) setStep(4) }}>Continue →</button>
+                <button style={{ ...s.btn, opacity: selectedCountry&&(selectedCity||citySearch)?1:0.4, marginTop:0 }} onClick={() => { if(selectedCountry&&(selectedCity||citySearch)) setStep(4) }}>Continue →</button>
               </div>
             </>
           )}
