@@ -2,21 +2,7 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-function ThinkersGrid() {
-  const thinkers = [
-    { name: 'Leonardo da Vinci', emoji: '🎨', subject: 'Art & Science', country: '🇮🇹 Italy', color: '#FEF3C7', accent: '#D97706' },
-    { name: 'Albert Einstein', emoji: '⚛️', subject: 'Physics', country: '🇩🇪 Germany', color: '#EEF2FF', accent: '#635BFF' },
-    { name: 'Thor Heyerdahl', emoji: '🚢', subject: 'Exploration', country: '🇳🇴 Norway', color: '#ECFDF5', accent: '#059669' },
-    { name: 'Marie Curie', emoji: '🔬', subject: 'Chemistry', country: '🇵🇱 Poland', color: '#FDF2F8', accent: '#DB2777' },
-    { name: 'Ibn Battuta', emoji: '🗺️', subject: 'Geography', country: '🇲🇦 Morocco', color: '#FFF7ED', accent: '#EA580C' },
-    { name: 'Confucius', emoji: '📜', subject: 'Philosophy', country: '🇨🇳 China', color: '#F0FDF4', accent: '#16A34A' },
-    { name: 'Nikola Tesla', emoji: '⚡', subject: 'Electricity', country: '🇷🇸 Serbia', color: '#EFF6FF', accent: '#2563EB' },
-    { name: 'Cleopatra', emoji: '👑', subject: 'History', country: '🇪🇬 Egypt', color: '#FFFBEB', accent: '#B45309' },
-    { name: 'Charles Darwin', emoji: '🦋', subject: 'Biology', country: '🇬🇧 England', color: '#F0FDF4', accent: '#15803D' },
-    { name: 'Galileo Galilei', emoji: '🔭', subject: 'Astronomy', country: '🇮🇹 Italy', color: '#F8F6FF', accent: '#7C3AED' },
-    { name: 'Maya Angelou', emoji: '✍️', subject: 'Literature', country: '🇺🇸 USA', color: '#FFF1F2', accent: '#E11D48' },
-    { name: 'Pythagoras', emoji: '📐', subject: 'Mathematics', country: '🇬🇷 Greece', color: '#EEF2FF', accent: '#4F46E5' },
-  ]
+
 
   return (
     <div>
@@ -106,12 +92,7 @@ export default function LandingPage() {
           </div>
           <p style={{ fontSize: 13, color: '#8B87A8', fontWeight: 600 }}>Credit card required · Cancel before day 10 to avoid charges</p>
 
-          {/* Destination pills */}
-          <div style={{ display: 'flex', gap: 10, justifyContent: 'center', flexWrap: 'wrap', marginTop: 48 }}>
-            {['🇹🇭 Bangkok', '🇮🇹 Rome', '🇯🇵 Tokyo', '🇪🇸 Barcelona', '🇲🇦 Marrakech', '🇧🇷 Rio', '🇮🇩 Bali', '🇵🇪 Cusco'].map(d => (
-              <span key={d} style={{ padding: '6px 14px', borderRadius: 100, background: 'white', fontSize: 13, fontWeight: 600, color: '#4B5563', border: '1px solid #E4E0F5', boxShadow: '0 2px 8px rgba(0,0,0,0.06)' }}>{d}</span>
-            ))}
-          </div>
+          
         </div>
       </div>
 
