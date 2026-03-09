@@ -2,32 +2,6 @@
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
-
-
-  return (
-    <div>
-      <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 22, textAlign: 'center', marginBottom: 8, color: '#1E1B2E' }}>
-        Learn from the greatest minds in history 🌍
-      </h3>
-      <p style={{ textAlign: 'center', color: '#8B87A8', fontSize: 14, marginBottom: 28 }}>
-        Every destination unlocks lessons inspired by the people who shaped it
-      </p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 16 }}>
-        {thinkers.map(t => (
-          <div key={t.name} style={{ background: t.color, borderRadius: 16, padding: '20px 16px', border: `2px solid ${t.accent}33`, textAlign: 'center', transition: 'transform 0.15s', cursor: 'default' }}
-            onMouseEnter={e => (e.currentTarget.style.transform = 'translateY(-4px)')}
-            onMouseLeave={e => (e.currentTarget.style.transform = 'translateY(0)')}>
-            <div style={{ fontSize: 36, marginBottom: 10 }}>{t.emoji}</div>
-            <div style={{ fontFamily: 'Georgia,serif', fontSize: 14, fontWeight: 700, color: '#1E1B2E', marginBottom: 4, lineHeight: 1.3 }}>{t.name}</div>
-            <div style={{ fontSize: 11, fontWeight: 700, color: t.accent, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>{t.subject}</div>
-            <div style={{ fontSize: 12, color: '#6B7280' }}>{t.country}</div>
-          </div>
-        ))}
-      </div>
-    </div>
-  )
-}
-
 export default function LandingPage() {
   const router = useRouter()
   const [billing, setBilling] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly')
@@ -69,7 +43,7 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero — centered, clean */}
+      {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #DBEAFE 50%, #E0F2FE 100%)', padding: '100px 24px' }}>
         <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ display: 'inline-block', background: '#E8E6FF', color: '#635BFF', padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 28, border: '1px solid #C7D2FE' }}>
@@ -91,8 +65,6 @@ export default function LandingPage() {
             </button>
           </div>
           <p style={{ fontSize: 13, color: '#8B87A8', fontWeight: 600 }}>Credit card required · Cancel before day 10 to avoid charges</p>
-
-          
         </div>
       </div>
 
@@ -110,9 +82,6 @@ export default function LandingPage() {
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, textAlign: 'center', marginBottom: 16 }}>Everything you need to homeschool anywhere</h2>
           <p style={{ textAlign: 'center', color: '#6B7280', fontSize: 17, marginBottom: 48 }}>No planning stress. No missed school days. Just learning that moves with you.</p>
-          <div style={{ marginBottom: 56 }}>
-            <ThinkersGrid />
-          </div>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
             {features.map(f => (
               <div key={f.title} style={{ background: 'white', borderRadius: 20, padding: 28, border: '2px solid #E4E0F5' }}>
