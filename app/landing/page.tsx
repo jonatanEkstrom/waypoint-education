@@ -6,170 +6,111 @@ function TravelIllustration() {
   const [frame, setFrame] = useState(0)
 
   useEffect(() => {
-    const interval = setInterval(() => setFrame(f => f + 1), 50)
+    const interval = setInterval(() => setFrame(f => f + 1), 60)
     return () => clearInterval(interval)
   }, [])
 
-  const planeX = 80 + Math.sin(frame * 0.02) * 20
-  const planeY = 60 + Math.sin(frame * 0.015) * 10
-  const cloud1X = (frame * 0.3) % 420
-  const cloud2X = (frame * 0.2 + 200) % 420
-  const balloonY = 80 + Math.sin(frame * 0.025) * 8
+  const planeX = Math.sin(frame * 0.018) * 15
+  const planeY = Math.sin(frame * 0.012) * 8
+  const balloonY = Math.sin(frame * 0.02) * 10
+  const cloud1 = (frame * 0.4) % 500
+  const cloud2 = (frame * 0.25 + 250) % 500
+  const twinkle = (i: number) => 0.4 + Math.sin(frame * 0.08 + i) * 0.6
 
   return (
-    <div style={{ position: 'relative', width: '100%', maxWidth: 480 }}>
-      <svg viewBox="0 0 400 340" width="100%" style={{ filter: 'drop-shadow(0 8px 32px rgba(99,91,255,0.15))' }}>
+    <div style={{
+      background: 'linear-gradient(180deg, #BAE6FD 0%, #E0F2FE 50%, #DCFCE7 80%, #BBF7D0 100%)',
+      borderRadius: 32, overflow: 'hidden', width: '100%', maxWidth: 480,
+      aspectRatio: '4/3', position: 'relative', border: '3px solid white',
+      boxShadow: '0 20px 60px rgba(99,91,255,0.2)'
+    }}>
+      <div style={{ position: 'absolute', top: 16, right: 24, fontSize: 56, lineHeight: 1,
+        filter: 'drop-shadow(0 4px 12px rgba(251,191,36,0.5))',
+        transform: `rotate(${frame * 0.1}deg)` }}>☀️</div>
 
-        {/* Sky background */}
-        <defs>
-          <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#BFDBFE"/>
-            <stop offset="100%" stopColor="#E0F2FE"/>
-          </linearGradient>
-          <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#86EFAC"/>
-            <stop offset="100%" stopColor="#4ADE80"/>
-          </linearGradient>
-          <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#60A5FA"/>
-            <stop offset="100%" stopColor="#3B82F6"/>
-          </linearGradient>
-        </defs>
+      {[0,1,2,3].map(i => (
+        <div key={i} style={{
+          position: 'absolute',
+          top: [40, 60, 30, 80][i],
+          left: [60, 160, 280, 340][i],
+          fontSize: [14, 12, 16, 11][i],
+          opacity: twinkle(i)
+        }}>⭐</div>
+      ))}
 
-        <rect width="400" height="340" fill="url(#sky)" rx="24"/>
+      <div style={{ position: 'absolute', top: 28, left: cloud1 - 100, fontSize: 40, opacity: 0.85 }}>☁️</div>
+      <div style={{ position: 'absolute', top: 55, left: cloud2 - 100, fontSize: 28, opacity: 0.7 }}>☁️</div>
 
-        {/* Sun */}
-        <circle cx="340" cy="50" r="28" fill="#FDE68A"/>
-        <circle cx="340" cy="50" r="22" fill="#FCD34D"/>
-        {[0,45,90,135,180,225,270,315].map((angle, i) => (
-          <line key={i}
-            x1={340 + Math.cos(angle * Math.PI/180) * 28}
-            y1={50 + Math.sin(angle * Math.PI/180) * 28}
-            x2={340 + Math.cos(angle * Math.PI/180) * 38}
-            y2={50 + Math.sin(angle * Math.PI/180) * 38}
-            stroke="#FCD34D" strokeWidth="3" strokeLinecap="round"/>
+      <div style={{
+        position: 'absolute', top: 85 + planeY, left: 100 + planeX,
+        fontSize: 38, filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.15))'
+      }}>✈️</div>
+
+      <div style={{
+        position: 'absolute', top: 30 + balloonY, right: 100,
+        fontSize: 52, filter: 'drop-shadow(0 4px 12px rgba(0,0,0,0.15))'
+      }}>🎈</div>
+
+      <div style={{
+        position: 'absolute', bottom: 0, left: 0, right: 0, height: '42%',
+        background: 'linear-gradient(180deg, #86EFAC 0%, #4ADE80 100%)',
+        borderRadius: '50% 50% 0 0 / 20% 20% 0 0'
+      }}/>
+
+      <div style={{
+        position: 'absolute', bottom: 0, right: 0, width: '35%', height: '28%',
+        background: 'linear-gradient(180deg, #60A5FA 0%, #3B82F6 100%)',
+        borderRadius: '40% 0 0 0'
+      }}/>
+
+      <div style={{
+        position: 'absolute', bottom: '28%', left: 0, right: 0,
+        display: 'flex', justifyContent: 'space-around', alignItems: 'flex-end',
+        padding: '0 20px'
+      }}>
+        {[
+          { emoji: '🗼', label: 'Paris' },
+          { emoji: '🌴', label: 'Bali' },
+          { emoji: '🏛️', label: 'Rome' },
+          { emoji: '🕌', label: 'Cairo' },
+          { emoji: '⛩️', label: 'Tokyo' },
+        ].map(l => (
+          <div key={l.label} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 34 }}>{l.emoji}</div>
+            <div style={{ fontSize: 10, fontWeight: 700, color: '#166534' }}>{l.label}</div>
+          </div>
         ))}
+      </div>
 
-        {/* Clouds */}
-        <g transform={`translate(${cloud1X - 60}, 30)`} opacity="0.9">
-          <ellipse cx="30" cy="20" rx="28" ry="14" fill="white"/>
-          <ellipse cx="50" cy="15" rx="20" ry="12" fill="white"/>
-          <ellipse cx="15" cy="18" rx="16" ry="10" fill="white"/>
-        </g>
-        <g transform={`translate(${cloud2X - 60}, 55)`} opacity="0.7">
-          <ellipse cx="30" cy="20" rx="22" ry="11" fill="white"/>
-          <ellipse cx="45" cy="15" rx="16" ry="10" fill="white"/>
-          <ellipse cx="18" cy="18" rx="14" ry="9" fill="white"/>
-        </g>
+      <div style={{
+        position: 'absolute', bottom: '10%', left: 0, right: 0,
+        display: 'flex', justifyContent: 'center', gap: 12, alignItems: 'flex-end'
+      }}>
+        {[
+          { kid: '🧒', item: '🎒', delay: 0 },
+          { kid: '👧', item: '📚', delay: 1 },
+          { kid: '👦', item: '🗺️', delay: 2 },
+        ].map((k, i) => (
+          <div key={i} style={{ textAlign: 'center' }}>
+            <div style={{ fontSize: 36, transform: `rotate(${Math.sin(frame * 0.05 + k.delay) * 3}deg)`, display: 'inline-block' }}>{k.kid}</div>
+            <div style={{ fontSize: 18 }}>{k.item}</div>
+          </div>
+        ))}
+      </div>
 
-        {/* Ground / sea split */}
-        <rect x="0" y="230" width="400" height="110" fill="url(#sea)" rx="0"/>
-        <ellipse cx="200" cy="230" rx="200" ry="20" fill="#86EFAC"/>
-        <rect x="0" y="230" width="220" height="110" fill="url(#ground)"/>
-        <ellipse cx="110" cy="230" rx="110" ry="16" fill="#4ADE80"/>
-
-        {/* Eiffel tower */}
-        <g transform="translate(30, 150)">
-          <polygon points="20,0 40,0 50,80 10,80" fill="#9CA3AF"/>
-          <polygon points="22,0 38,0 44,50 16,50" fill="#D1D5DB"/>
-          <rect x="18" y="25" width="24" height="4" fill="#9CA3AF"/>
-          <rect x="14" y="50" width="32" height="4" fill="#9CA3AF"/>
-          <rect x="28" y="-15" width="4" height="18" fill="#6B7280"/>
-          <text x="20" y="98" fontSize="10" fill="#4B5563" fontWeight="700">Paris</text>
-        </g>
-
-        {/* Palm tree */}
-        <g transform="translate(160, 165)">
-          <rect x="8" y="20" width="8" height="60" fill="#92400E" rx="4"/>
-          <ellipse cx="12" cy="20" rx="22" ry="12" fill="#4ADE80" transform="rotate(-20, 12, 20)"/>
-          <ellipse cx="12" cy="20" rx="22" ry="12" fill="#22C55E" transform="rotate(20, 12, 20)"/>
-          <ellipse cx="12" cy="20" rx="20" ry="10" fill="#4ADE80" transform="rotate(60, 12, 20)"/>
-          <ellipse cx="12" cy="18" rx="8" ry="6" fill="#FCD34D"/>
-          <text x="-2" y="92" fontSize="10" fill="#4B5563" fontWeight="700">Bali</text>
-        </g>
-
-        {/* Pyramid */}
-        <g transform="translate(240, 175)">
-          <polygon points="35,0 70,55 0,55" fill="#FCD34D"/>
-          <polygon points="35,0 70,55 35,55" fill="#F59E0B"/>
-          <text x="15" y="70" fontSize="10" fill="#4B5563" fontWeight="700">Cairo</text>
-        </g>
-
-        {/* Mount Fuji */}
-        <g transform="translate(320, 160)">
-          <polygon points="35,0 70,70 0,70" fill="#9CA3AF"/>
-          <polygon points="35,0 50,25 20,25" fill="white"/>
-          <text x="12" y="85" fontSize="10" fill="#4B5563" fontWeight="700">Tokyo</text>
-        </g>
-
-        {/* Kid with backpack on ground */}
-        <g transform="translate(60, 195)">
-          {/* Body */}
-          <circle cx="20" cy="12" r="10" fill="#FED7AA"/>
-          <rect x="12" y="22" width="16" height="22" fill="#635BFF" rx="4"/>
-          {/* Backpack */}
-          <rect x="24" y="23" width="10" height="14" fill="#F43F5E" rx="3"/>
-          <rect x="25" y="25" width="8" height="3" fill="#BE185D" rx="1"/>
-          {/* Arms */}
-          <line x1="12" y1="26" x2="4" y2="36" stroke="#FED7AA" strokeWidth="4" strokeLinecap="round"/>
-          <line x1="28" y1="26" x2="34" y2="32" stroke="#FED7AA" strokeWidth="4" strokeLinecap="round"/>
-          {/* Legs */}
-          <line x1="16" y1="44" x2="12" y2="58" stroke="#635BFF" strokeWidth="5" strokeLinecap="round"/>
-          <line x1="24" y1="44" x2="28" y2="58" stroke="#635BFF" strokeWidth="5" strokeLinecap="round"/>
-          {/* Shoes */}
-          <ellipse cx="11" cy="59" rx="6" ry="3" fill="#1E1B2E"/>
-          <ellipse cx="29" cy="59" rx="6" ry="3" fill="#1E1B2E"/>
-          {/* Hair */}
-          <ellipse cx="20" cy="5" rx="10" ry="6" fill="#92400E"/>
-          {/* Map in hand */}
-          <rect x="-2" y="32" width="8" height="6" fill="#FEF3C7" rx="1"/>
-        </g>
-
-        {/* Kid 2 waving */}
-        <g transform="translate(110, 200)">
-          <circle cx="18" cy="10" r="9" fill="#FBBF24"/>
-          <rect x="11" y="19" width="14" height="20" fill="#10B981" rx="4"/>
-          <line x1="11" y1="22" x2="2" y2="28" stroke="#FBBF24" strokeWidth="4" strokeLinecap="round"/>
-          <line x1="25" y1="22" x2="30" y2="14" stroke="#FBBF24" strokeWidth="4" strokeLinecap="round"/>
-          <line x1="14" y1="39" x2="11" y2="52" stroke="#10B981" strokeWidth="5" strokeLinecap="round"/>
-          <line x1="22" y1="39" x2="25" y2="52" stroke="#10B981" strokeWidth="5" strokeLinecap="round"/>
-          <ellipse cx="10" cy="53" rx="5" ry="3" fill="#1E1B2E"/>
-          <ellipse cx="26" cy="53" rx="5" ry="3" fill="#1E1B2E"/>
-          <ellipse cx="18" cy="4" rx="9" ry="5" fill="#92400E"/>
-          {/* Star sparkle from waving hand */}
-          <text x="26" y="12" fontSize="12">⭐</text>
-        </g>
-
-        {/* Airplane */}
-        <g transform={`translate(${planeX}, ${planeY})`}>
-          <ellipse cx="30" cy="12" rx="28" ry="8" fill="white"/>
-          <polygon points="58,12 72,8 72,16" fill="white"/>
-          <ellipse cx="30" cy="12" rx="10" ry="7" fill="#BFDBFE"/>
-          <polygon points="20,20 8,28 36,20" fill="white"/>
-          <polygon points="38,20 42,26 52,20" fill="white"/>
-          <circle cx="24" cy="11" r="3" fill="#60A5FA"/>
-          <circle cx="34" cy="11" r="3" fill="#60A5FA"/>
-          <text x="8" y="-4" fontSize="10" fill="#635BFF" fontWeight="800">✈</text>
-        </g>
-
-        {/* Hot air balloon */}
-        <g transform={`translate(340, ${balloonY})`}>
-          <ellipse cx="20" cy="20" rx="18" ry="22" fill="#F43F5E"/>
-          <ellipse cx="20" cy="20" rx="18" ry="22" fill="none" stroke="#BE185D" strokeWidth="1"/>
-          <line x1="8" y1="38" x2="20" y2="42" stroke="#92400E" strokeWidth="1.5"/>
-          <line x1="32" y1="38" x2="20" y2="42" stroke="#92400E" strokeWidth="1.5"/>
-          <rect x="13" y="42" width="14" height="10" fill="#FCD34D" rx="3"/>
-          <line x1="8" y1="10" x2="32" y2="10" stroke="#BE185D" strokeWidth="1" opacity="0.5"/>
-          <line x1="4" y1="20" x2="36" y2="20" stroke="#BE185D" strokeWidth="1" opacity="0.5"/>
-          <line x1="20" y1="0" x2="20" y2="42" stroke="#BE185D" strokeWidth="1" opacity="0.3"/>
-        </g>
-
-        {/* Sparkles */}
-        <text x="200" y="100" fontSize="16" opacity={0.5 + Math.sin(frame * 0.08) * 0.5}>✨</text>
-        <text x="140" y="70" fontSize="12" opacity={0.5 + Math.sin(frame * 0.06 + 1) * 0.5}>⭐</text>
-        <text x="290" y="130" fontSize="14" opacity={0.5 + Math.sin(frame * 0.07 + 2) * 0.5}>🌟</text>
-
-      </svg>
+      {[
+        { text: '📐 Math in Tokyo', top: 140, left: 12, color: '#635BFF', shadow: '99,91,255', delay: 0 },
+        { text: '🌿 Science in Bali', top: 155, right: 10, color: '#059669', shadow: '5,150,105', delay: 2 },
+        { text: '🎨 Art in Paris', bottom: '46%', left: '28%', color: '#D97706', shadow: '217,119,6', delay: 4 },
+      ].map((b, i) => (
+        <div key={i} style={{
+          position: 'absolute', ...b,
+          background: 'white', borderRadius: 12, padding: '5px 10px',
+          fontSize: 11, fontWeight: 700, color: b.color,
+          boxShadow: `0 4px 12px rgba(${b.shadow},0.2)`,
+          transform: `translateY(${Math.sin(frame * 0.03 + b.delay) * 5}px)`
+        }}>{b.text}</div>
+      ))}
     </div>
   )
 }
@@ -246,7 +187,6 @@ export default function LandingPage() {
   return (
     <div style={{ minHeight: '100vh', fontFamily: 'system-ui, sans-serif', color: '#1E1B2E' }}>
 
-      {/* Nav */}
       <nav style={{ background: 'white', borderBottom: '2px solid #E4E0F5', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100 }}>
         <span style={{ fontFamily: 'Georgia,serif', fontSize: 20, fontWeight: 700 }}>🧭 Waypoint <span style={{ color: '#635BFF' }}>Education</span></span>
         <div style={{ display: 'flex', gap: 12 }}>
@@ -255,7 +195,6 @@ export default function LandingPage() {
         </div>
       </nav>
 
-      {/* Hero */}
       <div style={{ background: 'linear-gradient(135deg, #EEF2FF 0%, #DBEAFE 50%, #E0F2FE 100%)', padding: '64px 24px' }}>
         <div style={{ maxWidth: 1100, margin: '0 auto', display: 'flex', alignItems: 'center', gap: 48, flexWrap: 'wrap', justifyContent: 'center' }}>
           <div style={{ flex: 1, minWidth: 300, maxWidth: 520 }}>
@@ -280,7 +219,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Social proof */}
       <div style={{ background: 'white', padding: '24px', borderBottom: '2px solid #E4E0F5' }}>
         <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: 32, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
           {['🌍 Works in any country', '👶 Ages 4–18', '📚 6 teaching philosophies', '⚡ Plan ready in 30 seconds'].map(item => (
@@ -289,7 +227,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Features */}
       <div id="features" style={{ background: '#F8F6FF', padding: '80px 24px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, textAlign: 'center', marginBottom: 16 }}>Everything you need to homeschool anywhere</h2>
@@ -309,7 +246,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Testimonials */}
       <div style={{ background: 'white', padding: '80px 24px' }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, textAlign: 'center', marginBottom: 56 }}>Loved by worldschooling families</h2>
@@ -335,7 +271,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Pricing */}
       <div id="pricing" style={{ background: '#F8F6FF', padding: '80px 24px' }}>
         <div style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, marginBottom: 16 }}>Simple, transparent pricing</h2>
@@ -388,7 +323,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* FAQ */}
       <div style={{ background: 'white', padding: '80px 24px' }}>
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, textAlign: 'center', marginBottom: 56 }}>Frequently asked questions</h2>
@@ -401,7 +335,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* CTA */}
       <div style={{ background: 'linear-gradient(135deg, #635BFF, #8B5CF6)', padding: '80px 24px', textAlign: 'center' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <div style={{ fontSize: 48, marginBottom: 24 }}>🌍</div>
@@ -414,7 +347,6 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Footer */}
       <div style={{ background: '#1E1B2E', padding: '32px 24px', textAlign: 'center' }}>
         <span style={{ fontFamily: 'Georgia,serif', fontSize: 18, fontWeight: 700, color: 'white' }}>🧭 Waypoint <span style={{ color: '#635BFF' }}>Education</span></span>
         <p style={{ color: '#4B5563', fontSize: 13, marginTop: 8 }}>© 2026 Waypoint Education · The world is their classroom.</p>
