@@ -1,7 +1,8 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { Country, City } from 'country-state-city'
+import { supabase } from '../lib/supabase'
 
 const ageGroups = ["4–6 years","7–9 years","10–12 years","13–15 years","16–18 years"]
 const subjects = ["Math","Science","Language Arts","History","Geography","Art","Music","Physical Education","Coding","Life Skills"]
@@ -31,7 +32,14 @@ export default function OnboardingPage() {
   const [showCityDropdown, setShowCityDropdown] = useState(false)
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
+  const [userId, setUserId] = useState<string>('guest')
   const router = useRouter()
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data?.user?.id) setUserId(data.user.id)
+    })
+  }, [])
 
   function toggleSubject(s: string) {
     if (selectedSubjects.includes(s)) setSelectedSubjects(selectedSubjects.filter(x => x !== s))
@@ -73,7 +81,7 @@ export default function OnboardingPage() {
         notes,
         country: selectedCountry?.name || countrySearch,
         city: selectedCity || citySearch,
-        profile_id: 'guest'
+        profile_id: userId
       }
       localStorage.removeItem('cachedPlan')
       localStorage.removeItem('cachedPlanChild')
