@@ -31,7 +31,7 @@ function AuthForm() {
         const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         if (data.user) {
-          await supabase.from('profiles').insert({ id: data.user.id, email: data.user.email })
+          await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email })
           const res = await fetch('/api/create-checkout', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
