@@ -7,42 +7,80 @@ const client = new Anthropic({
 
 export async function POST(request: NextRequest) {
   try {
-    const { name, age_group, subjects, curriculum, learn_style, city, country } = await request.json()
+    const { name, age_group, subjects, curriculum, learn_style, city, country, notes } = await request.json()
 
-    const prompt = `Create a 5-day homeschool week plan. Return ONLY valid JSON, no other text.
+    const philosophyGuide: Record<string, string> = {
+      'charlotte-mason': 'Use living books, nature observation, narration and short focused lessons. Avoid textbook-style instruction.',
+      'classical': 'Structure lessons around Grammar (facts), Logic (reasoning) and Rhetoric (expression) stages based on age.',
+      'unschooling': 'Follow the child\'s curiosity. Frame lessons as explorations and discoveries, not assignments.',
+      'montessori': 'Use hands-on materials, self-directed work and real-world application. Avoid passive learning.',
+      'eclectic': 'Mix the best methods — combine hands-on activities, reading, discussion and creative projects.',
+    }
 
-Child: ${name}, ${age_group}
-Location entered by user: city="${city}", country="${country}"
-IMPORTANT: If the city and country don't match, silently use the correct country. Always use the corrected real location.
-Philosophy: ${curriculum}, Learning style: ${learn_style}
-Subjects: ${subjects.slice(0, 3).join(', ')}
+    const styleGuide: Record<string, string> = {
+      'Hands-on & building': 'Every lesson must include a physical activity, experiment or something to build/make.',
+      'Reading & writing': 'Include specific book recommendations, journaling prompts or written exercises.',
+      'Visual & video': 'Suggest diagrams, drawings, maps or documentary-style explanations.',
+      'Discussion & exploration': 'Frame lessons as Socratic conversations and open-ended questions.',
+    }
+
+    const philosophy = philosophyGuide[curriculum] || philosophyGuide['eclectic']
+    const style = styleGuide[learn_style] || ''
+    const topSubjects = (subjects || []).slice(0, 4).join(', ')
+    const extraNotes = notes ? `Special notes about ${name}: ${notes}` : ''
+
+    const prompt = `You are an expert homeschool curriculum designer. Create a rich, detailed 5-day lesson plan.
+
+CHILD PROFILE:
+- Name: ${name}
+- Age group: ${age_group}
+- Current location: ${city}, ${country}
+- Subjects: ${topSubjects}
+- Philosophy: ${curriculum}
+- Learning style: ${learn_style}
+${extraNotes}
+
+PHILOSOPHY GUIDANCE: ${philosophy}
+LEARNING STYLE GUIDANCE: ${style}
+
+REQUIREMENTS:
+- 3 lessons per day
+- Each lesson must feel specific to ${name}'s age, location and interests
+- Weave ${city} and ${country} into lessons naturally (local landmarks, culture, food, history, nature)
+- Follow the ${curriculum} philosophy strictly in how lessons are structured
+- Adapt activities to the "${learn_style}" learning style
+
+Return ONLY this JSON structure, no other text:
 
 {
-  "week_theme": "short theme title",
+  "week_theme": "engaging theme title that connects all subjects this week",
   "days": [
     {
       "day": "Monday",
-      "focus": "one sentence",
+      "focus": "one sentence describing the day's learning arc",
       "lessons": [
         {
           "subject": "Math",
-          "title": "lesson title",
+          "title": "specific lesson title",
           "duration": "30 min",
-          "method": "teaching method",
-          "description": "2 sentences",
-          "milestone": "skill name",
-          "local_tip": "one sentence about the correct city"
+          "method": "specific teaching method based on philosophy",
+          "goal": "what the child will understand or be able to do after this lesson",
+          "activity": "detailed 3-4 sentence description of exactly what to do, step by step",
+          "reflection": "a question or prompt to end the lesson and consolidate learning",
+          "milestone": "skill or concept being practiced",
+          "local_tip": "one specific connection to ${city}, ${country} — a place to visit, local example or cultural tie-in",
+          "materials": "simple list of what you need"
         }
       ]
     }
   ]
 }
 
-Create all 5 days with 2 lessons each. Keep it SHORT.`
+Create all 5 days (Monday–Friday) with exactly 3 lessons each. Be specific, creative and practical.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
-      max_tokens: 3000,
+      max_tokens: 6000,
       messages: [{ role: 'user', content: prompt }]
     })
 
