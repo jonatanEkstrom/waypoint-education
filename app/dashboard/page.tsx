@@ -32,24 +32,39 @@ export default function DashboardPage() {
   }, [])
 
   async function generatePlan(childData: any) {
-    setLoading(true)
-    try {
-      const res = await fetch('/api/generate-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(childData)
-      })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      setPlan(data.plan)
-      localStorage.setItem('cachedPlan', JSON.stringify(data.plan))
-      localStorage.setItem('cachedPlanChild', childData.name + childData.city)
-    } catch (e) {
-      console.error(e)
-    } finally {
-      setLoading(false)
+  setLoading(true)
+  try {
+    const res = await fetch('/api/generate-plan', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(childData)
+    })
+
+    if (!res.ok) throw new Error('Failed to generate plan')
+    if (!res.body) throw new Error('No response body')
+
+    const reader = res.body.getReader()
+    const decoder = new TextDecoder()
+    let fullText = ''
+
+    while (true) {
+      const { done, value } = await reader.read()
+      if (done) break
+      fullText += decoder.decode(value, { stream: true })
     }
+
+    const cleaned = fullText.replace(/```json|```/g, '').trim()
+    const plan = JSON.parse(cleaned)
+    setPlan(plan)
+    localStorage.setItem('cachedPlan', JSON.stringify(plan))
+    localStorage.setItem('cachedPlanChild', childData.name + childData.city)
+  } catch (e) {
+    console.error(e)
+  } finally {
+    setLoading(false)
   }
+}
+
 
   function toggleExpand(id: string) {
     setExpanded(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
