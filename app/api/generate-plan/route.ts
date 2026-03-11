@@ -68,7 +68,7 @@ All 5 days, exactly 2 lessons each. Be specific and practical.`
 
   const stream = await client.messages.stream({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4000,
+    max_tokens: 8000,
     messages: [{ role: 'user', content: prompt }]
   })
 
