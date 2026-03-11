@@ -75,17 +75,35 @@ export default function OnboardingPage() {
       const childData = {
         name,
         age_group: age,
+        age: age,
         subjects: selectedSubjects,
         curriculum,
         learn_style: learnStyle,
+        learning_style: learnStyle,
         notes,
         country: selectedCountry?.name || countrySearch,
         city: selectedCity || citySearch,
         profile_id: userId
       }
+
+      // Spara som activeChild
       localStorage.removeItem('cachedPlan')
       localStorage.removeItem('cachedPlanChild')
       localStorage.setItem('activeChild', JSON.stringify(childData))
+
+      // Spara i children-listan
+      const existingChildren = JSON.parse(localStorage.getItem('children') || '[]')
+      const alreadyExists = existingChildren.find((c: any) => c.name === name)
+      if (!alreadyExists) {
+        const newChild = {
+          ...childData,
+          id: Date.now(),
+          color_index: existingChildren.length,
+          interests: selectedSubjects,
+        }
+        localStorage.setItem('children', JSON.stringify([...existingChildren, newChild]))
+      }
+
       router.push('/dashboard')
     } catch (e) {
       console.error(e)
@@ -171,7 +189,6 @@ export default function OnboardingPage() {
             <>
               <h2 style={{ fontFamily:'Georgia,serif', fontSize:24, marginBottom:6 }}>Where are you right now? 📍</h2>
               <p style={{ color:'#8B87A8', marginBottom:24, fontSize:15 }}>We'll weave your location into every lesson.</p>
-
               <div style={{ marginBottom:16 }}>
                 <label style={s.label}>Country</label>
                 <div style={{ position:'relative' }}>
@@ -196,7 +213,6 @@ export default function OnboardingPage() {
                   )}
                 </div>
               </div>
-
               <div style={{ marginBottom:8 }}>
                 <label style={s.label}>City</label>
                 <div style={{ position:'relative' }}>
@@ -222,7 +238,6 @@ export default function OnboardingPage() {
                   )}
                 </div>
               </div>
-
               <div style={{ display:'flex', gap:12, marginTop:24 }}>
                 <button style={{ ...s.btn, background:'white', color:'#1E1B2E', border:'2px solid #E4E0F5', width:'auto', padding:'14px 24px', marginTop:0 }} onClick={() => setStep(2)}>←</button>
                 <button style={{ ...s.btn, opacity: selectedCountry&&(selectedCity||citySearch)?1:0.4, marginTop:0 }} onClick={() => { if(selectedCountry&&(selectedCity||citySearch)) setStep(4) }}>Continue →</button>
@@ -256,3 +271,5 @@ export default function OnboardingPage() {
     </div>
   )
 }
+
+
