@@ -1,0 +1,440 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+interface Child {
+  id: number;
+  name: string;
+  age: string;
+  city: string;
+  country: string;
+  curriculum: string;
+  learning_style: string;
+  interests: string[];
+  notes: string;
+  color_index: number;
+}
+
+const AVATAR_COLORS = [
+  { bg: "#2D5016", text: "#F5E6C8" },
+  { bg: "#8B4513", text: "#F5E6C8" },
+  { bg: "#1B4D6E", text: "#F5E6C8" },
+  { bg: "#6B3A7D", text: "#F5E6C8" },
+  { bg: "#2E4A1E", text: "#F5E6C8" },
+  { bg: "#7D3A1E", text: "#F5E6C8" },
+];
+
+const INTERESTS = [
+  "Dinosaurier","Rymden","Djur","Matematik","Historia",
+  "Konst","Musik","Natur","Sport","Teknik","Matlagning","Språk",
+];
+
+const LEARNING_STYLES = [
+  { id: "visual",      label: "Visual",       icon: "🎨" },
+  { id: "kinesthetic", label: "Kinesthetic",  icon: "🏃" },
+  { id: "auditory",    label: "Auditory",     icon: "🎵" },
+  { id: "reading",     label: "Reading",      icon: "📚" },
+];
+
+function getInitials(name: string) {
+  return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+export default function ChildrenPage() {
+  const router = useRouter();
+
+  const [children, setChildren] = useState<Child[]>(() => {
+    if (typeof window === "undefined") return [];
+    const stored = localStorage.getItem("children");
+    if (stored) return JSON.parse(stored);
+    const active = localStorage.getItem("activeChild");
+    if (active) {
+      const c = JSON.parse(active);
+      return [{ ...c, id: 1, color_index: 0, interests: [], notes: "", learning_style: "visual" }];
+    }
+    return [];
+  });
+
+  const [activeId, setActiveId]     = useState<number | null>(children[0]?.id ?? null);
+  const [mode, setMode]             = useState<"view" | "add" | "edit">("view");
+  const [editingChild, setEditing]  = useState<Child | null>(null);
+  const [toast, setToast]           = useState<string | null>(null);
+
+  const [form, setForm] = useState<Partial<Child>>({});
+
+  const activeChild = children.find(c => c.id === activeId) ?? null;
+
+  const save = (updated: Child[]) => {
+    setChildren(updated);
+    localStorage.setItem("children", JSON.stringify(updated));
+    if (updated.length > 0) {
+      localStorage.setItem("activeChild", JSON.stringify(updated[0]));
+    }
+  };
+
+  const showToast = (msg: string) => {
+    setToast(msg);
+    setTimeout(() => setToast(null), 3000);
+  };
+
+  const openAdd = () => {
+    setForm({ name: "", age: "8", city: "", country: "", curriculum: "", learning_style: "visual", interests: [], notes: "", color_index: children.length });
+    setEditing(null);
+    setMode("add");
+  };
+
+  const openEdit = (child: Child) => {
+    setForm({ ...child });
+    setEditing(child);
+    setMode("edit");
+  };
+
+  const handleSave = () => {
+    if (!form.name?.trim()) return;
+    if (editingChild) {
+      const updated = children.map(c => c.id === editingChild.id ? { ...c, ...form } as Child : c);
+      save(updated);
+      showToast(`${form.name} uppdaterad ✓`);
+    } else {
+      const newChild: Child = {
+        id: Date.now(),
+        name: form.name ?? "",
+        age: form.age ?? "8",
+        city: form.city ?? "",
+        country: form.country ?? "",
+        curriculum: form.curriculum ?? "",
+        learning_style: form.learning_style ?? "visual",
+        interests: form.interests ?? [],
+        notes: form.notes ?? "",
+        color_index: children.length,
+      };
+      const updated = [...children, newChild];
+      save(updated);
+      setActiveId(newChild.id);
+      showToast(`${newChild.name} tillagd! 🎉`);
+    }
+    setMode("view");
+  };
+
+  const handleDelete = (id: number) => {
+    const updated = children.filter(c => c.id !== id);
+    save(updated);
+    setActiveId(updated[0]?.id ?? null);
+    setMode("view");
+    showToast("Barnet har tagits bort.");
+  };
+
+  const handleSelect = (child: Child) => {
+    localStorage.setItem("activeChild", JSON.stringify(child));
+    localStorage.removeItem("cachedPlan");
+    localStorage.removeItem("cachedPlanChild");
+    router.push("/dashboard");
+  };
+
+  const toggleInterest = (interest: string) => {
+    const curr = form.interests ?? [];
+    setForm(f => ({
+      ...f,
+      interests: curr.includes(interest) ? curr.filter(i => i !== interest) : [...curr, interest]
+    }));
+  };
+
+  const inp: React.CSSProperties = {
+    width: "100%", padding: "10px 14px",
+    border: "2px solid #D4C5A0", borderRadius: 8,
+    background: "#FDFAF5", color: "#1C2B0E",
+    fontSize: 15, outline: "none", boxSizing: "border-box",
+    fontFamily: "Georgia, serif",
+  };
+
+  return (
+    <div style={{ minHeight: "100vh", background: "#F5EDD8", fontFamily: "Georgia, serif" }}>
+      <style>{`* { box-sizing: border-box; }
+        @keyframes fadeIn { from { opacity:0; transform:translateX(-50%) translateY(8px) } to { opacity:1; transform:translateX(-50%) translateY(0) } }
+      `}</style>
+
+      {/* Topbar */}
+      <div style={{ background: "#1C2B0E", padding: "0 24px", display: "flex",
+        alignItems: "center", justifyContent: "space-between", height: 56,
+        position: "sticky", top: 0, zIndex: 10 }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <span style={{ fontSize: 20 }}>🧭</span>
+          <span style={{ color: "#F5E6C8", fontSize: 18, fontWeight: 700 }}>Waypoint Education</span>
+        </div>
+        <button onClick={() => router.push("/dashboard")}
+          style={{ background: "none", border: "1px solid #F5E6C8", borderRadius: 8,
+            color: "#F5E6C8", cursor: "pointer", padding: "6px 14px", fontSize: 13 }}>
+          ← Dashboard
+        </button>
+      </div>
+
+      <div style={{ maxWidth: 860, margin: "0 auto", padding: "28px 16px" }}>
+        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1C2B0E", margin: "0 0 4px 0" }}>
+          Mina resenärer
+        </h1>
+        <p style={{ color: "#8B7355", margin: "0 0 24px 0", fontSize: 15 }}>
+          {children.length} barn registrerade
+        </p>
+
+        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 20, alignItems: "start" }}>
+
+          {/* Vänster: lista */}
+          <div>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
+              {children.map(child => {
+                const color = AVATAR_COLORS[child.color_index % AVATAR_COLORS.length];
+                const isActive = activeId === child.id && mode === "view";
+                return (
+                  <div key={child.id} onClick={() => { setActiveId(child.id); setMode("view"); }}
+                    style={{ cursor: "pointer", background: isActive ? "#F5E6C8" : "#FDFAF5",
+                      border: `2px solid ${isActive ? "#2D5016" : "#D4C5A0"}`, borderRadius: 12,
+                      padding: 14, display: "flex", alignItems: "center", gap: 12,
+                      position: "relative", overflow: "hidden" }}>
+                    {isActive && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0,
+                      width: 4, background: "#2D5016" }} />}
+                    <div style={{ width: 44, height: 44, borderRadius: "50%",
+                      background: color.bg, color: color.text,
+                      display: "flex", alignItems: "center", justifyContent: "center",
+                      fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
+                      {getInitials(child.name)}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: "#1C2B0E",
+                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                        {child.name}
+                      </div>
+                      <div style={{ fontSize: 12, color: "#6B5A3E" }}>
+                        {child.age} år · {child.city || "Ingen stad"}
+                      </div>
+                    </div>
+                    <button onClick={e => { e.stopPropagation(); openEdit(child); }}
+                      style={{ background: "none", border: "none", cursor: "pointer",
+                        fontSize: 15, opacity: 0.5 }}>✏️</button>
+                  </div>
+                );
+              })}
+            </div>
+            <button onClick={openAdd} style={{ width: "100%", padding: 12,
+              background: "transparent", border: "2px dashed #C8BEA6",
+              borderRadius: 12, cursor: "pointer", color: "#8B7355", fontSize: 14,
+              display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              ＋ Lägg till barn
+            </button>
+          </div>
+
+          {/* Höger: detalj eller formulär */}
+          <div>
+            {mode === "view" && activeChild && (() => {
+              const color = AVATAR_COLORS[activeChild.color_index % AVATAR_COLORS.length];
+              const ls = LEARNING_STYLES.find(l => l.id === activeChild.learning_style);
+              const [confirmDelete, setConfirmDelete] = useState(false);
+              return (
+                <div>
+                  <div style={{ background: color.bg, borderRadius: "16px 16px 0 0",
+                    padding: "24px", position: "relative", overflow: "hidden" }}>
+                    <div style={{ position: "absolute", top: 10, right: 20, fontSize: 50, opacity: .1 }}>🗺️</div>
+                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                      <div style={{ width: 56, height: 56, borderRadius: "50%",
+                        background: "rgba(255,255,255,.15)", color: color.text,
+                        display: "flex", alignItems: "center", justifyContent: "center",
+                        fontWeight: 700, fontSize: 20, border: "2px solid rgba(255,255,255,.3)" }}>
+                        {getInitials(activeChild.name)}
+                      </div>
+                      <div>
+                        <div style={{ fontSize: 22, fontWeight: 700, color: color.text }}>
+                          {activeChild.name}
+                        </div>
+                        <div style={{ color: "rgba(245,230,200,.7)", fontSize: 13, marginTop: 2 }}>
+                          {activeChild.age} år · {activeChild.city}, {activeChild.country} · {ls?.icon} {ls?.label}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div style={{ background: "#FDFAF5", border: "2px solid #D4C5A0",
+                    borderTop: "none", borderRadius: "0 0 16px 16px", padding: 22 }}>
+
+                    {activeChild.interests.length > 0 && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+                          letterSpacing: "0.08em", color: "#8B7355", marginBottom: 8 }}>Intressen</div>
+                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+                          {activeChild.interests.map(i => (
+                            <span key={i} style={{ padding: "4px 12px", borderRadius: 20,
+                              background: "#F0E8D0", color: "#8B6914", fontSize: 12,
+                              border: "1px solid #D4C5A0" }}>{i}</span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {activeChild.notes && (
+                      <div style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+                          letterSpacing: "0.08em", color: "#8B7355", marginBottom: 8 }}>Anteckningar</div>
+                        <p style={{ margin: 0, color: "#6B5A3E", fontSize: 13, fontStyle: "italic" }}>
+                          "{activeChild.notes}"
+                        </p>
+                      </div>
+                    )}
+
+                    <button onClick={() => handleSelect(activeChild)}
+                      style={{ width: "100%", padding: 14, background: "#2D5016",
+                        color: "#F5E6C8", border: "none", borderRadius: 10, cursor: "pointer",
+                        fontSize: 16, fontWeight: 700, marginBottom: 10,
+                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+                      🗺️ Generera veckans lektionsplan
+                    </button>
+
+                    {!confirmDelete ? (
+                      <button onClick={() => setConfirmDelete(true)}
+                        style={{ width: "100%", padding: 8, background: "transparent",
+                          color: "#B85C38", border: "1px solid #E8C4B0", borderRadius: 8,
+                          cursor: "pointer", fontSize: 13 }}>
+                        Ta bort {activeChild.name}
+                      </button>
+                    ) : (
+                      <div style={{ background: "#FFF5F0", border: "1px solid #E8C4B0",
+                        borderRadius: 8, padding: 12, display: "flex", gap: 8, alignItems: "center" }}>
+                        <span style={{ flex: 1, fontSize: 13, color: "#B85C38" }}>Är du säker?</span>
+                        <button onClick={() => handleDelete(activeChild.id)}
+                          style={{ padding: "6px 14px", background: "#B85C38", color: "#fff",
+                            border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
+                          Ja, ta bort
+                        </button>
+                        <button onClick={() => setConfirmDelete(false)}
+                          style={{ padding: "6px 14px", background: "transparent", color: "#6B5A3E",
+                            border: "1px solid #D4C5A0", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
+                          Avbryt
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              );
+            })()}
+
+            {mode === "view" && !activeChild && (
+              <div style={{ background: "#FDFAF5", border: "2px dashed #D4C5A0",
+                borderRadius: 16, padding: 48, textAlign: "center" }}>
+                <div style={{ fontSize: 48, marginBottom: 12 }}>🗺️</div>
+                <div style={{ fontSize: 18, fontWeight: 700, color: "#2D5016", marginBottom: 8 }}>
+                  Inga barn ännu
+                </div>
+                <p style={{ color: "#8B7355", margin: 0 }}>Klicka "Lägg till barn" för att börja.</p>
+              </div>
+            )}
+
+            {(mode === "add" || mode === "edit") && (
+              <div style={{ background: "#FDFAF5", border: "2px solid #D4C5A0",
+                borderRadius: 16, padding: 24, position: "relative" }}>
+                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4,
+                  background: "linear-gradient(90deg,#2D5016,#8B6914,#2D5016)",
+                  borderRadius: "16px 16px 0 0" }} />
+                <h3 style={{ fontSize: 20, fontWeight: 700, color: "#1C2B0E", margin: "0 0 20px 0" }}>
+                  {editingChild ? `Redigera ${editingChild.name}` : "Lägg till barn"}
+                </h3>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 700,
+                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Namn</label>
+                    <input value={form.name ?? ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                      placeholder="Barnets namn" style={inp} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 700,
+                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Ålder</label>
+                    <input value={form.age ?? ""} onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
+                      placeholder="t.ex. 8" style={inp} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 700,
+                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Stad</label>
+                    <input value={form.city ?? ""} onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
+                      placeholder="t.ex. Bangkok" style={inp} />
+                  </div>
+                  <div>
+                    <label style={{ display: "block", fontSize: 12, fontWeight: 700,
+                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Land</label>
+                    <input value={form.country ?? ""} onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
+                      placeholder="t.ex. Thailand" style={inp} />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700,
+                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Lärstil</label>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {LEARNING_STYLES.map(ls => (
+                      <button key={ls.id} onClick={() => setForm(f => ({ ...f, learning_style: ls.id }))}
+                        style={{ padding: "7px 14px", borderRadius: 8,
+                          border: `2px solid ${form.learning_style === ls.id ? "#2D5016" : "#D4C5A0"}`,
+                          background: form.learning_style === ls.id ? "#2D5016" : "transparent",
+                          color: form.learning_style === ls.id ? "#F5E6C8" : "#6B5A3E",
+                          cursor: "pointer", fontSize: 13 }}>
+                        {ls.icon} {ls.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700,
+                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Intressen</label>
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                    {INTERESTS.map(interest => (
+                      <button key={interest} onClick={() => toggleInterest(interest)}
+                        style={{ padding: "5px 12px", borderRadius: 20,
+                          border: `1.5px solid ${(form.interests ?? []).includes(interest) ? "#8B6914" : "#D4C5A0"}`,
+                          background: (form.interests ?? []).includes(interest) ? "#F5E6C8" : "transparent",
+                          color: (form.interests ?? []).includes(interest) ? "#8B6914" : "#6B5A3E",
+                          cursor: "pointer", fontSize: 12 }}>
+                        {interest}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 20 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700,
+                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Anteckningar</label>
+                  <textarea value={form.notes ?? ""} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
+                    placeholder="Särskilda behov, allergier, språk..." rows={3}
+                    style={{ ...inp, resize: "vertical" }} />
+                </div>
+
+                <div style={{ display: "flex", gap: 10 }}>
+                  <button onClick={handleSave} disabled={!form.name?.trim()}
+                    style={{ flex: 1, padding: 12,
+                      background: form.name?.trim() ? "#2D5016" : "#C8BEA6",
+                      color: "#F5E6C8", border: "none", borderRadius: 8,
+                      cursor: form.name?.trim() ? "pointer" : "default",
+                      fontSize: 15, fontWeight: 700 }}>
+                    {editingChild ? "Spara" : "Lägg till"}
+                  </button>
+                  <button onClick={() => setMode("view")}
+                    style={{ padding: "12px 18px", background: "transparent",
+                      color: "#6B5A3E", border: "2px solid #D4C5A0",
+                      borderRadius: 8, cursor: "pointer", fontSize: 14 }}>
+                    Avbryt
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {toast && (
+        <div style={{ position: "fixed", bottom: 28, left: "50%",
+          transform: "translateX(-50%)", background: "#1C2B0E", color: "#F5E6C8",
+          padding: "12px 24px", borderRadius: 10, fontSize: 15,
+          boxShadow: "0 4px 20px rgba(0,0,0,.3)", zIndex: 100,
+          animation: "fadeIn 0.2s ease", border: "1px solid #2D5016" }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
