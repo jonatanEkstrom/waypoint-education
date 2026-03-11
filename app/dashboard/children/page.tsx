@@ -26,19 +26,112 @@ const AVATAR_COLORS = [
 ];
 
 const INTERESTS = [
-  "Dinosaurier","Rymden","Djur","Matematik","Historia",
-  "Konst","Musik","Natur","Sport","Teknik","Matlagning","Språk",
+  "Dinosaurs","Space","Animals","Math","History",
+  "Art","Music","Nature","Sports","Technology","Cooking","Languages",
 ];
 
 const LEARNING_STYLES = [
-  { id: "visual",      label: "Visual",       icon: "🎨" },
-  { id: "kinesthetic", label: "Kinesthetic",  icon: "🏃" },
-  { id: "auditory",    label: "Auditory",     icon: "🎵" },
-  { id: "reading",     label: "Reading",      icon: "📚" },
+  { id: "visual",      label: "Visual",      icon: "🎨" },
+  { id: "kinesthetic", label: "Kinesthetic", icon: "🏃" },
+  { id: "auditory",    label: "Auditory",    icon: "🎵" },
+  { id: "reading",     label: "Reading",     icon: "📚" },
 ];
 
 function getInitials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
+}
+
+function ChildDetail({ child, onSelect, onDelete }: {
+  child: Child;
+  onSelect: (c: Child) => void;
+  onDelete: (id: number) => void;
+}) {
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const color = AVATAR_COLORS[child.color_index % AVATAR_COLORS.length];
+  const ls = LEARNING_STYLES.find(l => l.id === child.learning_style);
+
+  return (
+    <div>
+      <div style={{ background: color.bg, borderRadius: "16px 16px 0 0",
+        padding: "24px", position: "relative", overflow: "hidden" }}>
+        <div style={{ position: "absolute", top: 10, right: 20, fontSize: 50, opacity: .1 }}>🗺️</div>
+        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+          <div style={{ width: 56, height: 56, borderRadius: "50%",
+            background: "rgba(255,255,255,.15)", color: color.text,
+            display: "flex", alignItems: "center", justifyContent: "center",
+            fontWeight: 700, fontSize: 20, border: "2px solid rgba(255,255,255,.3)" }}>
+            {getInitials(child.name)}
+          </div>
+          <div>
+            <div style={{ fontSize: 22, fontWeight: 700, color: color.text }}>{child.name}</div>
+            <div style={{ color: "rgba(245,230,200,.7)", fontSize: 13, marginTop: 2 }}>
+              {child.age} years · {child.city}, {child.country} · {ls?.icon} {ls?.label}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ background: "#FDFAF5", border: "2px solid #D4C5A0",
+        borderTop: "none", borderRadius: "0 0 16px 16px", padding: 22 }}>
+
+        {child.interests.length > 0 && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+              letterSpacing: "0.08em", color: "#8B7355", marginBottom: 8 }}>Interests</div>
+            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+              {child.interests.map(i => (
+                <span key={i} style={{ padding: "4px 12px", borderRadius: 20,
+                  background: "#F0E8D0", color: "#8B6914", fontSize: 12,
+                  border: "1px solid #D4C5A0" }}>{i}</span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {child.notes && (
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
+              letterSpacing: "0.08em", color: "#8B7355", marginBottom: 8 }}>Notes</div>
+            <p style={{ margin: 0, color: "#6B5A3E", fontSize: 13, fontStyle: "italic" }}>
+              "{child.notes}"
+            </p>
+          </div>
+        )}
+
+        <button onClick={() => onSelect(child)}
+          style={{ width: "100%", padding: 14, background: "#2D5016",
+            color: "#F5E6C8", border: "none", borderRadius: 10, cursor: "pointer",
+            fontSize: 16, fontWeight: 700, marginBottom: 10,
+            display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+          🗺️ Generate this week's lesson plan
+        </button>
+
+        {!confirmDelete ? (
+          <button onClick={() => setConfirmDelete(true)}
+            style={{ width: "100%", padding: 8, background: "transparent",
+              color: "#B85C38", border: "1px solid #E8C4B0", borderRadius: 8,
+              cursor: "pointer", fontSize: 13 }}>
+            Remove {child.name}
+          </button>
+        ) : (
+          <div style={{ background: "#FFF5F0", border: "1px solid #E8C4B0",
+            borderRadius: 8, padding: 12, display: "flex", gap: 8, alignItems: "center" }}>
+            <span style={{ flex: 1, fontSize: 13, color: "#B85C38" }}>Are you sure?</span>
+            <button onClick={() => onDelete(child.id)}
+              style={{ padding: "6px 14px", background: "#B85C38", color: "#fff",
+                border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
+              Yes, remove
+            </button>
+            <button onClick={() => setConfirmDelete(false)}
+              style={{ padding: "6px 14px", background: "transparent", color: "#6B5A3E",
+                border: "1px solid #D4C5A0", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
+              Cancel
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export default function ChildrenPage() {
@@ -51,17 +144,16 @@ export default function ChildrenPage() {
     const active = localStorage.getItem("activeChild");
     if (active) {
       const c = JSON.parse(active);
-      return [{ ...c, id: 1, color_index: 0, interests: [], notes: "", learning_style: "visual" }];
+      return [{ ...c, id: 1, color_index: 0, interests: c.interests ?? [], notes: c.notes ?? "", learning_style: c.learning_style ?? "visual" }];
     }
     return [];
   });
 
-  const [activeId, setActiveId]     = useState<number | null>(children[0]?.id ?? null);
-  const [mode, setMode]             = useState<"view" | "add" | "edit">("view");
-  const [editingChild, setEditing]  = useState<Child | null>(null);
-  const [toast, setToast]           = useState<string | null>(null);
-
-  const [form, setForm] = useState<Partial<Child>>({});
+  const [activeId, setActiveId]    = useState<number | null>(children[0]?.id ?? null);
+  const [mode, setMode]            = useState<"view" | "add" | "edit">("view");
+  const [editingChild, setEditing] = useState<Child | null>(null);
+  const [toast, setToast]          = useState<string | null>(null);
+  const [form, setForm]            = useState<Partial<Child>>({});
 
   const activeChild = children.find(c => c.id === activeId) ?? null;
 
@@ -79,7 +171,8 @@ export default function ChildrenPage() {
   };
 
   const openAdd = () => {
-    setForm({ name: "", age: "8", city: "", country: "", curriculum: "", learning_style: "visual", interests: [], notes: "", color_index: children.length });
+    setForm({ name: "", age: "8", city: "", country: "", curriculum: "",
+      learning_style: "visual", interests: [], notes: "", color_index: children.length });
     setEditing(null);
     setMode("add");
   };
@@ -95,7 +188,7 @@ export default function ChildrenPage() {
     if (editingChild) {
       const updated = children.map(c => c.id === editingChild.id ? { ...c, ...form } as Child : c);
       save(updated);
-      showToast(`${form.name} uppdaterad ✓`);
+      showToast(`${form.name} updated ✓`);
     } else {
       const newChild: Child = {
         id: Date.now(),
@@ -112,7 +205,7 @@ export default function ChildrenPage() {
       const updated = [...children, newChild];
       save(updated);
       setActiveId(newChild.id);
-      showToast(`${newChild.name} tillagd! 🎉`);
+      showToast(`${newChild.name} added! 🎉`);
     }
     setMode("view");
   };
@@ -122,7 +215,7 @@ export default function ChildrenPage() {
     save(updated);
     setActiveId(updated[0]?.id ?? null);
     setMode("view");
-    showToast("Barnet har tagits bort.");
+    showToast("Child removed.");
   };
 
   const handleSelect = (child: Child) => {
@@ -136,7 +229,9 @@ export default function ChildrenPage() {
     const curr = form.interests ?? [];
     setForm(f => ({
       ...f,
-      interests: curr.includes(interest) ? curr.filter(i => i !== interest) : [...curr, interest]
+      interests: curr.includes(interest)
+        ? curr.filter(i => i !== interest)
+        : [...curr, interest],
     }));
   };
 
@@ -154,7 +249,6 @@ export default function ChildrenPage() {
         @keyframes fadeIn { from { opacity:0; transform:translateX(-50%) translateY(8px) } to { opacity:1; transform:translateX(-50%) translateY(0) } }
       `}</style>
 
-      {/* Topbar */}
       <div style={{ background: "#1C2B0E", padding: "0 24px", display: "flex",
         alignItems: "center", justifyContent: "space-between", height: 56,
         position: "sticky", top: 0, zIndex: 10 }}>
@@ -171,15 +265,14 @@ export default function ChildrenPage() {
 
       <div style={{ maxWidth: 860, margin: "0 auto", padding: "28px 16px" }}>
         <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1C2B0E", margin: "0 0 4px 0" }}>
-          Mina resenärer
+          My Travelers
         </h1>
         <p style={{ color: "#8B7355", margin: "0 0 24px 0", fontSize: 15 }}>
-          {children.length} barn registrerade
+          {children.length} {children.length === 1 ? "child" : "children"} registered
         </p>
 
         <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 20, alignItems: "start" }}>
 
-          {/* Vänster: lista */}
           <div>
             <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
               {children.map(child => {
@@ -191,8 +284,7 @@ export default function ChildrenPage() {
                       border: `2px solid ${isActive ? "#2D5016" : "#D4C5A0"}`, borderRadius: 12,
                       padding: 14, display: "flex", alignItems: "center", gap: 12,
                       position: "relative", overflow: "hidden" }}>
-                    {isActive && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0,
-                      width: 4, background: "#2D5016" }} />}
+                    {isActive && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: "#2D5016" }} />}
                     <div style={{ width: 44, height: 44, borderRadius: "50%",
                       background: color.bg, color: color.text,
                       display: "flex", alignItems: "center", justifyContent: "center",
@@ -205,123 +297,43 @@ export default function ChildrenPage() {
                         {child.name}
                       </div>
                       <div style={{ fontSize: 12, color: "#6B5A3E" }}>
-                        {child.age} år · {child.city || "Ingen stad"}
+                        {child.age} years · {child.city || "No city"}
                       </div>
                     </div>
                     <button onClick={e => { e.stopPropagation(); openEdit(child); }}
-                      style={{ background: "none", border: "none", cursor: "pointer",
-                        fontSize: 15, opacity: 0.5 }}>✏️</button>
+                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, opacity: 0.5 }}>
+                      ✏️
+                    </button>
                   </div>
                 );
               })}
             </div>
-            <button onClick={openAdd} style={{ width: "100%", padding: 12,
-              background: "transparent", border: "2px dashed #C8BEA6",
-              borderRadius: 12, cursor: "pointer", color: "#8B7355", fontSize: 14,
-              display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              ＋ Lägg till barn
+            <button onClick={openAdd}
+              style={{ width: "100%", padding: 12, background: "transparent",
+                border: "2px dashed #C8BEA6", borderRadius: 12, cursor: "pointer",
+                color: "#8B7355", fontSize: 14,
+                display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
+              ＋ Add child
             </button>
           </div>
 
-          {/* Höger: detalj eller formulär */}
           <div>
-            {mode === "view" && activeChild && (() => {
-              const color = AVATAR_COLORS[activeChild.color_index % AVATAR_COLORS.length];
-              const ls = LEARNING_STYLES.find(l => l.id === activeChild.learning_style);
-              const [confirmDelete, setConfirmDelete] = useState(false);
-              return (
-                <div>
-                  <div style={{ background: color.bg, borderRadius: "16px 16px 0 0",
-                    padding: "24px", position: "relative", overflow: "hidden" }}>
-                    <div style={{ position: "absolute", top: 10, right: 20, fontSize: 50, opacity: .1 }}>🗺️</div>
-                    <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-                      <div style={{ width: 56, height: 56, borderRadius: "50%",
-                        background: "rgba(255,255,255,.15)", color: color.text,
-                        display: "flex", alignItems: "center", justifyContent: "center",
-                        fontWeight: 700, fontSize: 20, border: "2px solid rgba(255,255,255,.3)" }}>
-                        {getInitials(activeChild.name)}
-                      </div>
-                      <div>
-                        <div style={{ fontSize: 22, fontWeight: 700, color: color.text }}>
-                          {activeChild.name}
-                        </div>
-                        <div style={{ color: "rgba(245,230,200,.7)", fontSize: 13, marginTop: 2 }}>
-                          {activeChild.age} år · {activeChild.city}, {activeChild.country} · {ls?.icon} {ls?.label}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                  <div style={{ background: "#FDFAF5", border: "2px solid #D4C5A0",
-                    borderTop: "none", borderRadius: "0 0 16px 16px", padding: 22 }}>
-
-                    {activeChild.interests.length > 0 && (
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-                          letterSpacing: "0.08em", color: "#8B7355", marginBottom: 8 }}>Intressen</div>
-                        <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-                          {activeChild.interests.map(i => (
-                            <span key={i} style={{ padding: "4px 12px", borderRadius: 20,
-                              background: "#F0E8D0", color: "#8B6914", fontSize: 12,
-                              border: "1px solid #D4C5A0" }}>{i}</span>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {activeChild.notes && (
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-                          letterSpacing: "0.08em", color: "#8B7355", marginBottom: 8 }}>Anteckningar</div>
-                        <p style={{ margin: 0, color: "#6B5A3E", fontSize: 13, fontStyle: "italic" }}>
-                          "{activeChild.notes}"
-                        </p>
-                      </div>
-                    )}
-
-                    <button onClick={() => handleSelect(activeChild)}
-                      style={{ width: "100%", padding: 14, background: "#2D5016",
-                        color: "#F5E6C8", border: "none", borderRadius: 10, cursor: "pointer",
-                        fontSize: 16, fontWeight: 700, marginBottom: 10,
-                        display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-                      🗺️ Generera veckans lektionsplan
-                    </button>
-
-                    {!confirmDelete ? (
-                      <button onClick={() => setConfirmDelete(true)}
-                        style={{ width: "100%", padding: 8, background: "transparent",
-                          color: "#B85C38", border: "1px solid #E8C4B0", borderRadius: 8,
-                          cursor: "pointer", fontSize: 13 }}>
-                        Ta bort {activeChild.name}
-                      </button>
-                    ) : (
-                      <div style={{ background: "#FFF5F0", border: "1px solid #E8C4B0",
-                        borderRadius: 8, padding: 12, display: "flex", gap: 8, alignItems: "center" }}>
-                        <span style={{ flex: 1, fontSize: 13, color: "#B85C38" }}>Är du säker?</span>
-                        <button onClick={() => handleDelete(activeChild.id)}
-                          style={{ padding: "6px 14px", background: "#B85C38", color: "#fff",
-                            border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-                          Ja, ta bort
-                        </button>
-                        <button onClick={() => setConfirmDelete(false)}
-                          style={{ padding: "6px 14px", background: "transparent", color: "#6B5A3E",
-                            border: "1px solid #D4C5A0", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-                          Avbryt
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            })()}
+            {mode === "view" && activeChild && (
+              <ChildDetail
+                child={activeChild}
+                onSelect={handleSelect}
+                onDelete={handleDelete}
+              />
+            )}
 
             {mode === "view" && !activeChild && (
               <div style={{ background: "#FDFAF5", border: "2px dashed #D4C5A0",
                 borderRadius: 16, padding: 48, textAlign: "center" }}>
                 <div style={{ fontSize: 48, marginBottom: 12 }}>🗺️</div>
                 <div style={{ fontSize: 18, fontWeight: 700, color: "#2D5016", marginBottom: 8 }}>
-                  Inga barn ännu
+                  No children yet
                 </div>
-                <p style={{ color: "#8B7355", margin: 0 }}>Klicka "Lägg till barn" för att börja.</p>
+                <p style={{ color: "#8B7355", margin: 0 }}>Click "Add child" to get started.</p>
               </div>
             )}
 
@@ -332,39 +344,39 @@ export default function ChildrenPage() {
                   background: "linear-gradient(90deg,#2D5016,#8B6914,#2D5016)",
                   borderRadius: "16px 16px 0 0" }} />
                 <h3 style={{ fontSize: 20, fontWeight: 700, color: "#1C2B0E", margin: "0 0 20px 0" }}>
-                  {editingChild ? `Redigera ${editingChild.name}` : "Lägg till barn"}
+                  {editingChild ? `Edit ${editingChild.name}` : "Add child"}
                 </h3>
 
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
                   <div>
                     <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Namn</label>
+                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Name</label>
                     <input value={form.name ?? ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                      placeholder="Barnets namn" style={inp} />
+                      placeholder="Child's name" style={inp} />
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Ålder</label>
+                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Age</label>
                     <input value={form.age ?? ""} onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
-                      placeholder="t.ex. 8" style={inp} />
+                      placeholder="e.g. 8" style={inp} />
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Stad</label>
+                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>City</label>
                     <input value={form.city ?? ""} onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
-                      placeholder="t.ex. Bangkok" style={inp} />
+                      placeholder="e.g. Bangkok" style={inp} />
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Land</label>
+                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Country</label>
                     <input value={form.country ?? ""} onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
-                      placeholder="t.ex. Thailand" style={inp} />
+                      placeholder="e.g. Thailand" style={inp} />
                   </div>
                 </div>
 
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Lärstil</label>
+                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Learning style</label>
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                     {LEARNING_STYLES.map(ls => (
                       <button key={ls.id} onClick={() => setForm(f => ({ ...f, learning_style: ls.id }))}
@@ -381,7 +393,7 @@ export default function ChildrenPage() {
 
                 <div style={{ marginBottom: 14 }}>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Intressen</label>
+                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Interests</label>
                   <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
                     {INTERESTS.map(interest => (
                       <button key={interest} onClick={() => toggleInterest(interest)}
@@ -398,9 +410,9 @@ export default function ChildrenPage() {
 
                 <div style={{ marginBottom: 20 }}>
                   <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Anteckningar</label>
+                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Notes</label>
                   <textarea value={form.notes ?? ""} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                    placeholder="Särskilda behov, allergier, språk..." rows={3}
+                    placeholder="Special needs, allergies, languages..." rows={3}
                     style={{ ...inp, resize: "vertical" }} />
                 </div>
 
@@ -411,13 +423,13 @@ export default function ChildrenPage() {
                       color: "#F5E6C8", border: "none", borderRadius: 8,
                       cursor: form.name?.trim() ? "pointer" : "default",
                       fontSize: 15, fontWeight: 700 }}>
-                    {editingChild ? "Spara" : "Lägg till"}
+                    {editingChild ? "Save" : "Add child"}
                   </button>
                   <button onClick={() => setMode("view")}
                     style={{ padding: "12px 18px", background: "transparent",
                       color: "#6B5A3E", border: "2px solid #D4C5A0",
                       borderRadius: 8, cursor: "pointer", fontSize: 14 }}>
-                    Avbryt
+                    Cancel
                   </button>
                 </div>
               </div>
