@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "../../lib/supabase";
 
 interface Child {
-  id: number;
+  id: string;
   name: string;
   age: string;
   city: string;
@@ -37,6 +38,16 @@ const LEARNING_STYLES = [
   { id: "reading",     label: "Reading",     icon: "📚" },
 ];
 
+const CURRICULA = [
+  { id: "charlotte-mason", label: "Charlotte Mason" },
+  { id: "classical",       label: "Classical" },
+  { id: "unschooling",     label: "Unschooling" },
+  { id: "montessori",      label: "Montessori" },
+  { id: "eclectic",        label: "Eclectic" },
+];
+
+const AGE_GROUPS = ["4–6 years", "7–9 years", "10–12 years", "13–15 years", "16–18 years"];
+
 function getInitials(name: string) {
   return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
 }
@@ -44,7 +55,7 @@ function getInitials(name: string) {
 function ChildDetail({ child, onSelect, onDelete }: {
   child: Child;
   onSelect: (c: Child) => void;
-  onDelete: (id: number) => void;
+  onDelete: (id: string) => void;
 }) {
   const [confirmDelete, setConfirmDelete] = useState(false);
   const color = AVATAR_COLORS[child.color_index % AVATAR_COLORS.length];
@@ -65,7 +76,7 @@ function ChildDetail({ child, onSelect, onDelete }: {
           <div>
             <div style={{ fontSize: 22, fontWeight: 700, color: color.text }}>{child.name}</div>
             <div style={{ color: "rgba(245,230,200,.7)", fontSize: 13, marginTop: 2 }}>
-              {child.age} years · {child.city}, {child.country} · {ls?.icon} {ls?.label}
+              {child.age} · {child.city}, {child.country} · {ls?.icon} {ls?.label}
             </div>
           </div>
         </div>
@@ -136,34 +147,37 @@ function ChildDetail({ child, onSelect, onDelete }: {
 
 export default function ChildrenPage() {
   const router = useRouter();
-
-  const [children, setChildren] = useState<Child[]>(() => {
-    if (typeof window === "undefined") return [];
-    const stored = localStorage.getItem("children");
-    if (stored) return JSON.parse(stored);
-    const active = localStorage.getItem("activeChild");
-    if (active) {
-      const c = JSON.parse(active);
-      return [{ ...c, id: 1, color_index: 0, interests: c.interests ?? [], notes: c.notes ?? "", learning_style: c.learning_style ?? "visual" }];
-    }
-    return [];
-  });
-
-  const [activeId, setActiveId]    = useState<number | null>(children[0]?.id ?? null);
-  const [mode, setMode]            = useState<"view" | "add" | "edit">("view");
+  const [children, setChildren] = useState<Child[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [userId, setUserId] = useState<string | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [mode, setMode] = useState<"view" | "add" | "edit">("view");
   const [editingChild, setEditing] = useState<Child | null>(null);
-  const [toast, setToast]          = useState<string | null>(null);
-  const [form, setForm]            = useState<Partial<Child>>({});
+  const [toast, setToast] = useState<string | null>(null);
+  const [form, setForm] = useState<Partial<Child>>({});
+
+  useEffect(() => {
+    async function load() {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) { router.push('/auth'); return }
+      setUserId(user.id)
+
+      const { data, error } = await supabase
+        .from('children')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: true })
+
+      if (data && data.length > 0) {
+        setChildren(data)
+        setActiveId(data[0].id)
+      }
+      setLoading(false)
+    }
+    load()
+  }, [])
 
   const activeChild = children.find(c => c.id === activeId) ?? null;
-
-  const save = (updated: Child[]) => {
-    setChildren(updated);
-    localStorage.setItem("children", JSON.stringify(updated));
-    if (updated.length > 0) {
-      localStorage.setItem("activeChild", JSON.stringify(updated[0]));
-    }
-  };
 
   const showToast = (msg: string) => {
     setToast(msg);
@@ -171,7 +185,7 @@ export default function ChildrenPage() {
   };
 
   const openAdd = () => {
-    setForm({ name: "", age: "8", city: "", country: "", curriculum: "",
+    setForm({ name: "", age: "7–9 years", city: "", country: "", curriculum: "eclectic",
       learning_style: "visual", interests: [], notes: "", color_index: children.length });
     setEditing(null);
     setMode("add");
@@ -183,46 +197,81 @@ export default function ChildrenPage() {
     setMode("edit");
   };
 
-  const handleSave = () => {
-    if (!form.name?.trim()) return;
+  const handleSave = async () => {
+    if (!form.name?.trim() || !userId) return;
+
     if (editingChild) {
-      const updated = children.map(c => c.id === editingChild.id ? { ...c, ...form } as Child : c);
-      save(updated);
-      showToast(`${form.name} updated ✓`);
+      const { error } = await supabase
+        .from('children')
+        .update({
+          name: form.name,
+          age: form.age,
+          city: form.city,
+          country: form.country,
+          curriculum: form.curriculum,
+          learning_style: form.learning_style,
+          interests: form.interests,
+          notes: form.notes,
+        })
+        .eq('id', editingChild.id)
+
+      if (!error) {
+        const updated = children.map(c => c.id === editingChild.id ? { ...c, ...form } as Child : c)
+        setChildren(updated)
+        showToast(`${form.name} updated ✓`)
+      }
     } else {
-      const newChild: Child = {
-        id: Date.now(),
+      const newChild = {
+        user_id: userId,
         name: form.name ?? "",
-        age: form.age ?? "8",
+        age: form.age ?? "7–9 years",
         city: form.city ?? "",
         country: form.country ?? "",
-        curriculum: form.curriculum ?? "",
+        curriculum: form.curriculum ?? "eclectic",
         learning_style: form.learning_style ?? "visual",
         interests: form.interests ?? [],
         notes: form.notes ?? "",
         color_index: children.length,
-      };
-      const updated = [...children, newChild];
-      save(updated);
-      setActiveId(newChild.id);
-      showToast(`${newChild.name} added! 🎉`);
+      }
+
+      const { data, error } = await supabase
+        .from('children')
+        .insert(newChild)
+        .select()
+        .single()
+
+      if (!error && data) {
+        const updated = [...children, data]
+        setChildren(updated)
+        setActiveId(data.id)
+        showToast(`${data.name} added! 🎉`)
+      }
     }
-    setMode("view");
+    setMode("view")
   };
 
-  const handleDelete = (id: number) => {
-    const updated = children.filter(c => c.id !== id);
-    save(updated);
-    setActiveId(updated[0]?.id ?? null);
-    setMode("view");
-    showToast("Child removed.");
+  const handleDelete = async (id: string) => {
+    const { error } = await supabase.from('children').delete().eq('id', id)
+    if (!error) {
+      const updated = children.filter(c => c.id !== id)
+      setChildren(updated)
+      setActiveId(updated[0]?.id ?? null)
+      setMode("view")
+      showToast("Child removed.")
+    }
   };
 
   const handleSelect = (child: Child) => {
-    localStorage.setItem("activeChild", JSON.stringify(child));
-    localStorage.removeItem("cachedPlan");
-    localStorage.removeItem("cachedPlanChild");
-    router.push("/dashboard");
+    const childData = {
+      ...child,
+      age_group: child.age,
+      learn_style: child.learning_style,
+      subjects: child.interests,
+    }
+    localStorage.setItem("activeChild", JSON.stringify(childData))
+    localStorage.removeItem("cachedPlan")
+    localStorage.removeItem("cachedPlanChild")
+    router.push("/dashboard")
   };
 
   const toggleInterest = (interest: string) => {
@@ -242,6 +291,13 @@ export default function ChildrenPage() {
     fontSize: 15, outline: "none", boxSizing: "border-box",
     fontFamily: "Georgia, serif",
   };
+
+  if (loading) return (
+    <div style={{ minHeight: "100vh", background: "#F5EDD8", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
+      <div style={{ fontSize: 48 }}>🧭</div>
+      <p style={{ fontFamily: "Georgia,serif", fontSize: 18, color: "#2D5016" }}>Loading your travelers...</p>
+    </div>
+  )
 
   return (
     <div style={{ minHeight: "100vh", background: "#F5EDD8", fontFamily: "Georgia, serif" }}>
@@ -297,7 +353,7 @@ export default function ChildrenPage() {
                         {child.name}
                       </div>
                       <div style={{ fontSize: 12, color: "#6B5A3E" }}>
-                        {child.age} years · {child.city || "No city"}
+                        {child.age} · {child.city || "No city"}
                       </div>
                     </div>
                     <button onClick={e => { e.stopPropagation(); openEdit(child); }}
@@ -356,9 +412,11 @@ export default function ChildrenPage() {
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Age</label>
-                    <input value={form.age ?? ""} onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
-                      placeholder="e.g. 8" style={inp} />
+                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Age group</label>
+                    <select value={form.age ?? "7–9 years"} onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
+                      style={{ ...inp }}>
+                      {AGE_GROUPS.map(a => <option key={a} value={a}>{a}</option>)}
+                    </select>
                   </div>
                   <div>
                     <label style={{ display: "block", fontSize: 12, fontWeight: 700,
@@ -371,6 +429,23 @@ export default function ChildrenPage() {
                       textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Country</label>
                     <input value={form.country ?? ""} onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
                       placeholder="e.g. Thailand" style={inp} />
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: 14 }}>
+                  <label style={{ display: "block", fontSize: 12, fontWeight: 700,
+                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Teaching philosophy</label>
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {CURRICULA.map(c => (
+                      <button key={c.id} onClick={() => setForm(f => ({ ...f, curriculum: c.id }))}
+                        style={{ padding: "7px 14px", borderRadius: 8,
+                          border: `2px solid ${form.curriculum === c.id ? "#2D5016" : "#D4C5A0"}`,
+                          background: form.curriculum === c.id ? "#2D5016" : "transparent",
+                          color: form.curriculum === c.id ? "#F5E6C8" : "#6B5A3E",
+                          cursor: "pointer", fontSize: 13 }}>
+                        {c.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
 
