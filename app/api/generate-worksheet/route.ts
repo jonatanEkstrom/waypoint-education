@@ -58,7 +58,7 @@ Return this exact JSON structure:
   }
 }
 
-Make all content fun, educational and age-appropriate for ${age_group}. Connect to ${theme || subject} and ${city} where possible.`
+Make all content age-appropriate for ${age_group}. For 13-15 and 16-18 years: use advanced vocabulary, complex concepts, critical thinking. For 10-12 years: intermediate level. For 7-9 years: simple and fun. For 4-6 years: very basic and playful. Connect to ${theme || subject} and ${city} where possible.`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-6',
