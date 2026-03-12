@@ -201,19 +201,19 @@ export default function ChildrenPage() {
     if (!form.name?.trim() || !userId) return;
 
     if (editingChild) {
-      const { error } = await supabase
-        .from('children')
-        .update({
-          name: form.name,
-          age: form.age,
-          city: form.city,
-          country: form.country,
-          curriculum: form.curriculum,
-          learning_style: form.learning_style,
-          interests: form.interests,
-          notes: form.notes,
-        })
-        .eq('id', editingChild.id)
+     const { error } = await supabase
+  .from('children')
+  .update({
+    name: form.name,
+    age_group: form.age,
+    city: form.city,
+    country: form.country,
+    curriculum: form.curriculum,
+    learn_style: form.learning_style,
+    subjects: form.interests,
+    notes: form.notes,
+  })
+  .eq('id', editingChild.id)
 
       if (!error) {
         const updated = children.map(c => c.id === editingChild.id ? { ...c, ...form } as Child : c)
@@ -221,19 +221,19 @@ export default function ChildrenPage() {
         showToast(`${form.name} updated ✓`)
       }
     } else {
-      const newChild = {
-        user_id: userId,
-        profile_id: userId,
-        name: form.name ?? "",
-        age: form.age ?? "7–9 years",
-        city: form.city ?? "",
-        country: form.country ?? "",
-        curriculum: form.curriculum ?? "eclectic",
-        learning_style: form.learning_style ?? "visual",
-        interests: form.interests ?? [],
-        notes: form.notes ?? "",
-        color_index: children.length,
-      }
+     const newChild = {
+  user_id: userId,
+  profile_id: userId,
+  name: form.name ?? "",
+  age_group: form.age ?? "7–9 years",
+  city: form.city ?? "",
+  country: form.country ?? "",
+  curriculum: form.curriculum ?? "eclectic",
+  learn_style: form.learning_style ?? "visual",
+  subjects: form.interests ?? [],
+  notes: form.notes ?? "",
+  color_index: children.length,
+}
 
       const { data, error } = await supabase
         .from('children')
