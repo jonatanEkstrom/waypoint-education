@@ -38,7 +38,8 @@ PHILOSOPHY: ${philosophy}
 STYLE: ${style}
 ${extraNotes}
 
-IMPORTANT: Keep every field SHORT — max 10 words each. No long sentences.
+IMPORTANT: Keep every field SHORT — max 15 words each. Adapt difficulty strictly to age — ${age_group} should get age-appropriate, challenging content. A 16-18 year old gets advanced, complex tasks. A 4-6 year old gets simple, playful tasks.
+
 
 {"week_theme":"string","days":[{"day":"Monday","focus":"string","lessons":[{"subject":"string","title":"string","duration":"30 min","method":"string","goal":"string","activity":"string","reflection":"string","milestone":"string","local_tip":"string","materials":"string"}]}]}
 
