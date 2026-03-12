@@ -169,8 +169,21 @@ export default function ChildrenPage() {
         .order('created_at', { ascending: true })
 
       if (data && data.length > 0) {
-        setChildren(data)
-        setActiveId(data[0].id)
+        // Map DB column names to interface names
+        const mapped = data.map((c: any) => ({
+          id: c.id,
+          name: c.name,
+          age: c.age_group ?? c.age ?? "",
+          city: c.city ?? "",
+          country: c.country ?? "",
+          curriculum: c.curriculum ?? "",
+          learning_style: c.learn_style ?? c.learning_style ?? "",
+          interests: c.subjects ?? c.interests ?? [],
+          notes: c.notes ?? "",
+          color_index: c.color_index ?? 0,
+        }))
+        setChildren(mapped)
+        setActiveId(mapped[0].id)
       }
       setLoading(false)
     }
@@ -201,54 +214,72 @@ export default function ChildrenPage() {
     if (!form.name?.trim() || !userId) return;
 
     if (editingChild) {
-     const { error } = await supabase
-  .from('children')
-  .update({
-    name: form.name,
-    age_group: form.age,
-    city: form.city,
-    country: form.country,
-    curriculum: form.curriculum,
-    learn_style: form.learning_style,
-    subjects: form.interests,
-    notes: form.notes,
-  })
-  .eq('id', editingChild.id)
+      const { error } = await supabase
+        .from('children')
+        .update({
+          name: form.name,
+          age_group: form.age,
+          city: form.city,
+          country: form.country,
+          curriculum: form.curriculum,
+          learn_style: form.learning_style,
+          subjects: form.interests,
+          notes: form.notes,
+        })
+        .eq('id', editingChild.id)
 
       if (!error) {
         const updated = children.map(c => c.id === editingChild.id ? { ...c, ...form } as Child : c)
         setChildren(updated)
         showToast(`${form.name} updated ✓`)
+        setMode("view")
+      } else {
+        console.error('Update error:', error)
+        showToast('Error updating child')
       }
     } else {
-     const newChild = {
-  user_id: userId,
-  profile_id: userId,
-  name: form.name ?? "",
-  age_group: form.age ?? "7–9 years",
-  city: form.city ?? "",
-  country: form.country ?? "",
-  curriculum: form.curriculum ?? "eclectic",
-  learn_style: form.learning_style ?? "visual",
-  subjects: form.interests ?? [],
-  notes: form.notes ?? "",
-  color_index: children.length,
-}
+      const newChild = {
+        user_id: userId,
+        profile_id: userId,
+        name: form.name ?? "",
+        age_group: form.age ?? "7–9 years",
+        city: form.city ?? "",
+        country: form.country ?? "",
+        curriculum: form.curriculum ?? "eclectic",
+        learn_style: form.learning_style ?? "visual",
+        subjects: form.interests ?? [],
+        notes: form.notes ?? "",
+        color_index: children.length,
+      }
 
       const { data, error } = await supabase
         .from('children')
         .insert(newChild)
         .select()
-        .single()
 
-      if (!error && data) {
-        const updated = [...children, data]
-        setChildren(updated)
-        setActiveId(data.id)
-        showToast(`${data.name} added! 🎉`)
+      if (!error && data && data.length > 0) {
+        const saved = data[0]
+        const mapped: Child = {
+          id: saved.id,
+          name: saved.name,
+          age: saved.age_group ?? "",
+          city: saved.city ?? "",
+          country: saved.country ?? "",
+          curriculum: saved.curriculum ?? "",
+          learning_style: saved.learn_style ?? "",
+          interests: saved.subjects ?? [],
+          notes: saved.notes ?? "",
+          color_index: saved.color_index ?? 0,
+        }
+        setChildren(prev => [...prev, mapped])
+        setActiveId(mapped.id)
+        showToast(`${mapped.name} added! 🎉`)
+        setMode("view")
+      } else {
+        console.error('Insert error:', error)
+        showToast('Error adding child')
       }
     }
-    setMode("view")
   };
 
   const handleDelete = async (id: string) => {
