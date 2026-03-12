@@ -240,7 +240,6 @@ export default function ChildrenPage() {
     } else {
       const newChild = {
         user_id: userId,
-        profile_id: userId,
         name: form.name ?? "",
         age_group: form.age ?? "7–9 years",
         city: form.city ?? "",
