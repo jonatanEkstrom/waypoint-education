@@ -263,7 +263,7 @@ export default function ChildrenPage() {
 
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Notes (optional)</label>
-                  <textarea value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} placeholder="Allergies, special needs, goals..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
+                  <textarea value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} placeholder="Extra notes, goals, special interests..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
                 </div>
 
                 <div style={{ display: 'flex', gap: 10 }}>
