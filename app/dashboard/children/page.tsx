@@ -1,558 +1,295 @@
-"use client";
-
-import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "../../lib/supabase";
+'use client'
+import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
+import { supabase } from '../../lib/supabase'
 
 interface Child {
-  id: string;
-  name: string;
-  age: string;
-  city: string;
-  country: string;
-  curriculum: string;
-  learning_style: string;
-  interests: string[];
-  notes: string;
-  color_index: number;
+  id: string
+  name: string
+  age: string
+  age_group: string
+  city: string
+  country: string
+  curriculum: string
+  learn_style: string
+  subjects: string[]
+  notes: string
+  color_index: number
 }
 
-const AVATAR_COLORS = [
-  { bg: "#2D5016", text: "#F5E6C8" },
-  { bg: "#8B4513", text: "#F5E6C8" },
-  { bg: "#1B4D6E", text: "#F5E6C8" },
-  { bg: "#6B3A7D", text: "#F5E6C8" },
-  { bg: "#2E4A1E", text: "#F5E6C8" },
-  { bg: "#7D3A1E", text: "#F5E6C8" },
-];
+const PRIMARY = '#9B8EC4'
+const PRIMARY_DARK = '#7B6BAA'
+const PRIMARY_BG = '#F0EBF9'
+const PRIMARY_BORDER = '#DDD0F0'
+const BEIGE = '#FAF7F2'
+const BEIGE_CARD = '#FFFFFF'
+const BEIGE_BORDER = '#E8E2D9'
+const GREEN = '#A8D5BA'
+const GREEN_DARK = '#6AAF8A'
+const GREEN_BG = '#EDF7F2'
+const TEXT = '#2D2D2D'
+const TEXT_MUTED = '#9E9188'
 
-const INTERESTS = [
-  "Dinosaurs","Space","Animals","Math","History",
-  "Art","Music","Nature","Sports","Technology","Cooking","Languages",
-];
-
-const LEARNING_STYLES = [
-  { id: "visual",      label: "Visual",      icon: "🎨" },
-  { id: "kinesthetic", label: "Kinesthetic", icon: "🏃" },
-  { id: "auditory",    label: "Auditory",    icon: "🎵" },
-  { id: "reading",     label: "Reading",     icon: "📚" },
-];
-
-const CURRICULA = [
-  { id: "charlotte-mason", label: "Charlotte Mason" },
-  { id: "classical",       label: "Classical" },
-  { id: "unschooling",     label: "Unschooling" },
-  { id: "montessori",      label: "Montessori" },
-  { id: "eclectic",        label: "Eclectic" },
-];
-
-const AGE_GROUPS = ["4–6 years", "7–9 years", "10–12 years", "13–15 years", "16–18 years"];
-
-function getInitials(name: string) {
-  return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2);
-}
-
-function ChildDetail({ child, onSelect, onDelete }: {
-  child: Child;
-  onSelect: (c: Child) => void;
-  onDelete: (id: string) => void;
-}) {
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const color = AVATAR_COLORS[child.color_index % AVATAR_COLORS.length];
-  const ls = LEARNING_STYLES.find(l => l.id === child.learning_style);
-
-  return (
-    <div>
-      <div style={{ background: color.bg, borderRadius: "16px 16px 0 0",
-        padding: "24px", position: "relative", overflow: "hidden" }}>
-        <div style={{ position: "absolute", top: 10, right: 20, fontSize: 50, opacity: .1 }}>🗺️</div>
-        <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
-          <div style={{ width: 56, height: 56, borderRadius: "50%",
-            background: "rgba(255,255,255,.15)", color: color.text,
-            display: "flex", alignItems: "center", justifyContent: "center",
-            fontWeight: 700, fontSize: 20, border: "2px solid rgba(255,255,255,.3)" }}>
-            {getInitials(child.name)}
-          </div>
-          <div>
-            <div style={{ fontSize: 22, fontWeight: 700, color: color.text }}>{child.name}</div>
-            <div style={{ color: "rgba(245,230,200,.7)", fontSize: 13, marginTop: 2 }}>
-              {child.age} · {child.city}, {child.country} · {ls?.icon} {ls?.label}
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div style={{ background: "#FDFAF5", border: "2px solid #D4C5A0",
-        borderTop: "none", borderRadius: "0 0 16px 16px", padding: 22 }}>
-
-        {child.interests.length > 0 && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-              letterSpacing: "0.08em", color: "#8B7355", marginBottom: 8 }}>Interests</div>
-            <div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
-              {child.interests.map(i => (
-                <span key={i} style={{ padding: "4px 12px", borderRadius: 20,
-                  background: "#F0E8D0", color: "#8B6914", fontSize: 12,
-                  border: "1px solid #D4C5A0" }}>{i}</span>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {child.notes && (
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, textTransform: "uppercase",
-              letterSpacing: "0.08em", color: "#8B7355", marginBottom: 8 }}>Notes</div>
-            <p style={{ margin: 0, color: "#6B5A3E", fontSize: 13, fontStyle: "italic" }}>
-              "{child.notes}"
-            </p>
-          </div>
-        )}
-
-        <button onClick={() => onSelect(child)}
-          style={{ width: "100%", padding: 14, background: "#2D5016",
-            color: "#F5E6C8", border: "none", borderRadius: 10, cursor: "pointer",
-            fontSize: 16, fontWeight: 700, marginBottom: 10,
-            display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-          🗺️ Generate this week's lesson plan
-        </button>
-
-        {!confirmDelete ? (
-          <button onClick={() => setConfirmDelete(true)}
-            style={{ width: "100%", padding: 8, background: "transparent",
-              color: "#B85C38", border: "1px solid #E8C4B0", borderRadius: 8,
-              cursor: "pointer", fontSize: 13 }}>
-            Remove {child.name}
-          </button>
-        ) : (
-          <div style={{ background: "#FFF5F0", border: "1px solid #E8C4B0",
-            borderRadius: 8, padding: 12, display: "flex", gap: 8, alignItems: "center" }}>
-            <span style={{ flex: 1, fontSize: 13, color: "#B85C38" }}>Are you sure?</span>
-            <button onClick={() => onDelete(child.id)}
-              style={{ padding: "6px 14px", background: "#B85C38", color: "#fff",
-                border: "none", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-              Yes, remove
-            </button>
-            <button onClick={() => setConfirmDelete(false)}
-              style={{ padding: "6px 14px", background: "transparent", color: "#6B5A3E",
-                border: "1px solid #D4C5A0", borderRadius: 6, cursor: "pointer", fontSize: 13 }}>
-              Cancel
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
+const AVATAR_COLORS = ['#9B8EC4', '#A8D5BA', '#F4A7A7', '#F5DFA0', '#A0C4E8', '#F0B8D0']
+const CURRICULUMS = ['Unschooling', 'Classical', 'Charlotte Mason', 'Montessori', 'Eclectic', 'Traditional']
+const LEARN_STYLES = ['Visual', 'Auditory', 'Kinesthetic', 'Reading/Writing']
+const AGE_GROUPS = ['4–6 years', '7–9 years', '10–12 years', '13–15 years', '16–18 years']
 
 export default function ChildrenPage() {
-  const router = useRouter();
-  const [children, setChildren] = useState<Child[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [userId, setUserId] = useState<string | null>(null);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [mode, setMode] = useState<"view" | "add" | "edit">("view");
-  const [editingChild, setEditing] = useState<Child | null>(null);
-  const [toast, setToast] = useState<string | null>(null);
-  const [form, setForm] = useState<Partial<Child>>({});
+  const [children, setChildren] = useState<Child[]>([])
+  const [selected, setSelected] = useState<Child | null>(null)
+  const [adding, setAdding] = useState(false)
+  const [hover, setHover] = useState<string | null>(null)
+  const [form, setForm] = useState({
+    name: '', age_group: '7–9 years', city: '', country: '',
+    curriculum: 'Eclectic', learn_style: 'Visual', subjects: [] as string[], notes: ''
+  })
+  const router = useRouter()
 
-  useEffect(() => {
-    async function load() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) { router.push('/auth'); return }
-      setUserId(user.id)
+  useEffect(() => { loadChildren() }, [])
 
-      const { data, error } = await supabase
-        .from('children')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: true })
-
-      if (data && data.length > 0) {
-        // Map DB column names to interface names
-        const mapped = data.map((c: any) => ({
-          id: c.id,
-          name: c.name,
-          age: c.age_group ?? c.age ?? "",
-          city: c.city ?? "",
-          country: c.country ?? "",
-          curriculum: c.curriculum ?? "",
-          learning_style: c.learn_style ?? c.learning_style ?? "",
-          interests: c.subjects ?? c.interests ?? [],
-          notes: c.notes ?? "",
-          color_index: c.color_index ?? 0,
-        }))
-        setChildren(mapped)
-        setActiveId(mapped[0].id)
-      }
-      setLoading(false)
+  async function loadChildren() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) { router.push('/auth'); return }
+    const { data } = await supabase.from('children').select('*').eq('user_id', user.id)
+    if (data) {
+      const mapped = data.map((c: any) => ({
+        id: c.id, name: c.name, age: c.age_group, age_group: c.age_group,
+        city: c.city, country: c.country || '', curriculum: c.curriculum,
+        learn_style: c.learn_style, subjects: c.subjects || [], notes: c.notes || '',
+        color_index: c.color_index || 0
+      }))
+      setChildren(mapped)
     }
-    load()
-  }, [])
+  }
 
-  const activeChild = children.find(c => c.id === activeId) ?? null;
-
-  const showToast = (msg: string) => {
-    setToast(msg);
-    setTimeout(() => setToast(null), 3000);
-  };
-
-  const openAdd = () => {
-    setForm({ name: "", age: "7–9 years", city: "", country: "", curriculum: "eclectic",
-      learning_style: "visual", interests: [], notes: "", color_index: children.length });
-    setEditing(null);
-    setMode("add");
-  };
-
-  const openEdit = (child: Child) => {
-    setForm({ ...child });
-    setEditing(child);
-    setMode("edit");
-  };
-
-  const handleSave = async () => {
-    if (!form.name?.trim() || !userId) return;
-
-    if (editingChild) {
-      const { error } = await supabase
-        .from('children')
-        .update({
-          name: form.name,
-          age_group: form.age,
-          city: form.city,
-          country: form.country,
-          curriculum: form.curriculum,
-          learn_style: form.learning_style,
-          subjects: form.interests,
-          notes: form.notes,
-        })
-        .eq('id', editingChild.id)
-
-      if (!error) {
-        const updated = children.map(c => c.id === editingChild.id ? { ...c, ...form } as Child : c)
-        setChildren(updated)
-        showToast(`${form.name} updated ✓`)
-        setMode("view")
-      } else {
-        console.error('Update error:', error)
-        showToast('Error updating child')
-      }
-    } else {
-      const newChild = {
-        user_id: userId,
-        name: form.name ?? "",
-        age_group: form.age ?? "7–9 years",
-        city: form.city ?? "",
-        country: form.country ?? "",
-        curriculum: form.curriculum ?? "eclectic",
-        learn_style: form.learning_style ?? "visual",
-        subjects: form.interests ?? [],
-        notes: form.notes ?? "",
-        color_index: children.length,
-      }
-
-      const { data, error } = await supabase
-        .from('children')
-        .insert(newChild)
-        .select()
-
-      if (!error && data && data.length > 0) {
-        const saved = data[0]
-        const mapped: Child = {
-          id: saved.id,
-          name: saved.name,
-          age: saved.age_group ?? "",
-          city: saved.city ?? "",
-          country: saved.country ?? "",
-          curriculum: saved.curriculum ?? "",
-          learning_style: saved.learn_style ?? "",
-          interests: saved.subjects ?? [],
-          notes: saved.notes ?? "",
-          color_index: saved.color_index ?? 0,
-        }
-        setChildren(prev => [...prev, mapped])
-        setActiveId(mapped.id)
-        showToast(`${mapped.name} added! 🎉`)
-        setMode("view")
-      } else {
-        console.error('Insert error:', error)
-        showToast('Error adding child')
-      }
+  async function saveChild() {
+    if (!form.name || !form.city) return
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const colorIndex = children.length % AVATAR_COLORS.length
+    const { data } = await supabase.from('children').insert({
+      name: form.name, age_group: form.age_group, city: form.city, country: form.country,
+      curriculum: form.curriculum, learn_style: form.learn_style, subjects: form.subjects,
+      notes: form.notes, color_index: colorIndex, user_id: user.id
+    }).select()
+    if (data) {
+      await loadChildren()
+      setAdding(false)
+      setForm({ name: '', age_group: '7–9 years', city: '', country: '', curriculum: 'Eclectic', learn_style: 'Visual', subjects: [], notes: '' })
     }
-  };
+  }
 
-  const handleDelete = async (id: string) => {
-    const { error } = await supabase.from('children').delete().eq('id', id)
-    if (!error) {
-      const updated = children.filter(c => c.id !== id)
-      setChildren(updated)
-      setActiveId(updated[0]?.id ?? null)
-      setMode("view")
-      showToast("Child removed.")
-    }
-  };
+  async function removeChild(id: string) {
+    await supabase.from('children').delete().eq('id', id)
+    setSelected(null)
+    loadChildren()
+  }
 
-  const handleSelect = (child: Child) => {
-    const childData = {
-      ...child,
-      age_group: child.age,
-      learn_style: child.learning_style,
-      subjects: child.interests,
-    }
-    localStorage.setItem("activeChild", JSON.stringify(childData))
-    localStorage.removeItem("cachedPlan")
-    localStorage.removeItem("cachedPlanChild")
-    router.push("/dashboard")
-  };
+  function startPlan(child: Child) {
+    localStorage.setItem('activeChild', JSON.stringify(child))
+    localStorage.removeItem('cachedPlan')
+    localStorage.removeItem('cachedPlanChild')
+    localStorage.removeItem('cachedLessons')
+    router.push('/dashboard')
+  }
 
-  const toggleInterest = (interest: string) => {
-    const curr = form.interests ?? [];
-    setForm(f => ({
-      ...f,
-      interests: curr.includes(interest)
-        ? curr.filter(i => i !== interest)
-        : [...curr, interest],
-    }));
-  };
+  const btn = (id: string, base: React.CSSProperties, hoverStyle: React.CSSProperties): React.CSSProperties => ({
+    ...base, ...(hover === id ? hoverStyle : {}), transition: 'all 0.15s ease', cursor: 'pointer'
+  })
 
-  const inp: React.CSSProperties = {
-    width: "100%", padding: "10px 14px",
-    border: "2px solid #D4C5A0", borderRadius: 8,
-    background: "#FDFAF5", color: "#1C2B0E",
-    fontSize: 15, outline: "none", boxSizing: "border-box",
-    fontFamily: "Georgia, serif",
-  };
-
-  if (loading) return (
-    <div style={{ minHeight: "100vh", background: "#F5EDD8", display: "flex", alignItems: "center", justifyContent: "center", flexDirection: "column", gap: 16 }}>
-      <div style={{ fontSize: 48 }}>🧭</div>
-      <p style={{ fontFamily: "Georgia,serif", fontSize: 18, color: "#2D5016" }}>Loading your travelers...</p>
-    </div>
-  )
+  const inputStyle: React.CSSProperties = {
+    width: '100%', padding: '10px 14px', borderRadius: 10, border: `2px solid ${BEIGE_BORDER}`,
+    background: BEIGE, fontSize: 14, color: TEXT, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box'
+  }
 
   return (
-    <div style={{ minHeight: "100vh", background: "#F5EDD8", fontFamily: "Georgia, serif" }}>
-      <style>{`* { box-sizing: border-box; }
-        @keyframes fadeIn { from { opacity:0; transform:translateX(-50%) translateY(8px) } to { opacity:1; transform:translateX(-50%) translateY(0) } }
-      `}</style>
+    <div style={{ minHeight: '100vh', background: BEIGE }}>
+      <style>{`@keyframes fadeIn { from { opacity:0; transform:translateY(6px) } to { opacity:1; transform:translateY(0) } }`}</style>
 
-      <div style={{ background: "#1C2B0E", padding: "0 24px", display: "flex",
-        alignItems: "center", justifyContent: "space-between", height: 56,
-        position: "sticky", top: 0, zIndex: 10 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <span style={{ fontSize: 20 }}>🧭</span>
-          <span style={{ color: "#F5E6C8", fontSize: 18, fontWeight: 700 }}>Waypoint Education</span>
+      {/* Topbar */}
+      <div style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <span style={{ fontSize: 22 }}>🧭</span>
+          <span style={{ fontFamily: 'Georgia,serif', fontSize: 18, fontWeight: 700, color: TEXT }}>Waypoint <span style={{ color: PRIMARY }}>Education</span></span>
         </div>
-        <button onClick={() => router.push("/dashboard")}
-          style={{ background: "none", border: "1px solid #F5E6C8", borderRadius: 8,
-            color: "#F5E6C8", cursor: "pointer", padding: "6px 14px", fontSize: 13 }}>
+        <button onClick={() => router.push('/dashboard')}
+          onMouseEnter={() => setHover('back')} onMouseLeave={() => setHover(null)}
+          style={btn('back', { padding: '8px 18px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
           ← Dashboard
         </button>
       </div>
 
-      <div style={{ maxWidth: 860, margin: "0 auto", padding: "28px 16px" }}>
-        <h1 style={{ fontSize: 28, fontWeight: 700, color: "#1C2B0E", margin: "0 0 4px 0" }}>
-          My Travelers
-        </h1>
-        <p style={{ color: "#8B7355", margin: "0 0 24px 0", fontSize: 15 }}>
-          {children.length} {children.length === 1 ? "child" : "children"} registered
-        </p>
+      <div style={{ maxWidth: 900, margin: '0 auto', padding: 32, display: 'flex', gap: 24, alignItems: 'flex-start' }}>
 
-        <div style={{ display: "grid", gridTemplateColumns: "260px 1fr", gap: 20, alignItems: "start" }}>
+        {/* Left: list */}
+        <div style={{ width: 280, flexShrink: 0 }}>
+          <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 26, color: TEXT, marginBottom: 4 }}>My Travelers</h1>
+          <p style={{ color: TEXT_MUTED, fontSize: 14, marginBottom: 24 }}>{children.length} {children.length === 1 ? 'child' : 'children'} registered</p>
 
-          <div>
-            <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 12 }}>
-              {children.map(child => {
-                const color = AVATAR_COLORS[child.color_index % AVATAR_COLORS.length];
-                const isActive = activeId === child.id && mode === "view";
-                return (
-                  <div key={child.id} onClick={() => { setActiveId(child.id); setMode("view"); }}
-                    style={{ cursor: "pointer", background: isActive ? "#F5E6C8" : "#FDFAF5",
-                      border: `2px solid ${isActive ? "#2D5016" : "#D4C5A0"}`, borderRadius: 12,
-                      padding: 14, display: "flex", alignItems: "center", gap: 12,
-                      position: "relative", overflow: "hidden" }}>
-                    {isActive && <div style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 4, background: "#2D5016" }} />}
-                    <div style={{ width: 44, height: 44, borderRadius: "50%",
-                      background: color.bg, color: color.text,
-                      display: "flex", alignItems: "center", justifyContent: "center",
-                      fontWeight: 700, fontSize: 16, flexShrink: 0 }}>
-                      {getInitials(child.name)}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontWeight: 700, fontSize: 15, color: "#1C2B0E",
-                        whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                        {child.name}
-                      </div>
-                      <div style={{ fontSize: 12, color: "#6B5A3E" }}>
-                        {child.age} · {child.city || "No city"}
-                      </div>
-                    </div>
-                    <button onClick={e => { e.stopPropagation(); openEdit(child); }}
-                      style={{ background: "none", border: "none", cursor: "pointer", fontSize: 15, opacity: 0.5 }}>
-                      ✏️
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-            <button onClick={openAdd}
-              style={{ width: "100%", padding: 12, background: "transparent",
-                border: "2px dashed #C8BEA6", borderRadius: 12, cursor: "pointer",
-                color: "#8B7355", fontSize: 14,
-                display: "flex", alignItems: "center", justifyContent: "center", gap: 8 }}>
-              ＋ Add child
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {children.map(child => (
+              <button key={child.id} onClick={() => { setSelected(child); setAdding(false) }}
+                onMouseEnter={() => setHover(`child-${child.id}`)} onMouseLeave={() => setHover(null)}
+                style={btn(`child-${child.id}`,
+                  { display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 16, border: `2px solid ${selected?.id === child.id ? PRIMARY : BEIGE_BORDER}`, background: selected?.id === child.id ? PRIMARY_BG : BEIGE_CARD, cursor: 'pointer', textAlign: 'left', fontFamily: 'inherit', width: '100%' },
+                  { borderColor: PRIMARY, background: PRIMARY_BG }
+                )}>
+                <div style={{ width: 40, height: 40, borderRadius: '50%', background: AVATAR_COLORS[child.color_index % AVATAR_COLORS.length], display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>
+                  {child.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                </div>
+                <div>
+                  <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{child.name}</div>
+                  <div style={{ fontSize: 12, color: TEXT_MUTED }}>{child.age_group} · {child.city}</div>
+                </div>
+              </button>
+            ))}
+
+            <button onClick={() => { setAdding(true); setSelected(null) }}
+              onMouseEnter={() => setHover('add')} onMouseLeave={() => setHover(null)}
+              style={btn('add', { padding: '14px 16px', borderRadius: 16, border: `2px dashed ${BEIGE_BORDER}`, background: 'transparent', fontSize: 14, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit', width: '100%' }, { borderColor: PRIMARY, color: PRIMARY })}>
+              + Add child
             </button>
           </div>
+        </div>
 
-          <div>
-            {mode === "view" && activeChild && (
-              <ChildDetail
-                child={activeChild}
-                onSelect={handleSelect}
-                onDelete={handleDelete}
-              />
-            )}
-
-            {mode === "view" && !activeChild && (
-              <div style={{ background: "#FDFAF5", border: "2px dashed #D4C5A0",
-                borderRadius: 16, padding: 48, textAlign: "center" }}>
-                <div style={{ fontSize: 48, marginBottom: 12 }}>🗺️</div>
-                <div style={{ fontSize: 18, fontWeight: 700, color: "#2D5016", marginBottom: 8 }}>
-                  No children yet
+        {/* Right: detail or form */}
+        <div style={{ flex: 1, animation: 'fadeIn 0.2s ease' }}>
+          {selected && !adding && (
+            <div style={{ background: BEIGE_CARD, borderRadius: 24, overflow: 'hidden', border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 2px 12px rgba(0,0,0,0.06)' }}>
+              <div style={{ background: `linear-gradient(135deg, ${PRIMARY}, ${GREEN})`, padding: '28px 28px 24px', color: 'white' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                  <div style={{ width: 56, height: 56, borderRadius: '50%', background: 'rgba(255,255,255,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white', fontWeight: 700, fontSize: 20 }}>
+                    {selected.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div>
+                    <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 22, margin: 0 }}>{selected.name}</h2>
+                    <p style={{ margin: '4px 0 0', opacity: 0.85, fontSize: 14 }}>{selected.age_group} · {selected.city}, {selected.country} · 🌐 {selected.learn_style}</p>
+                  </div>
                 </div>
-                <p style={{ color: "#8B7355", margin: 0 }}>Click "Add child" to get started.</p>
               </div>
-            )}
 
-            {(mode === "add" || mode === "edit") && (
-              <div style={{ background: "#FDFAF5", border: "2px solid #D4C5A0",
-                borderRadius: 16, padding: 24, position: "relative" }}>
-                <div style={{ position: "absolute", top: 0, left: 0, right: 0, height: 4,
-                  background: "linear-gradient(90deg,#2D5016,#8B6914,#2D5016)",
-                  borderRadius: "16px 16px 0 0" }} />
-                <h3 style={{ fontSize: 20, fontWeight: 700, color: "#1C2B0E", margin: "0 0 20px 0" }}>
-                  {editingChild ? `Edit ${editingChild.name}` : "Add child"}
-                </h3>
+              <div style={{ padding: 28 }}>
+                {selected.subjects?.length > 0 && (
+                  <div style={{ marginBottom: 20 }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>Interests</div>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {selected.subjects.map(s => (
+                        <span key={s} style={{ padding: '4px 12px', borderRadius: 100, background: PRIMARY_BG, color: PRIMARY, fontSize: 13, fontWeight: 600, border: `1px solid ${PRIMARY_BORDER}` }}>{s}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12, marginBottom: 14 }}>
+                {selected.notes && (
+                  <div style={{ background: BEIGE, borderRadius: 12, padding: 16, marginBottom: 20, border: `1px solid ${BEIGE_BORDER}` }}>
+                    <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>Notes</div>
+                    <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.6 }}>{selected.notes}</p>
+                  </div>
+                )}
+
+                <button onClick={() => startPlan(selected)}
+                  onMouseEnter={() => setHover('generate')} onMouseLeave={() => setHover(null)}
+                  style={btn('generate', { width: '100%', padding: '16px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY_DARK })}>
+                  📅 Generate this week's lesson plan
+                </button>
+
+                <button onClick={() => removeChild(selected.id)}
+                  onMouseEnter={() => setHover('remove')} onMouseLeave={() => setHover(null)}
+                  style={btn('remove', { width: '100%', padding: '12px', borderRadius: 14, border: `2px solid #F4A7A7`, background: BEIGE_CARD, color: '#E07575', fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }, { background: '#FFF1F2' })}>
+                  Remove {selected.name}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {adding && (
+            <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: 28, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 2px 12px rgba(0,0,0,0.06)', animation: 'fadeIn 0.2s ease' }}>
+              <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 22, color: TEXT, marginBottom: 24 }}>Add a new traveler</h2>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Name</label>
+                  <input value={form.name} onChange={e => setForm(p => ({...p, name: e.target.value}))} placeholder="Child's name" style={inputStyle} />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Name</label>
-                    <input value={form.name ?? ""} onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
-                      placeholder="Child's name" style={inp} />
+                    <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>City</label>
+                    <input value={form.city} onChange={e => setForm(p => ({...p, city: e.target.value}))} placeholder="City" style={inputStyle} />
                   </div>
                   <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Age group</label>
-                    <select value={form.age ?? "7–9 years"} onChange={e => setForm(f => ({ ...f, age: e.target.value }))}
-                      style={{ ...inp }}>
-                      {AGE_GROUPS.map(a => <option key={a} value={a}>{a}</option>)}
-                    </select>
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>City</label>
-                    <input value={form.city ?? ""} onChange={e => setForm(f => ({ ...f, city: e.target.value }))}
-                      placeholder="e.g. Bangkok" style={inp} />
-                  </div>
-                  <div>
-                    <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                      textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Country</label>
-                    <input value={form.country ?? ""} onChange={e => setForm(f => ({ ...f, country: e.target.value }))}
-                      placeholder="e.g. Thailand" style={inp} />
+                    <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Country</label>
+                    <input value={form.country} onChange={e => setForm(p => ({...p, country: e.target.value}))} placeholder="Country" style={inputStyle} />
                   </div>
                 </div>
 
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Teaching philosophy</label>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {CURRICULA.map(c => (
-                      <button key={c.id} onClick={() => setForm(f => ({ ...f, curriculum: c.id }))}
-                        style={{ padding: "7px 14px", borderRadius: 8,
-                          border: `2px solid ${form.curriculum === c.id ? "#2D5016" : "#D4C5A0"}`,
-                          background: form.curriculum === c.id ? "#2D5016" : "transparent",
-                          color: form.curriculum === c.id ? "#F5E6C8" : "#6B5A3E",
-                          cursor: "pointer", fontSize: 13 }}>
-                        {c.label}
-                      </button>
-                    ))}
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Age group</label>
+                  <select value={form.age_group} onChange={e => setForm(p => ({...p, age_group: e.target.value}))} style={inputStyle}>
+                    {AGE_GROUPS.map(a => <option key={a}>{a}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Learning philosophy</label>
+                  <select value={form.curriculum} onChange={e => setForm(p => ({...p, curriculum: e.target.value}))} style={inputStyle}>
+                    {CURRICULUMS.map(c => <option key={c}>{c}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Learning style</label>
+                  <select value={form.learn_style} onChange={e => setForm(p => ({...p, learn_style: e.target.value}))} style={inputStyle}>
+                    {LEARN_STYLES.map(l => <option key={l}>{l}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>Interests</label>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                    {['Math', 'Science', 'History', 'Art', 'Music', 'Coding', 'Nature', 'Sports', 'Language', 'Technology'].map(s => {
+                      const on = form.subjects.includes(s)
+                      return (
+                        <button key={s} onClick={() => setForm(p => ({ ...p, subjects: on ? p.subjects.filter(x => x !== s) : [...p.subjects, s] }))}
+                          onMouseEnter={() => setHover(`subj-${s}`)} onMouseLeave={() => setHover(null)}
+                          style={btn(`subj-${s}`, { padding: '6px 14px', borderRadius: 100, border: `2px solid ${on ? PRIMARY : BEIGE_BORDER}`, background: on ? PRIMARY_BG : BEIGE_CARD, color: on ? PRIMARY : TEXT_MUTED, fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
+                          {s}
+                        </button>
+                      )
+                    })}
                   </div>
                 </div>
 
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Learning style</label>
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {LEARNING_STYLES.map(ls => (
-                      <button key={ls.id} onClick={() => setForm(f => ({ ...f, learning_style: ls.id }))}
-                        style={{ padding: "7px 14px", borderRadius: 8,
-                          border: `2px solid ${form.learning_style === ls.id ? "#2D5016" : "#D4C5A0"}`,
-                          background: form.learning_style === ls.id ? "#2D5016" : "transparent",
-                          color: form.learning_style === ls.id ? "#F5E6C8" : "#6B5A3E",
-                          cursor: "pointer", fontSize: 13 }}>
-                        {ls.icon} {ls.label}
-                      </button>
-                    ))}
-                  </div>
+                <div>
+                  <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Notes (optional)</label>
+                  <textarea value={form.notes} onChange={e => setForm(p => ({...p, notes: e.target.value}))} placeholder="Allergies, special needs, goals..." rows={3} style={{ ...inputStyle, resize: 'vertical' }} />
                 </div>
 
-                <div style={{ marginBottom: 14 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Interests</label>
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
-                    {INTERESTS.map(interest => (
-                      <button key={interest} onClick={() => toggleInterest(interest)}
-                        style={{ padding: "5px 12px", borderRadius: 20,
-                          border: `1.5px solid ${(form.interests ?? []).includes(interest) ? "#8B6914" : "#D4C5A0"}`,
-                          background: (form.interests ?? []).includes(interest) ? "#F5E6C8" : "transparent",
-                          color: (form.interests ?? []).includes(interest) ? "#8B6914" : "#6B5A3E",
-                          cursor: "pointer", fontSize: 12 }}>
-                        {interest}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 20 }}>
-                  <label style={{ display: "block", fontSize: 12, fontWeight: 700,
-                    textTransform: "uppercase", color: "#8B7355", marginBottom: 6 }}>Notes</label>
-                  <textarea value={form.notes ?? ""} onChange={e => setForm(f => ({ ...f, notes: e.target.value }))}
-                    placeholder="Special needs, allergies, languages..." rows={3}
-                    style={{ ...inp, resize: "vertical" }} />
-                </div>
-
-                <div style={{ display: "flex", gap: 10 }}>
-                  <button onClick={handleSave} disabled={!form.name?.trim()}
-                    style={{ flex: 1, padding: 12,
-                      background: form.name?.trim() ? "#2D5016" : "#C8BEA6",
-                      color: "#F5E6C8", border: "none", borderRadius: 8,
-                      cursor: form.name?.trim() ? "pointer" : "default",
-                      fontSize: 15, fontWeight: 700 }}>
-                    {editingChild ? "Save" : "Add child"}
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button onClick={saveChild}
+                    onMouseEnter={() => setHover('save')} onMouseLeave={() => setHover(null)}
+                    style={btn('save', { flex: 1, padding: '14px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
+                    Save traveler
                   </button>
-                  <button onClick={() => setMode("view")}
-                    style={{ padding: "12px 18px", background: "transparent",
-                      color: "#6B5A3E", border: "2px solid #D4C5A0",
-                      borderRadius: 8, cursor: "pointer", fontSize: 14 }}>
+                  <button onClick={() => setAdding(false)}
+                    onMouseEnter={() => setHover('cancel')} onMouseLeave={() => setHover(null)}
+                    style={btn('cancel', { padding: '14px 20px', borderRadius: 14, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, color: TEXT_MUTED, fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
                     Cancel
                   </button>
                 </div>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+
+          {!selected && !adding && (
+            <div style={{ textAlign: 'center', padding: '60px 40px', color: TEXT_MUTED }}>
+              <div style={{ fontSize: 48, marginBottom: 16 }}>🧭</div>
+              <p style={{ fontSize: 16, fontWeight: 600 }}>Select a traveler or add a new one</p>
+            </div>
+          )}
         </div>
       </div>
-
-      {toast && (
-        <div style={{ position: "fixed", bottom: 28, left: "50%",
-          transform: "translateX(-50%)", background: "#1C2B0E", color: "#F5E6C8",
-          padding: "12px 24px", borderRadius: 10, fontSize: 15,
-          boxShadow: "0 4px 20px rgba(0,0,0,.3)", zIndex: 100,
-          animation: "fadeIn 0.2s ease", border: "1px solid #2D5016" }}>
-          {toast}
-        </div>
-      )}
     </div>
-  );
+  )
 }
