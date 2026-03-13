@@ -22,10 +22,8 @@ export default function DashboardPage() {
     if (!stored) { router.push('/dashboard/children'); return }
     const childData = JSON.parse(stored)
     setChild(childData)
-
     const cachedPlan = localStorage.getItem('cachedPlan')
     const cachedPlanChild = localStorage.getItem('cachedPlanChild')
-
     if (cachedPlan && cachedPlanChild === childData.name + childData.city) {
       setPlan(JSON.parse(cachedPlan))
       setLoading(false)
@@ -44,7 +42,6 @@ export default function DashboardPage() {
       })
       if (!res.ok) throw new Error('Failed')
       if (!res.body) throw new Error('No body')
-
       const reader = res.body.getReader()
       const decoder = new TextDecoder()
       let fullText = ''
@@ -130,36 +127,65 @@ export default function DashboardPage() {
     <div style={{ minHeight: '100vh', background: '#F8F6FF' }}>
       <style>{`@media print { .no-print { display: none !important; } }`}</style>
 
-      {/* Reading modal */}
       {readingLesson && readingId && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center',
-          padding: 16, overflowY: 'auto'
-        }}>
-          <div style={{
-            background: 'white', borderRadius: 24, padding: 32,
-            maxWidth: 680, width: '100%', maxHeight: '90vh',
-            overflowY: 'auto', position: 'relative'
-          }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflowY: 'auto' }}>
+          <div style={{ background: 'white', borderRadius: 24, padding: 32, maxWidth: 720, width: '100%', maxHeight: '90vh', overflowY: 'auto', position: 'relative' }}>
             <button onClick={() => { setReadingLesson(null); setReadingId(null); setQuizAnswers({}); setQuizSubmitted([]) }}
-              style={{ position: 'absolute', top: 16, right: 16, background: '#F3F4F6', border: 'none', borderRadius: '50%', width: 36, height: 36, cursor: 'pointer', fontSize: 18 }}>
-              ✕
-            </button>
+              style={{ position: 'absolute', top: 16, right: 16, background: '#F3F4F6', border: 'none', borderRadius: '50%', width: 36, height: 36, cursor: 'pointer', fontSize: 18 }}>✕</button>
 
             <div style={{ fontSize: 12, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>📖 Read & Learn</div>
             <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 24, color: '#1E1B2E', marginBottom: 24 }}>{readingLesson.reading_title}</h2>
 
-            {/* Reading text */}
-            <div style={{ background: '#F8F6FF', borderRadius: 16, padding: 24, marginBottom: 24 }}>
+            <div style={{ background: '#F8F6FF', borderRadius: 16, padding: 24, marginBottom: 20 }}>
               {readingLesson.reading_text?.split('\n\n').map((para: string, i: number) => (
-                <p key={i} style={{ fontSize: 16, color: '#1E1B2E', lineHeight: 1.8, marginBottom: 12, margin: '0 0 12px 0' }}>{para}</p>
+                <p key={i} style={{ fontSize: 16, color: '#1E1B2E', lineHeight: 1.8, margin: '0 0 12px 0' }}>{para}</p>
               ))}
             </div>
 
-            {/* Quiz */}
+            {readingLesson.did_you_know && (
+              <div style={{ background: 'linear-gradient(135deg, #FFF7ED, #FEF3C7)', borderRadius: 14, padding: 16, marginBottom: 20, border: '2px solid #FDE68A' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>⚡ Did you know?</div>
+                <p style={{ fontSize: 15, color: '#92400E', margin: 0, lineHeight: 1.7, fontStyle: 'italic' }}>{readingLesson.did_you_know}</p>
+              </div>
+            )}
+
+            {readingLesson.concept_explanation && (
+              <div style={{ background: '#EEF2FF', borderRadius: 14, padding: 16, marginBottom: 20, border: '2px solid #C7D2FE' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>🧠 Why does this work?</div>
+                <p style={{ fontSize: 15, color: '#1E1B2E', margin: 0, lineHeight: 1.7 }}>{readingLesson.concept_explanation}</p>
+              </div>
+            )}
+
+            {readingLesson.real_world_examples && readingLesson.real_world_examples.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>🌍 Real world examples</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {readingLesson.real_world_examples.map((ex: string, i: number) => (
+                    <div key={i} style={{ background: '#F0FDF4', borderRadius: 12, padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 16, flexShrink: 0 }}>🔹</span>
+                      <p style={{ fontSize: 14, color: '#1E1B2E', margin: 0, lineHeight: 1.6 }}>{ex}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {readingLesson.step_by_step && readingLesson.step_by_step.length > 0 && (
+              <div style={{ marginBottom: 20 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#0891B2', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>📋 Step by step</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  {readingLesson.step_by_step.map((step: string, i: number) => (
+                    <div key={i} style={{ background: '#F0F9FF', borderRadius: 12, padding: '10px 14px', display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                      <span style={{ background: '#0891B2', color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
+                      <p style={{ fontSize: 14, color: '#1E1B2E', margin: 0, lineHeight: 1.6 }}>{step.replace(/^Step \d+:\s*/i, '')}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {readingLesson.quiz && readingLesson.quiz.length > 0 && (
-              <div style={{ marginBottom: 24 }}>
+              <div style={{ marginBottom: 20 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>🧠 Check your understanding</div>
                 {readingLesson.quiz.map((q: any, qi: number) => {
                   const qid = `${readingId}-${qi}`
@@ -170,15 +196,12 @@ export default function DashboardPage() {
                       <p style={{ fontSize: 15, fontWeight: 700, color: '#1E1B2E', marginBottom: 10 }}>{qi + 1}. {q.question}</p>
                       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                         {q.options.map((opt: string, oi: number) => {
-                          let bg = 'white'
-                          let border = '#E4E0F5'
-                          let color = '#4B5563'
+                          let bg = 'white', border = '#E4E0F5', color = '#4B5563'
                           if (!isSubmitted && userAnswer === oi) { bg = '#E8E6FF'; border = '#635BFF'; color = '#635BFF' }
                           if (isSubmitted && oi === q.correct) { bg = '#ECFDF5'; border = '#10B981'; color = '#059669' }
                           if (isSubmitted && userAnswer === oi && oi !== q.correct) { bg = '#FFF1F2'; border = '#F43F5E'; color = '#E11D48' }
                           return (
-                            <button key={oi}
-                              onClick={() => !isSubmitted && setQuizAnswers(prev => ({ ...prev, [qid]: oi }))}
+                            <button key={oi} onClick={() => !isSubmitted && setQuizAnswers(prev => ({ ...prev, [qid]: oi }))}
                               style={{ padding: '12px 16px', borderRadius: 12, border: `2px solid ${border}`, background: bg, color, cursor: isSubmitted ? 'default' : 'pointer', fontSize: 14, fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }}>
                               {isSubmitted && oi === q.correct && '✓ '}{isSubmitted && userAnswer === oi && oi !== q.correct && '✗ '}{opt}
                             </button>
@@ -188,10 +211,8 @@ export default function DashboardPage() {
                     </div>
                   )
                 })}
-
                 {!quizSubmitted.includes(readingId!) ? (
-                  <button
-                    onClick={() => setQuizSubmitted(prev => [...prev, readingId!])}
+                  <button onClick={() => setQuizSubmitted(prev => [...prev, readingId!])}
                     style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: '#635BFF', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
                     Submit answers →
                   </button>
@@ -205,7 +226,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Activity */}
             {readingLesson.activity && (
               <div style={{ background: '#F0FDF4', borderRadius: 14, padding: 16, marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#059669', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>🏃 Try it yourself</div>
@@ -213,7 +233,6 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {/* Parent tip */}
             {readingLesson.parent_tip && (
               <div style={{ background: '#FFF7ED', borderLeft: '3px solid #EA580C', borderRadius: '0 12px 12px 0', padding: '10px 14px' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#EA580C', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
@@ -224,7 +243,6 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Topbar */}
       <div className="no-print" style={{ background: 'white', borderBottom: '2px solid #E4E0F5', padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 24 }}>🧭</span>
@@ -244,7 +262,6 @@ export default function DashboardPage() {
       </div>
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
-
         {plan?.week_theme && (
           <div style={{ background: 'linear-gradient(135deg, #635BFF, #8B5CF6)', borderRadius: 20, padding: '20px 24px', marginBottom: 24, color: 'white' }}>
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.8 }}>This week's theme</div>
@@ -285,42 +302,31 @@ export default function DashboardPage() {
               const done = completed.includes(id)
               const isExpanded = expanded.includes(id)
               const color = subjectColors[lesson.subject] || '#635BFF'
-
               return (
                 <div key={i} style={{ background: 'white', borderRadius: 20, padding: 24, marginBottom: 16, border: `2px solid ${done ? '#10B981' : '#E4E0F5'}`, opacity: done ? 0.85 : 1 }}>
-
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <span style={{ padding: '4px 12px', borderRadius: 100, background: `${color}20`, color: color, fontSize: 12, fontWeight: 700 }}>{lesson.subject}</span>
                     <span style={{ fontSize: 12, color: '#8B87A8', fontWeight: 600 }}>⏱ {lesson.duration}</span>
                   </div>
-
                   <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 19, color: '#1E1B2E', marginBottom: 10 }}>{lesson.title}</h3>
-
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
                     {lesson.milestone && <span style={{ padding: '4px 10px', borderRadius: 100, background: '#FEF3C7', color: '#D97706', fontSize: 11, fontWeight: 700 }}>🎯 {lesson.milestone}</span>}
                     {lesson.method && <span style={{ padding: '4px 10px', borderRadius: 100, background: '#F3F4F6', color: '#6B7280', fontSize: 11, fontWeight: 700 }}>🏛 {lesson.method}</span>}
                     {lesson.materials && <span style={{ padding: '4px 10px', borderRadius: 100, background: '#F0FDF4', color: '#059669', fontSize: 11, fontWeight: 700 }}>🧰 {lesson.materials}</span>}
                   </div>
-
                   {lesson.goal && (
                     <div style={{ background: '#EEF2FF', borderRadius: 12, padding: '12px 16px', marginBottom: 12 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#635BFF', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>🎯 Goal</div>
                       <p style={{ fontSize: 14, color: '#1E1B2E', margin: 0, lineHeight: 1.6 }}>{lesson.goal}</p>
                     </div>
                   )}
-
-                  {/* Read & Learn button */}
-                  <button
-                    onClick={() => loadReading(id, lesson)}
-                    disabled={loadingReading === id}
+                  <button onClick={() => loadReading(id, lesson)} disabled={loadingReading === id}
                     style={{ width: '100%', padding: '11px', borderRadius: 12, border: '2px solid #635BFF', background: '#E8E6FF', color: '#635BFF', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }}>
                     {loadingReading === id ? '✨ Loading reading...' : '📖 Read & Learn'}
                   </button>
-
                   <button onClick={() => toggleExpand(id)} style={{ width: '100%', padding: '10px', borderRadius: 12, border: '2px solid #E4E0F5', background: '#F8F6FF', color: '#635BFF', cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }}>
                     {isExpanded ? '▲ Hide lesson details' : '▼ Show lesson details'}
                   </button>
-
                   {isExpanded && (
                     <div style={{ marginBottom: 12 }}>
                       {lesson.activity && (
@@ -343,7 +349,6 @@ export default function DashboardPage() {
                       )}
                     </div>
                   )}
-
                   <button onClick={() => toggleComplete(id)} style={{ width: '100%', padding: '12px', borderRadius: 12, border: `2px solid ${done ? '#10B981' : '#E4E0F5'}`, background: done ? '#ECFDF5' : 'white', color: done ? '#10B981' : '#8B87A8', cursor: 'pointer', fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }}>
                     {done ? '✓ Completed!' : '○ Mark as completed'}
                   </button>
