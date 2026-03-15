@@ -38,6 +38,10 @@ export default function DashboardPage() {
   const [quizSubmitted, setQuizSubmitted] = useState<string[]>([])
   const [lessonCache, setLessonCache] = useState<{[key: string]: any}>({})
   const [hover, setHover] = useState<string | null>(null)
+  const [showFeedback, setShowFeedback] = useState(false)
+  const [feedbackRating, setFeedbackRating] = useState(0)
+  const [feedbackMsg, setFeedbackMsg] = useState('')
+  const [feedbackSent, setFeedbackSent] = useState(false)
   const router = useRouter()
   const msgInterval = useRef<any>(null)
 
@@ -155,6 +159,19 @@ export default function DashboardPage() {
     finally { setLoadingReading(null) }
   }
 
+  async function submitFeedback() {
+    if (!feedbackRating) return
+    try {
+      await fetch('/api/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ rating: feedbackRating, message: feedbackMsg, page: 'dashboard' })
+      })
+      setFeedbackSent(true)
+      setTimeout(() => { setShowFeedback(false); setFeedbackSent(false); setFeedbackRating(0); setFeedbackMsg('') }, 2000)
+    } catch (e) { console.error(e) }
+  }
+
   function toggleExpand(id: string) {
     setExpanded(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
@@ -207,6 +224,41 @@ export default function DashboardPage() {
         @keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
         @keyframes spin { to { transform: rotate(360deg) } }
       `}</style>
+
+      {/* Feedback widget */}
+      {showFeedback && (
+        <div style={{ position: 'fixed', bottom: 80, right: 24, zIndex: 999, background: BEIGE_CARD, borderRadius: 20, padding: 24, width: 300, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 8px 32px rgba(0,0,0,0.12)', animation: 'fadeIn 0.2s ease' }}>
+          <div style={{ fontSize: 14, fontWeight: 700, color: TEXT, marginBottom: 12 }}>How are we doing? 💬</div>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+            {[1,2,3,4,5].map(n => (
+              <button key={n} onClick={() => setFeedbackRating(n)}
+                style={{ flex: 1, padding: '8px 4px', borderRadius: 10, border: `2px solid ${feedbackRating === n ? PRIMARY : BEIGE_BORDER}`, background: feedbackRating === n ? PRIMARY_BG : BEIGE_CARD, fontSize: 20, cursor: 'pointer', transition: 'all 0.15s' }}>
+                {['😞','😕','😐','😊','🤩'][n-1]}
+              </button>
+            ))}
+          </div>
+          <textarea value={feedbackMsg} onChange={e => setFeedbackMsg(e.target.value)}
+            placeholder="Tell us what you think..."
+            rows={3}
+            style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE, fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'none', boxSizing: 'border-box', color: TEXT }} />
+          <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+            <button onClick={() => setShowFeedback(false)}
+              style={{ flex: 1, padding: '10px', borderRadius: 10, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', color: TEXT_MUTED }}>
+              Cancel
+            </button>
+            <button onClick={submitFeedback} disabled={!feedbackRating || feedbackSent}
+              style={{ flex: 2, padding: '10px', borderRadius: 10, border: 'none', background: feedbackSent ? GREEN : PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', opacity: !feedbackRating ? 0.4 : 1, transition: 'all 0.15s' }}>
+              {feedbackSent ? '✓ Sent!' : 'Send feedback'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      <button onClick={() => { setShowFeedback(p => !p); setFeedbackSent(false); setFeedbackRating(0); setFeedbackMsg('') }}
+        onMouseEnter={() => setHover('feedback')} onMouseLeave={() => setHover(null)}
+        style={btn('feedback', { position: 'fixed', bottom: 24, right: 24, zIndex: 999, background: PRIMARY, color: 'white', border: 'none', borderRadius: 100, padding: '12px 20px', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', boxShadow: '0 4px 16px rgba(155,142,196,0.4)' }, { background: PRIMARY_DARK })}>
+        💬 Feedback
+      </button>
 
       {readingLesson && readingId && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflowY: 'auto' }}>
@@ -423,7 +475,7 @@ export default function DashboardPage() {
                   <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 19, color: TEXT, marginBottom: 10 }}>{lesson.title}</h3>
 
                   <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-                    {lesson.milestone && <span style={{ padding: '4px 10px', borderRadius: 100, background: '#FFF8EC', color: '#C49040', fontSize: 11, fontWeight: 700 }}>🎯 {lesson.milestone}</span>}
+                    {lesson.milestone && <span style={{ padding: '4px 10px', borderRadius: 100, background: '#FFFBEB', color: '#D97706', fontSize: 11, fontWeight: 700 }}>🎯 {lesson.milestone}</span>}
                     {lesson.method && <span style={{ padding: '4px 10px', borderRadius: 100, background: BEIGE, color: TEXT_MUTED, fontSize: 11, fontWeight: 700 }}>🏛 {lesson.method}</span>}
                     {lesson.materials && <span style={{ padding: '4px 10px', borderRadius: 100, background: GREEN_BG, color: GREEN_DARK, fontSize: 11, fontWeight: 700 }}>🧰 {lesson.materials}</span>}
                   </div>
