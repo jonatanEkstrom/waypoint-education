@@ -388,7 +388,7 @@ export default function DashboardPage() {
           </div>
         </div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {[['children', '👨‍👧 Children', '/dashboard/children'], ['journal', '📖 Journal', '/journal'], ['worksheets', '📄 Worksheets', '/worksheets']].map(([key, label, path]) => (
+       {[['children', '👨‍👧 Children', '/dashboard/children'], ['journal', '📖 Journal', '/journal'], ['community', '🌍 Community', '/community'], ['worksheets', '📄 Worksheets', '/worksheets']].map(([key, label, path]) => (
             <button key={key} onClick={() => router.push(path)}
               onMouseEnter={() => setHover(`nav-${key}`)} onMouseLeave={() => setHover(null)}
               style={btn(`nav-${key}`, { padding: '8px 16px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
