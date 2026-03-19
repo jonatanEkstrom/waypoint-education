@@ -46,7 +46,7 @@ IMPORTANT: Keep every field SHORT — max 15 words each. Adapt difficulty strict
 Return all 5 days (Monday-Friday), exactly 2 lessons each. ONLY JSON.`
 
   const stream = await client.messages.stream({
-    model: 'claude-sonnet-4-6',
+    model: 'claude-sonnet-4-5',
     max_tokens: 3000,
     messages: [{ role: 'user', content: prompt }]
   })

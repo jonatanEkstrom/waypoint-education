@@ -56,7 +56,7 @@ The lesson must be complete enough that a parent does NOT need to look anything 
 }`
 
     const message = await client.messages.create({
-      model: 'claude-sonnet-4-6',
+      model: 'claude-sonnet-4-5',
       max_tokens: 3000,
       messages: [{ role: 'user', content: prompt }]
     })
