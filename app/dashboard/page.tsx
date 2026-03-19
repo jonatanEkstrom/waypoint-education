@@ -23,12 +23,24 @@ const LOADING_MESSAGES = [
   'Polishing the details...', 'Just a moment more...'
 ]
 
+function getTodayName() {
+  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+  const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  const today = days[new Date().getDay()]
+  return weekdays.includes(today) ? today : 'Monday'
+}
+
+function getWeekCacheKey(childData: any) {
+  const weekNumber = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000))
+  return `${childData.name}-${childData.city}-${childData.country}-${weekNumber}`
+}
+
 export default function DashboardPage() {
   const [child, setChild] = useState<any>(null)
   const [plan, setPlan] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [loadingMsg, setLoadingMsg] = useState(0)
-  const [activeDay, setActiveDay] = useState('Monday')
+  const [activeDay, setActiveDay] = useState(getTodayName())
   const [completed, setCompleted] = useState<string[]>([])
   const [expanded, setExpanded] = useState<string[]>([])
   const [readingLesson, setReadingLesson] = useState<any>(null)
@@ -51,21 +63,21 @@ export default function DashboardPage() {
     const childData = JSON.parse(stored)
     setChild(childData)
 
+    const cacheKey = getWeekCacheKey(childData)
     const cachedPlan = localStorage.getItem('cachedPlan')
     const cachedPlanChild = localStorage.getItem('cachedPlanChild')
-    const cachedTimestamp = localStorage.getItem('cachedPlanTimestamp')
-    const isExpired = cachedTimestamp && (Date.now() - parseInt(cachedTimestamp)) > 7 * 24 * 60 * 60 * 1000
-
     const cachedLessons = localStorage.getItem('cachedLessons')
     if (cachedLessons) setLessonCache(JSON.parse(cachedLessons))
 
-    if (cachedPlan && cachedPlanChild === childData.name + childData.city && !isExpired) {
+    if (cachedPlan && cachedPlanChild === cacheKey) {
       const p = JSON.parse(cachedPlan)
       setPlan(p)
       setLoading(false)
       prefetchLessons(p, childData, cachedLessons ? JSON.parse(cachedLessons) : {})
     } else {
-      generatePlan(childData)
+      localStorage.removeItem('cachedLessons')
+      setLessonCache({})
+      generatePlan(childData, cacheKey)
     }
   }, [])
 
@@ -98,7 +110,7 @@ export default function DashboardPage() {
     }
   }
 
-  async function generatePlan(childData: any) {
+  async function generatePlan(childData: any, cacheKey: string) {
     setLoading(true)
     msgInterval.current = setInterval(() => {
       setLoadingMsg(prev => (prev + 1) % LOADING_MESSAGES.length)
@@ -123,10 +135,8 @@ export default function DashboardPage() {
       const p = JSON.parse(cleaned)
       setPlan(p)
       localStorage.setItem('cachedPlan', JSON.stringify(p))
-      localStorage.setItem('cachedPlanChild', childData.name + childData.city)
+      localStorage.setItem('cachedPlanChild', cacheKey)
       localStorage.setItem('cachedPlanTimestamp', Date.now().toString())
-      localStorage.removeItem('cachedLessons')
-      setLessonCache({})
       prefetchLessons(p, childData, {})
     } catch (e) { console.error(e) }
     finally {
@@ -240,7 +250,7 @@ export default function DashboardPage() {
           <textarea value={feedbackMsg} onChange={e => setFeedbackMsg(e.target.value)}
             placeholder="Tell us what you think..."
             rows={3}
-            style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE, fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'none', boxSizing: 'border-box', color: TEXT }} />
+            style={{ width: '100%', padding: '10px 14px', borderRadius: 12, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE, fontSize: 13, fontFamily: 'inherit', outline: 'none', resize: 'none' as const, boxSizing: 'border-box' as const, color: TEXT }} />
           <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
             <button onClick={() => setShowFeedback(false)}
               style={{ flex: 1, padding: '10px', borderRadius: 10, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', color: TEXT_MUTED }}>
@@ -267,7 +277,7 @@ export default function DashboardPage() {
               onMouseEnter={() => setHover('close')} onMouseLeave={() => setHover(null)}
               style={btn('close', { position: 'absolute', top: 16, right: 16, background: BEIGE, border: `2px solid ${BEIGE_BORDER}`, borderRadius: '50%', width: 36, height: 36, fontSize: 16, color: TEXT_MUTED }, { background: BEIGE_BORDER })}>✕</button>
 
-            <div style={{ fontSize: 12, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>📖 Read & Learn</div>
+            <div style={{ fontSize: 12, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 8 }}>📖 Read & Learn</div>
             <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 24, color: TEXT, marginBottom: 24 }}>{readingLesson.reading_title}</h2>
 
             <div style={{ background: BEIGE, borderRadius: 16, padding: 24, marginBottom: 20, border: `2px solid ${BEIGE_BORDER}` }}>
@@ -278,22 +288,22 @@ export default function DashboardPage() {
 
             {readingLesson.did_you_know && (
               <div style={{ background: '#FFFBEB', borderRadius: 14, padding: 16, marginBottom: 20, border: '2px solid #FDE68A' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>⚡ Did you know?</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>⚡ Did you know?</div>
                 <p style={{ fontSize: 15, color: '#92400E', margin: 0, lineHeight: 1.7, fontStyle: 'italic' }}>{readingLesson.did_you_know}</p>
               </div>
             )}
 
             {readingLesson.concept_explanation && (
               <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 16, marginBottom: 20, border: `2px solid ${PRIMARY_BORDER}` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>🧠 Why does this work?</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>🧠 Why does this work?</div>
                 <p style={{ fontSize: 15, color: TEXT, margin: 0, lineHeight: 1.7 }}>{readingLesson.concept_explanation}</p>
               </div>
             )}
 
             {readingLesson.real_world_examples?.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>🌍 Real world examples</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>🌍 Real world examples</div>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
                   {readingLesson.real_world_examples.map((ex: string, i: number) => (
                     <div key={i} style={{ background: GREEN_BG, borderRadius: 12, padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start', border: `1px solid ${GREEN_BORDER}` }}>
                       <span style={{ fontSize: 14, flexShrink: 0 }}>🔹</span>
@@ -306,8 +316,8 @@ export default function DashboardPage() {
 
             {readingLesson.step_by_step?.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 10 }}>📋 Step by step</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>📋 Step by step</div>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
                   {readingLesson.step_by_step.map((step: string, i: number) => (
                     <div key={i} style={{ background: PRIMARY_BG, borderRadius: 12, padding: '10px 14px', display: 'flex', gap: 12, alignItems: 'flex-start', border: `1px solid ${PRIMARY_BORDER}` }}>
                       <span style={{ background: PRIMARY, color: 'white', borderRadius: '50%', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 12, fontWeight: 700, flexShrink: 0 }}>{i + 1}</span>
@@ -320,7 +330,7 @@ export default function DashboardPage() {
 
             {readingLesson.quiz?.length > 0 && (
               <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 16 }}>🧠 Check your understanding</div>
+                <div style={{ fontSize: 12, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 16 }}>🧠 Check your understanding</div>
                 {readingLesson.quiz.map((q: any, qi: number) => {
                   const qid = `${readingId}-${qi}`
                   const isSubmitted = quizSubmitted.includes(readingId!)
@@ -328,7 +338,7 @@ export default function DashboardPage() {
                   return (
                     <div key={qi} style={{ marginBottom: 20 }}>
                       <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 10 }}>{qi + 1}. {q.question}</p>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                      <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
                         {q.options.map((opt: string, oi: number) => {
                           let bg = BEIGE_CARD, border = BEIGE_BORDER, color = TEXT_MUTED
                           if (!isSubmitted && userAnswer === oi) { bg = PRIMARY_BG; border = PRIMARY; color = PRIMARY_DARK }
@@ -338,7 +348,7 @@ export default function DashboardPage() {
                             <button key={oi} onClick={() => !isSubmitted && setQuizAnswers(prev => ({ ...prev, [qid]: oi }))}
                               onMouseEnter={() => !isSubmitted && setHover(`opt-${qid}-${oi}`)}
                               onMouseLeave={() => setHover(null)}
-                              style={{ ...btn(`opt-${qid}-${oi}`, { padding: '12px 16px', borderRadius: 12, border: `2px solid ${border}`, background: bg, color, fontSize: 14, fontWeight: 600, textAlign: 'left', fontFamily: 'inherit' }, { filter: 'brightness(0.97)' }), cursor: isSubmitted ? 'default' : 'pointer' }}>
+                              style={{ ...btn(`opt-${qid}-${oi}`, { padding: '12px 16px', borderRadius: 12, border: `2px solid ${border}`, background: bg, color, fontSize: 14, fontWeight: 600, textAlign: 'left' as const, fontFamily: 'inherit' }, { filter: 'brightness(0.97)' }), cursor: isSubmitted ? 'default' : 'pointer' }}>
                               {isSubmitted && oi === q.correct && '✓ '}{isSubmitted && userAnswer === oi && oi !== q.correct && '✗ '}{opt}
                             </button>
                           )
@@ -365,13 +375,13 @@ export default function DashboardPage() {
 
             {readingLesson.activity && (
               <div style={{ background: GREEN_BG, borderRadius: 14, padding: 16, marginBottom: 16, border: `2px solid ${GREEN_BORDER}` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>🏃 Try it yourself</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 8 }}>🏃 Try it yourself</div>
                 <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.7 }}>{readingLesson.activity}</p>
               </div>
             )}
             {readingLesson.parent_tip && (
               <div style={{ background: '#FFF8EC', borderLeft: `4px solid #F5DFA0`, borderRadius: '0 12px 12px 0', padding: '10px 14px' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#C49040', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#C49040', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
                 <p style={{ fontSize: 13, color: '#6B5A3E', margin: 0 }}>{readingLesson.parent_tip}</p>
               </div>
             )}
@@ -387,8 +397,8 @@ export default function DashboardPage() {
             <div style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {child?.city}, {child?.country}</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-       {[['children', '👨‍👧 Children', '/dashboard/children'], ['journal', '📖 Journal', '/journal'], ['community', '🌍 Community', '/community'], ['worksheets', '📄 Worksheets', '/worksheets']].map(([key, label, path]) => (
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+          {[['children', '👨‍👧 Children', '/dashboard/children'], ['journal', '📖 Journal', '/journal'], ['community', '🌍 Community', '/community'], ['worksheets', '📄 Worksheets', '/worksheets']].map(([key, label, path]) => (
             <button key={key} onClick={() => router.push(path)}
               onMouseEnter={() => setHover(`nav-${key}`)} onMouseLeave={() => setHover(null)}
               style={btn(`nav-${key}`, { padding: '8px 16px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
@@ -416,7 +426,7 @@ export default function DashboardPage() {
       <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
         {plan?.week_theme && (
           <div style={{ background: `linear-gradient(135deg, ${PRIMARY}, ${GREEN})`, borderRadius: 20, padding: '20px 24px', marginBottom: 24, color: 'white' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', opacity: 0.85 }}>This week's theme</div>
+            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.05em', opacity: 0.85 }}>This week's theme</div>
             <div style={{ fontFamily: 'Georgia,serif', fontSize: 20, marginTop: 4 }}>{plan.week_theme}</div>
           </div>
         )}
@@ -441,7 +451,7 @@ export default function DashboardPage() {
               <button key={day} onClick={() => setActiveDay(day)}
                 onMouseEnter={() => setHover(`day-${day}`)} onMouseLeave={() => setHover(null)}
                 style={btn(`day-${day}`,
-                  { padding: '10px 18px', borderRadius: 100, border: `2px solid ${isActive ? PRIMARY : BEIGE_BORDER}`, background: isActive ? PRIMARY : BEIGE_CARD, color: isActive ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap', fontFamily: 'inherit' },
+                  { padding: '10px 18px', borderRadius: 100, border: `2px solid ${isActive ? PRIMARY : BEIGE_BORDER}`, background: isActive ? PRIMARY : BEIGE_CARD, color: isActive ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' as const, fontFamily: 'inherit' },
                   { borderColor: PRIMARY, color: isActive ? 'white' : PRIMARY, background: isActive ? PRIMARY_DARK : PRIMARY_BG }
                 )}>
                 {day} {dayCompleted === dayLessons.length && dayLessons.length > 0 ? '✓' : ''}
@@ -474,7 +484,7 @@ export default function DashboardPage() {
 
                   <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 19, color: TEXT, marginBottom: 10 }}>{lesson.title}</h3>
 
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, marginBottom: 16 }}>
                     {lesson.milestone && <span style={{ padding: '4px 10px', borderRadius: 100, background: '#FFFBEB', color: '#D97706', fontSize: 11, fontWeight: 700 }}>🎯 {lesson.milestone}</span>}
                     {lesson.method && <span style={{ padding: '4px 10px', borderRadius: 100, background: BEIGE, color: TEXT_MUTED, fontSize: 11, fontWeight: 700 }}>🏛 {lesson.method}</span>}
                     {lesson.materials && <span style={{ padding: '4px 10px', borderRadius: 100, background: GREEN_BG, color: GREEN_DARK, fontSize: 11, fontWeight: 700 }}>🧰 {lesson.materials}</span>}
@@ -482,7 +492,7 @@ export default function DashboardPage() {
 
                   {lesson.goal && (
                     <div style={{ background: PRIMARY_BG, borderRadius: 12, padding: '12px 16px', marginBottom: 12, border: `2px solid ${PRIMARY_BORDER}` }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 6 }}>🎯 Goal</div>
+                      <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>🎯 Goal</div>
                       <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.6 }}>{lesson.goal}</p>
                     </div>
                   )}
@@ -508,19 +518,19 @@ export default function DashboardPage() {
                     <div style={{ marginBottom: 12 }}>
                       {lesson.activity && (
                         <div style={{ background: GREEN_BG, borderRadius: 14, padding: 16, marginBottom: 12, border: `1px solid ${GREEN_BORDER}` }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>🏃 Activity</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 8 }}>🏃 Activity</div>
                           <p style={{ fontSize: 14, color: TEXT, lineHeight: 1.7, margin: 0 }}>{lesson.activity}</p>
                         </div>
                       )}
                       {lesson.reflection && (
                         <div style={{ background: '#FFFBEB', borderRadius: 14, padding: 16, marginBottom: 12, border: `1px solid #FDE68A` }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 8 }}>💬 Reflection</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 8 }}>💬 Reflection</div>
                           <p style={{ fontSize: 14, color: '#6B5A3E', lineHeight: 1.6, margin: 0, fontStyle: 'italic' }}>"{lesson.reflection}"</p>
                         </div>
                       )}
                       {lesson.local_tip && (
                         <div style={{ background: PRIMARY_BG, borderLeft: `4px solid ${PRIMARY}`, borderRadius: '0 12px 12px 0', padding: '10px 14px', marginBottom: 12 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>📍 Local tip — {child?.city}</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 4 }}>📍 Local tip — {child?.city}</div>
                           <p style={{ fontSize: 13, color: TEXT_MUTED, margin: 0 }}>{lesson.local_tip}</p>
                         </div>
                       )}
