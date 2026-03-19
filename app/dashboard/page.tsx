@@ -24,11 +24,11 @@ const LOADING_MESSAGES = [
 ]
 
 function getTodayName() {
-  const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
   const weekdays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-  const today = days[new Date().getDay()]
+  const today = new Date().toLocaleDateString('en-US', { weekday: 'long' })
   return weekdays.includes(today) ? today : 'Monday'
 }
+
 
 function getWeekCacheKey(childData: any) {
   const weekNumber = Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000))
