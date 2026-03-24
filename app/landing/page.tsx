@@ -1,5 +1,6 @@
 'use client'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 import { useState } from 'react'
 
 const PRIMARY = '#9B8EC4'
@@ -266,7 +267,11 @@ export default function LandingPage() {
       {/* Footer */}
       <div style={{ background: TEXT, padding: '32px 24px', textAlign: 'center' }}>
         <span style={{ fontFamily: 'Georgia,serif', fontSize: 18, fontWeight: 700, color: 'white' }}>🧭 Waypoint <span style={{ color: PRIMARY }}>Education</span></span>
-        <p style={{ color: '#9E9188', fontSize: 13, marginTop: 8 }}>© 2026 Waypoint Education · The world is their classroom.</p>
+        <p style={{ color: '#9E9188', fontSize: 13, marginTop: 8, marginBottom: 12 }}>© 2026 Waypoint Education · The world is their classroom.</p>
+        <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>
+          <Link href="/privacy" style={{ color: '#9E9188', fontSize: 13, textDecoration: 'none' }}>Privacy Policy</Link>
+          <Link href="/terms" style={{ color: '#9E9188', fontSize: 13, textDecoration: 'none' }}>Terms of Service</Link>
+        </div>
       </div>
 
     </div>
