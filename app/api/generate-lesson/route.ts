@@ -9,7 +9,7 @@ const client = new Anthropic({
 
 export async function POST(request: NextRequest) {
   try {
-    const { subject, title, age_group, city, curriculum } = await request.json()
+    const { subject, title, age_group, city, curriculum, language_learning } = await request.json()
 
     const difficultyGuide: Record<string, string> = {
       '4–6 years': 'Very simple words. Short sentences. Like a picture book. Use analogies to toys or animals.',
@@ -20,6 +20,9 @@ export async function POST(request: NextRequest) {
     }
 
     const difficulty = difficultyGuide[age_group] || difficultyGuide['10–12 years']
+    const langInstruction = language_learning && language_learning !== 'None'
+      ? `\nWeave in ${language_learning} vocabulary or phrases where naturally relevant to this lesson.`
+      : ''
 
     const prompt = `Create a rich, self-contained lesson. Return ONLY valid JSON, no other text.
 
@@ -53,7 +56,7 @@ The lesson must be complete enough that a parent does NOT need to look anything 
   ],
   "activity": "One hands-on activity the child can do alone using simple materials. 2-3 sentences.",
   "parent_tip": "Practical tip for the parent on how to deepen this lesson in conversation or daily life. 2 sentences."
-}`
+}${langInstruction}`
 
     const message = await client.messages.create({
       model: 'claude-sonnet-4-5',

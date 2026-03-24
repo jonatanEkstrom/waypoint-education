@@ -15,6 +15,7 @@ interface Child {
   subjects: string[]
   notes: string
   color_index: number
+  language_learning: string
 }
 
 const PRIMARY = '#9B8EC4'
@@ -33,6 +34,7 @@ const AVATAR_COLORS = ['#9B8EC4', '#A8D5BA', '#F4A7A7', '#F5DFA0', '#A0C4E8', '#
 const CURRICULUMS = ['Unschooling', 'Classical', 'Charlotte Mason', 'Montessori', 'Eclectic', 'Traditional']
 const LEARN_STYLES = ['Visual', 'Auditory', 'Kinesthetic', 'Reading/Writing']
 const AGE_GROUPS = ['4–6 years', '7–9 years', '10–12 years', '13–15 years', '16–18 years']
+const LANGUAGES = ['None', 'Spanish', 'French', 'German', 'Mandarin', 'Japanese', 'Arabic', 'Portuguese', 'Thai', 'Italian', 'Swedish']
 
 export default function ChildrenPage() {
   const [children, setChildren] = useState<Child[]>([])
@@ -41,13 +43,13 @@ export default function ChildrenPage() {
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     age_group: '7–9 years', city: '', country: '',
-    curriculum: 'Eclectic', learn_style: 'Visual', subjects: [] as string[], notes: ''
+    curriculum: 'Eclectic', learn_style: 'Visual', subjects: [] as string[], notes: '', language_learning: 'None'
   })
   const [hover, setHover] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [form, setForm] = useState({
     name: '', age_group: '7–9 years', city: '', country: '',
-    curriculum: 'Eclectic', learn_style: 'Visual', subjects: [] as string[], notes: ''
+    curriculum: 'Eclectic', learn_style: 'Visual', subjects: [] as string[], notes: '', language_learning: 'None'
   })
   const router = useRouter()
 
@@ -68,7 +70,7 @@ export default function ChildrenPage() {
         id: c.id, name: c.name, age: c.age_group, age_group: c.age_group,
         city: c.city, country: c.country || '', curriculum: c.curriculum,
         learn_style: c.learn_style, subjects: c.subjects || [], notes: c.notes || '',
-        color_index: c.color_index || 0
+        color_index: c.color_index || 0, language_learning: c.language_learning || 'None'
       }))
       setChildren(mapped)
     }
@@ -82,12 +84,12 @@ export default function ChildrenPage() {
     const { data } = await supabase.from('children').insert({
       name: form.name, age_group: form.age_group, city: form.city, country: form.country,
       curriculum: form.curriculum, learn_style: form.learn_style, subjects: form.subjects,
-      notes: form.notes, color_index: colorIndex, user_id: user.id
+      notes: form.notes, language_learning: form.language_learning, color_index: colorIndex, user_id: user.id
     }).select()
     if (data) {
       await loadChildren()
       setAdding(false)
-      setForm({ name: '', age_group: '7–9 years', city: '', country: '', curriculum: 'Eclectic', learn_style: 'Visual', subjects: [], notes: '' })
+      setForm({ name: '', age_group: '7–9 years', city: '', country: '', curriculum: 'Eclectic', learn_style: 'Visual', subjects: [], notes: '', language_learning: 'None' })
     }
   }
 
@@ -96,7 +98,7 @@ export default function ChildrenPage() {
     await supabase.from('children').update({
       age_group: editForm.age_group, city: editForm.city, country: editForm.country,
       curriculum: editForm.curriculum, learn_style: editForm.learn_style,
-      subjects: editForm.subjects, notes: editForm.notes,
+      subjects: editForm.subjects, notes: editForm.notes, language_learning: editForm.language_learning,
     }).eq('id', selected.id)
     await loadChildren()
     setSelected(prev => prev ? { ...prev, ...editForm, age: editForm.age_group } : null)
@@ -208,7 +210,7 @@ export default function ChildrenPage() {
                     <div>
                       <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 20, margin: 0 }}>{selected.name}</h2>
                       <p style={{ margin: '4px 0 0', opacity: 0.85, fontSize: 13 }}>
-                        {editing ? `Editing profile` : `${selected.age_group} · ${selected.city}${selected.country ? `, ${selected.country}` : ''}`}
+                        {editing ? `Editing profile` : `${selected.age_group} · ${selected.city}${selected.country ? `, ${selected.country}` : ''}${selected.language_learning && selected.language_learning !== 'None' ? ` · 🗣️ ${selected.language_learning}` : ''}`}
                       </p>
                     </div>
                   </div>
@@ -246,6 +248,13 @@ export default function ChildrenPage() {
                         <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Learning style</label>
                         <select value={editForm.learn_style} onChange={e => setEditForm(p => ({ ...p, learn_style: e.target.value }))} style={inputStyle}>
                           {LEARN_STYLES.map(l => <option key={l}>{l}</option>)}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Language learning</label>
+                        <select value={editForm.language_learning} onChange={e => setEditForm(p => ({ ...p, language_learning: e.target.value }))} style={inputStyle}>
+                          {LANGUAGES.map(l => <option key={l}>{l}</option>)}
                         </select>
                       </div>
 
@@ -315,6 +324,7 @@ export default function ChildrenPage() {
                             age_group: selected.age_group, city: selected.city, country: selected.country || '',
                             curriculum: selected.curriculum, learn_style: selected.learn_style,
                             subjects: selected.subjects || [], notes: selected.notes || '',
+                            language_learning: selected.language_learning || 'None',
                           })
                           setEditing(true)
                         }}
@@ -373,6 +383,13 @@ export default function ChildrenPage() {
                     <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Learning style</label>
                     <select value={form.learn_style} onChange={e => setForm(p => ({...p, learn_style: e.target.value}))} style={inputStyle}>
                       {LEARN_STYLES.map(l => <option key={l}>{l}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Language learning</label>
+                    <select value={form.language_learning} onChange={e => setForm(p => ({...p, language_learning: e.target.value}))} style={inputStyle}>
+                      {LANGUAGES.map(l => <option key={l}>{l}</option>)}
                     </select>
                   </div>
 

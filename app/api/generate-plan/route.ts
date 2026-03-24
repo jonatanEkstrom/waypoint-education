@@ -8,7 +8,7 @@ const client = new Anthropic({
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
-  const { name, age_group, subjects, curriculum, learn_style, city, country, notes } = await request.json()
+  const { name, age_group, subjects, curriculum, learn_style, city, country, notes, language_learning } = await request.json()
 
   const philosophyGuide: Record<string, string> = {
     'charlotte-mason': 'Living books, nature, narration.',
@@ -29,6 +29,9 @@ export async function POST(request: NextRequest) {
   const style = styleGuide[learn_style] || ''
   const topSubjects = (subjects || []).slice(0, 3).join(', ')
   const extraNotes = notes ? `Notes: ${notes}` : ''
+  const langNote = language_learning && language_learning !== 'None'
+    ? `LANGUAGE: Include 1 lesson per week focused on ${language_learning} language learning (vocabulary, phrases, or conversation relevant to the location and topics).\n`
+    : ''
 
   const prompt = `Homeschool curriculum designer. Create a 5-day plan. Return ONLY valid JSON, nothing else.
 
@@ -36,7 +39,7 @@ CHILD: ${name}, ${age_group}, ${city}, ${country}
 SUBJECTS: ${topSubjects}
 PHILOSOPHY: ${philosophy}
 STYLE: ${style}
-${extraNotes}
+${langNote}${extraNotes}
 
 IMPORTANT: Keep every field SHORT — max 15 words each. Adapt difficulty strictly to age — ${age_group} should get age-appropriate, challenging content. A 16-18 year old gets advanced, complex tasks. A 4-6 year old gets simple, playful tasks.
 

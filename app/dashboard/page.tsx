@@ -128,7 +128,7 @@ export default function DashboardPage() {
         const res = await fetch('/api/generate-lesson', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subject: lesson.subject, title: lesson.title, age_group: childData.age_group, city: childData.city, curriculum: childData.curriculum })
+          body: JSON.stringify({ subject: lesson.subject, title: lesson.title, age_group: childData.age_group, city: childData.city, curriculum: childData.curriculum, language_learning: childData.language_learning })
         })
         const data = await res.json()
         if (data.material) {
@@ -204,7 +204,7 @@ export default function DashboardPage() {
       const res = await fetch('/api/generate-lesson', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject: lesson.subject, title: lesson.title, age_group: child?.age_group, city: child?.city, curriculum: child?.curriculum })
+        body: JSON.stringify({ subject: lesson.subject, title: lesson.title, age_group: child?.age_group, city: child?.city, curriculum: child?.curriculum, language_learning: child?.language_learning })
       })
       const data = await res.json()
       if (data.material) {

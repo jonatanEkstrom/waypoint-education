@@ -17,6 +17,7 @@ export interface Child {
   curriculum: string
   learn_style: string
   notes?: string
+  language_learning?: string
 }
 
 export interface WeekPlan {
