@@ -38,6 +38,11 @@ export default function ChildrenPage() {
   const [children, setChildren] = useState<Child[]>([])
   const [selected, setSelected] = useState<Child | null>(null)
   const [adding, setAdding] = useState(false)
+  const [editing, setEditing] = useState(false)
+  const [editForm, setEditForm] = useState({
+    age_group: '7–9 years', city: '', country: '',
+    curriculum: 'Eclectic', learn_style: 'Visual', subjects: [] as string[], notes: ''
+  })
   const [hover, setHover] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
   const [form, setForm] = useState({
@@ -84,6 +89,18 @@ export default function ChildrenPage() {
       setAdding(false)
       setForm({ name: '', age_group: '7–9 years', city: '', country: '', curriculum: 'Eclectic', learn_style: 'Visual', subjects: [], notes: '' })
     }
+  }
+
+  async function saveEdit() {
+    if (!selected) return
+    await supabase.from('children').update({
+      age_group: editForm.age_group, city: editForm.city, country: editForm.country,
+      curriculum: editForm.curriculum, learn_style: editForm.learn_style,
+      subjects: editForm.subjects, notes: editForm.notes,
+    }).eq('id', selected.id)
+    await loadChildren()
+    setSelected(prev => prev ? { ...prev, ...editForm, age: editForm.age_group } : null)
+    setEditing(false)
   }
 
   async function removeChild(id: string) {
@@ -151,7 +168,7 @@ export default function ChildrenPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {children.map(child => (
-                <button key={child.id} onClick={() => { setSelected(child); setAdding(false) }}
+                <button key={child.id} onClick={() => { setSelected(child); setAdding(false); setEditing(false) }}
                   onMouseEnter={() => setHover(`child-${child.id}`)} onMouseLeave={() => setHover(null)}
                   style={btn(`child-${child.id}`,
                     { display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 16, border: `2px solid ${selected?.id === child.id && !isMobile ? PRIMARY : BEIGE_BORDER}`, background: selected?.id === child.id && !isMobile ? PRIMARY_BG : BEIGE_CARD, cursor: 'pointer', textAlign: 'left' as const, fontFamily: 'inherit', width: '100%' },
@@ -190,41 +207,129 @@ export default function ChildrenPage() {
                     </div>
                     <div>
                       <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 20, margin: 0 }}>{selected.name}</h2>
-                      <p style={{ margin: '4px 0 0', opacity: 0.85, fontSize: 13 }}>{selected.age_group} · {selected.city}, {selected.country}</p>
+                      <p style={{ margin: '4px 0 0', opacity: 0.85, fontSize: 13 }}>
+                        {editing ? `Editing profile` : `${selected.age_group} · ${selected.city}${selected.country ? `, ${selected.country}` : ''}`}
+                      </p>
                     </div>
                   </div>
                 </div>
 
                 <div style={{ padding: 24 }}>
-                  {selected.subjects?.length > 0 && (
-                    <div style={{ marginBottom: 20 }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>Interests</div>
-                      <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-                        {selected.subjects.map((s: string) => (
-                          <span key={s} style={{ padding: '4px 12px', borderRadius: 100, background: PRIMARY_BG, color: PRIMARY, fontSize: 13, fontWeight: 600, border: `1px solid ${PRIMARY_BORDER}` }}>{s}</span>
-                        ))}
+                  {editing ? (
+                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Age group</label>
+                        <select value={editForm.age_group} onChange={e => setEditForm(p => ({ ...p, age_group: e.target.value }))} style={inputStyle}>
+                          {AGE_GROUPS.map(a => <option key={a}>{a}</option>)}
+                        </select>
+                      </div>
+
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>City</label>
+                          <input value={editForm.city} onChange={e => setEditForm(p => ({ ...p, city: e.target.value }))} placeholder="City" style={inputStyle} />
+                        </div>
+                        <div>
+                          <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Country</label>
+                          <input value={editForm.country} onChange={e => setEditForm(p => ({ ...p, country: e.target.value }))} placeholder="Country" style={inputStyle} />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Learning philosophy</label>
+                        <select value={editForm.curriculum} onChange={e => setEditForm(p => ({ ...p, curriculum: e.target.value }))} style={inputStyle}>
+                          {CURRICULUMS.map(c => <option key={c}>{c}</option>)}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Learning style</label>
+                        <select value={editForm.learn_style} onChange={e => setEditForm(p => ({ ...p, learn_style: e.target.value }))} style={inputStyle}>
+                          {LEARN_STYLES.map(l => <option key={l}>{l}</option>)}
+                        </select>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>Interests</label>
+                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+                          {['Math', 'Science', 'History', 'Art', 'Music', 'Coding', 'Nature', 'Sports', 'Language', 'Technology'].map(s => {
+                            const on = editForm.subjects.includes(s)
+                            return (
+                              <button key={s} onClick={() => setEditForm(p => ({ ...p, subjects: on ? p.subjects.filter(x => x !== s) : [...p.subjects, s] }))}
+                                onMouseEnter={() => setHover(`esubj-${s}`)} onMouseLeave={() => setHover(null)}
+                                style={btn(`esubj-${s}`, { padding: '6px 14px', borderRadius: 100, border: `2px solid ${on ? PRIMARY : BEIGE_BORDER}`, background: on ? PRIMARY_BG : BEIGE_CARD, color: on ? PRIMARY : TEXT_MUTED, fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
+                                {s}
+                              </button>
+                            )
+                          })}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Notes (optional)</label>
+                        <textarea value={editForm.notes} onChange={e => setEditForm(p => ({ ...p, notes: e.target.value }))} placeholder="Extra notes, goals, special interests..." rows={3} style={{ ...inputStyle, resize: 'vertical' as const }} />
+                      </div>
+
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button onClick={saveEdit}
+                          onMouseEnter={() => setHover('saveedit')} onMouseLeave={() => setHover(null)}
+                          style={btn('saveedit', { flex: 1, padding: '14px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
+                          Save changes
+                        </button>
+                        <button onClick={() => setEditing(false)}
+                          onMouseEnter={() => setHover('canceledit')} onMouseLeave={() => setHover(null)}
+                          style={btn('canceledit', { padding: '14px 20px', borderRadius: 14, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, color: TEXT_MUTED, fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
+                          Cancel
+                        </button>
                       </div>
                     </div>
+                  ) : (
+                    <>
+                      {selected.subjects?.length > 0 && (
+                        <div style={{ marginBottom: 20 }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>Interests</div>
+                          <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+                            {selected.subjects.map((s: string) => (
+                              <span key={s} style={{ padding: '4px 12px', borderRadius: 100, background: PRIMARY_BG, color: PRIMARY, fontSize: 13, fontWeight: 600, border: `1px solid ${PRIMARY_BORDER}` }}>{s}</span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {selected.notes && (
+                        <div style={{ background: BEIGE, borderRadius: 12, padding: 16, marginBottom: 20, border: `1px solid ${BEIGE_BORDER}` }}>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>Notes</div>
+                          <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.6 }}>{selected.notes}</p>
+                        </div>
+                      )}
+
+                      <button onClick={() => startPlan(selected)}
+                        onMouseEnter={() => setHover('generate')} onMouseLeave={() => setHover(null)}
+                        style={btn('generate', { width: '100%', padding: '16px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY_DARK })}>
+                        📅 Generate this week's lesson plan
+                      </button>
+
+                      <div style={{ display: 'flex', gap: 10 }}>
+                        <button onClick={() => {
+                          setEditForm({
+                            age_group: selected.age_group, city: selected.city, country: selected.country || '',
+                            curriculum: selected.curriculum, learn_style: selected.learn_style,
+                            subjects: selected.subjects || [], notes: selected.notes || '',
+                          })
+                          setEditing(true)
+                        }}
+                          onMouseEnter={() => setHover('edit')} onMouseLeave={() => setHover(null)}
+                          style={btn('edit', { flex: 1, padding: '12px', borderRadius: 14, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, color: TEXT_MUTED, fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
+                          ✏️ Edit
+                        </button>
+                        <button onClick={() => removeChild(selected.id)}
+                          onMouseEnter={() => setHover('remove')} onMouseLeave={() => setHover(null)}
+                          style={btn('remove', { flex: 1, padding: '12px', borderRadius: 14, border: `2px solid #F4A7A7`, background: BEIGE_CARD, color: '#E07575', fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }, { background: '#FFF1F2' })}>
+                          Remove {selected.name}
+                        </button>
+                      </div>
+                    </>
                   )}
-
-                  {selected.notes && (
-                    <div style={{ background: BEIGE, borderRadius: 12, padding: 16, marginBottom: 20, border: `1px solid ${BEIGE_BORDER}` }}>
-                      <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>Notes</div>
-                      <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.6 }}>{selected.notes}</p>
-                    </div>
-                  )}
-
-                  <button onClick={() => startPlan(selected)}
-                    onMouseEnter={() => setHover('generate')} onMouseLeave={() => setHover(null)}
-                    style={btn('generate', { width: '100%', padding: '16px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY_DARK })}>
-                    📅 Generate this week's lesson plan
-                  </button>
-
-                  <button onClick={() => removeChild(selected.id)}
-                    onMouseEnter={() => setHover('remove')} onMouseLeave={() => setHover(null)}
-                    style={btn('remove', { width: '100%', padding: '12px', borderRadius: 14, border: `2px solid #F4A7A7`, background: BEIGE_CARD, color: '#E07575', fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }, { background: '#FFF1F2' })}>
-                    Remove {selected.name}
-                  </button>
                 </div>
               </div>
             )}
