@@ -21,6 +21,7 @@ function AuthForm() {
   const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [agreedToTerms, setAgreedToTerms] = useState(false)
   const router = useRouter()
 
   async function handleAuth() {
@@ -38,7 +39,7 @@ function AuthForm() {
         if (error) throw error
         if (data.user) {
           await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email })
-          router.push('/onboarding')
+          router.push('/dashboard/children')
         }
       }
     } catch (e: any) {
@@ -94,20 +95,33 @@ function AuthForm() {
               placeholder="••••••••" style={inputStyle} />
           </div>
 
+          {!isLogin && (
+            <div style={{ display: 'flex', alignItems: 'flex-start', gap: 10, marginBottom: 20 }}>
+              <input type="checkbox" id="terms" checked={agreedToTerms} onChange={e => setAgreedToTerms(e.target.checked)}
+                style={{ marginTop: 2, accentColor: PRIMARY, cursor: 'pointer', flexShrink: 0 }} />
+              <label htmlFor="terms" style={{ fontSize: 13, color: TEXT_MUTED, lineHeight: 1.5, cursor: 'pointer' }}>
+                I agree to the{' '}
+                <Link href="/privacy" style={{ color: PRIMARY, textDecoration: 'none', fontWeight: 700 }}>Privacy Policy</Link>
+                {' '}and{' '}
+                <Link href="/terms" style={{ color: PRIMARY, textDecoration: 'none', fontWeight: 700 }}>Terms of Service</Link>
+              </label>
+            </div>
+          )}
+
           {error && (
             <p style={{ color: '#E07575', fontSize: 13, marginBottom: 16, fontWeight: 600, background: '#FFF1F2', padding: '10px 14px', borderRadius: 10 }}>
               {error}
             </p>
           )}
 
-          <button onClick={handleAuth} disabled={loading || !email || !password}
+          <button onClick={handleAuth} disabled={loading || !email || !password || (!isLogin && !agreedToTerms)}
             style={{ width: '100%', padding: '15px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 16, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading || !email || !password ? 0.5 : 1, fontFamily: 'inherit', transition: 'all 0.15s' }}>
             {loading ? 'Loading...' : isLogin ? 'Sign in →' : 'Create account →'}
           </button>
 
           <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>
             {isLogin ? "Don't have an account? " : 'Already have an account? '}
-            <button onClick={() => { setIsLogin(!isLogin); setError('') }}
+            <button onClick={() => { setIsLogin(!isLogin); setError(''); setAgreedToTerms(false) }}
               style={{ background: 'none', border: 'none', color: PRIMARY, cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>
               {isLogin ? 'Sign up free' : 'Sign in'}
             </button>
