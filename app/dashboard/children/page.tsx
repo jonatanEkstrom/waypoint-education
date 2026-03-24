@@ -100,8 +100,17 @@ export default function ChildrenPage() {
       curriculum: editForm.curriculum, learn_style: editForm.learn_style,
       subjects: editForm.subjects, notes: editForm.notes, language_learning: editForm.language_learning,
     }).eq('id', selected.id)
+    const updatedChild: Child = { ...selected, ...editForm, age: editForm.age_group }
+    setSelected(updatedChild)
+    // Keep localStorage in sync so the dashboard reflects changes immediately
+    const stored = localStorage.getItem('activeChild')
+    if (stored) {
+      const active = JSON.parse(stored)
+      if (active.id === selected.id) {
+        localStorage.setItem('activeChild', JSON.stringify(updatedChild))
+      }
+    }
     await loadChildren()
-    setSelected(prev => prev ? { ...prev, ...editForm, age: editForm.age_group } : null)
     setEditing(false)
   }
 
