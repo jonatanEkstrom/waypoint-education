@@ -2,6 +2,7 @@
 import { useState, Suspense } from 'react'
 import { supabase } from '../lib/supabase'
 import { useRouter } from 'next/navigation'
+import Link from 'next/link'
 
 const PRIMARY = '#9B8EC4'
 const PRIMARY_DARK = '#7B6BAA'
@@ -116,6 +117,10 @@ function AuthForm() {
         <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>
           Beta access · 30 days free · No credit card required
         </p>
+        <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 12 }}>
+          <Link href="/privacy" style={{ fontSize: 12, color: TEXT_MUTED, textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</Link>
+          <Link href="/terms" style={{ fontSize: 12, color: TEXT_MUTED, textDecoration: 'none', fontWeight: 600 }}>Terms of Service</Link>
+        </div>
       </div>
     </div>
   )
