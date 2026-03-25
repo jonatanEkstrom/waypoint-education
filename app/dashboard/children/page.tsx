@@ -101,14 +101,31 @@ export default function ChildrenPage() {
       country: editForm.country,
       curriculum: editForm.curriculum,
       learn_style: editForm.learn_style,
-      subjects: [...editForm.subjects],
+      subjects: editForm.subjects,
       notes: editForm.notes,
       language_learning: editForm.language_learning,
     }
-    const { error } = await supabase.from('children').update(payload).eq('id', selected.id)
+    const { data, error } = await supabase
+      .from('children')
+      .update(payload)
+      .eq('id', selected.id)
+      .select()
+      .single()
     if (error) { console.error('saveEdit error:', error); return }
-    const updatedChild: Child = { ...selected, ...payload, age: payload.age_group }
+    const updatedChild: Child = {
+      ...selected,
+      age_group: data.age_group,
+      age: data.age_group,
+      city: data.city,
+      country: data.country || '',
+      curriculum: data.curriculum,
+      learn_style: data.learn_style,
+      subjects: data.subjects || [],
+      notes: data.notes || '',
+      language_learning: data.language_learning || 'None',
+    }
     setSelected(updatedChild)
+    setChildren(prev => prev.map(c => c.id === selected.id ? updatedChild : c))
     const stored = localStorage.getItem('activeChild')
     if (stored) {
       const active = JSON.parse(stored)
@@ -116,7 +133,6 @@ export default function ChildrenPage() {
         localStorage.setItem('activeChild', JSON.stringify(updatedChild))
       }
     }
-    await loadChildren()
     setEditing(false)
   }
 
