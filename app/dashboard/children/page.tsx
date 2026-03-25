@@ -95,14 +95,20 @@ export default function ChildrenPage() {
 
   async function saveEdit() {
     if (!selected) return
-    await supabase.from('children').update({
-      age_group: editForm.age_group, city: editForm.city, country: editForm.country,
-      curriculum: editForm.curriculum, learn_style: editForm.learn_style,
-      subjects: editForm.subjects, notes: editForm.notes, language_learning: editForm.language_learning,
-    }).eq('id', selected.id)
-    const updatedChild: Child = { ...selected, ...editForm, age: editForm.age_group }
+    const payload = {
+      age_group: editForm.age_group,
+      city: editForm.city,
+      country: editForm.country,
+      curriculum: editForm.curriculum,
+      learn_style: editForm.learn_style,
+      subjects: [...editForm.subjects],
+      notes: editForm.notes,
+      language_learning: editForm.language_learning,
+    }
+    const { error } = await supabase.from('children').update(payload).eq('id', selected.id)
+    if (error) { console.error('saveEdit error:', error); return }
+    const updatedChild: Child = { ...selected, ...payload, age: payload.age_group }
     setSelected(updatedChild)
-    // Keep localStorage in sync so the dashboard reflects changes immediately
     const stored = localStorage.getItem('activeChild')
     if (stored) {
       const active = JSON.parse(stored)
