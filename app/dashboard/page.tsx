@@ -47,6 +47,13 @@ export default function DashboardPage() {
   const [quizSubmitted, setQuizSubmitted] = useState<string[]>([])
   const [lessonCache, setLessonCache] = useState<{[key: string]: any}>({})
   const [hover, setHover] = useState<string | null>(null)
+  const [activeTab, setActiveTab] = useState<'plan' | 'language'>('plan')
+  const [langPlan, setLangPlan] = useState<any>(null)
+  const [langLoading, setLangLoading] = useState(false)
+  const [langWeek, setLangWeek] = useState(1)
+  const [langActiveDay, setLangActiveDay] = useState(getTodayName())
+  const [langQuizAnswers, setLangQuizAnswers] = useState<{[key: number]: number}>({})
+  const [langQuizSubmitted, setLangQuizSubmitted] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [feedbackRating, setFeedbackRating] = useState(0)
   const [feedbackMsg, setFeedbackMsg] = useState('')
@@ -228,6 +235,134 @@ export default function DashboardPage() {
     finally {
       clearInterval(msgInterval.current)
       setLoading(false)
+    }
+  }
+
+  async function loadLanguagePlan() {
+    if (!child || !child.language_learning || child.language_learning === 'None') return
+    const language = child.language_learning
+    const calendarWeek = getWeekNumber()
+    const langKey = `${child.name}-${language}-${calendarWeek}`
+
+    // Check localStorage
+    const cached = localStorage.getItem('cachedLangPlan')
+    const cachedKey = localStorage.getItem('cachedLangPlanKey')
+    if (cached && cachedKey === langKey) {
+      console.log('[Language] Serving from localStorage cache')
+      setLangPlan(JSON.parse(cached))
+      return
+    }
+
+    setLangLoading(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      // Check if this calendar week already has a plan
+      const { data: existing } = await supabase
+        .from('language_plans')
+        .select('plan, language_week')
+        .eq('user_id', user.id)
+        .eq('child_name', child.name)
+        .eq('language', language)
+        .eq('calendar_week', calendarWeek)
+        .single()
+
+      if (existing?.plan) {
+        console.log('[Language] Serving from Supabase cache, language_week:', existing.language_week)
+        setLangPlan(existing.plan)
+        setLangWeek(existing.language_week)
+        localStorage.setItem('cachedLangPlan', JSON.stringify(existing.plan))
+        localStorage.setItem('cachedLangPlanKey', langKey)
+        setLangLoading(false)
+        return
+      }
+
+      // Count previous plans to determine progressive week number
+      const { count } = await supabase
+        .from('language_plans')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('child_name', child.name)
+        .eq('language', language)
+
+      const currentLangWeek = (count || 0) + 1
+      setLangWeek(currentLangWeek)
+      console.log('[Language] Generating week', currentLangWeek, 'for', language)
+
+      // Fetch last 3 weeks of summaries for progressive context
+      let previousSummary = ''
+      if (currentLangWeek > 1) {
+        const { data: prev } = await supabase
+          .from('language_plans')
+          .select('plan')
+          .eq('user_id', user.id)
+          .eq('child_name', child.name)
+          .eq('language', language)
+          .order('language_week', { ascending: false })
+          .limit(3)
+        if (prev?.length) {
+          previousSummary = prev
+            .map((p: any) => `Week ${p.plan.week_number} (${p.plan.week_theme}): ${p.plan.weekly_summary}`)
+            .join('\n')
+        }
+      }
+
+      generateLanguagePlan(language, currentLangWeek, previousSummary, user.id, calendarWeek, langKey)
+    } catch (e) {
+      console.error('Language plan load error:', e)
+      setLangLoading(false)
+    }
+  }
+
+  async function generateLanguagePlan(
+    language: string, langWeekNum: number, previousSummary: string,
+    userId: string, calendarWeek: number, langKey: string
+  ) {
+    try {
+      const res = await fetch('/api/generate-language-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          language,
+          age_group: child?.age_group,
+          child_name: child?.name,
+          language_week: langWeekNum,
+          previous_summary: previousSummary,
+        })
+      })
+      if (!res.ok || !res.body) throw new Error('Failed to generate language plan')
+
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        fullText += decoder.decode(value, { stream: true })
+      }
+
+      const cleaned = fullText.replace(/```json|```/g, '').trim()
+      const p = JSON.parse(cleaned)
+      setLangPlan(p)
+      setLangWeek(langWeekNum)
+
+      localStorage.setItem('cachedLangPlan', JSON.stringify(p))
+      localStorage.setItem('cachedLangPlanKey', langKey)
+
+      // Save to Supabase language_plans table
+      await supabase.from('language_plans').upsert({
+        user_id: userId,
+        child_name: child?.name,
+        language,
+        calendar_week: calendarWeek,
+        language_week: langWeekNum,
+        plan: p,
+      }, { onConflict: 'user_id,child_name,language,calendar_week' })
+    } catch (e) {
+      console.error('Language plan generate error:', e)
+    } finally {
+      setLangLoading(false)
     }
   }
 
@@ -511,6 +646,22 @@ export default function DashboardPage() {
       </div>
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
+
+        {/* Tab toggle — only shown when child has a language set */}
+        {child?.language_learning && child.language_learning !== 'None' && (
+          <div style={{ display: 'flex', gap: 6, marginBottom: 24, background: BEIGE_CARD, borderRadius: 14, padding: 5, border: `2px solid ${BEIGE_BORDER}` }}>
+            <button onClick={() => setActiveTab('plan')}
+              style={{ flex: 1, padding: '10px 16px', borderRadius: 10, border: 'none', background: activeTab === 'plan' ? PRIMARY : 'transparent', color: activeTab === 'plan' ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s' }}>
+              📅 Lesson Plan
+            </button>
+            <button onClick={() => { setActiveTab('language'); if (!langPlan && !langLoading) loadLanguagePlan() }}
+              style={{ flex: 1, padding: '10px 16px', borderRadius: 10, border: 'none', background: activeTab === 'language' ? '#6B8FD6' : 'transparent', color: activeTab === 'language' ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s' }}>
+              🗣️ {child.language_learning}
+            </button>
+          </div>
+        )}
+
+        {activeTab === 'plan' && <>
         {plan?.week_theme && (
           <div style={{ background: `linear-gradient(135deg, ${PRIMARY}, ${GREEN})`, borderRadius: 20, padding: '20px 24px', marginBottom: 24, color: 'white' }}>
             <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.05em', opacity: 0.85 }}>This week's theme</div>
@@ -559,6 +710,7 @@ export default function DashboardPage() {
             {activeDay_.focus && (
               <p style={{ color: TEXT_MUTED, fontSize: 14, fontWeight: 600, marginBottom: 16 }}>📍 {activeDay_.focus}</p>
             )}
+
             {activeDay_.lessons.map((lesson: any, i: number) => {
               const id = `${activeDay}-${i}`
               const done = completed.includes(id)
@@ -641,6 +793,184 @@ export default function DashboardPage() {
             })}
           </div>
         )}
+        </>}
+
+        {/* ── Language tab ── */}
+        {activeTab === 'language' && (
+          <div>
+            {langLoading && (
+              <div style={{ textAlign: 'center' as const, padding: '60px 20px' }}>
+                <div style={{ width: 48, height: 48, border: `4px solid ${PRIMARY_BORDER}`, borderTopColor: '#6B8FD6', borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 20px' }} />
+                <p style={{ color: TEXT_MUTED, fontSize: 15 }}>Preparing Week {langWeek} {child?.language_learning} lessons...</p>
+              </div>
+            )}
+
+            {!langLoading && langPlan && (
+              <>
+                {/* Week header */}
+                <div style={{ background: 'linear-gradient(135deg, #6B8FD6, #9B8EC4)', borderRadius: 20, padding: '20px 24px', marginBottom: 24, color: 'white' }}>
+                  <div style={{ fontSize: 11, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.05em', opacity: 0.85 }}>
+                    Week {langPlan.week_number} · {child?.language_learning}
+                  </div>
+                  <div style={{ fontFamily: 'Georgia,serif', fontSize: 20, marginTop: 4 }}>{langPlan.week_theme}</div>
+                  <div style={{ fontSize: 13, opacity: 0.8, marginTop: 6 }}>{langPlan.vocabulary?.length || 0} new words this week</div>
+                </div>
+
+                {/* Vocabulary grid */}
+                {langPlan.vocabulary?.length > 0 && (
+                  <div style={{ background: BEIGE_CARD, borderRadius: 16, padding: 20, marginBottom: 24, border: `2px solid ${BEIGE_BORDER}` }}>
+                    <div style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 14 }}>📚 This week's vocabulary</div>
+                    <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 10 }}>
+                      {langPlan.vocabulary.map((v: any, i: number) => (
+                        <div key={i} style={{ background: PRIMARY_BG, border: `1px solid ${PRIMARY_BORDER}`, borderRadius: 12, padding: '8px 14px', minWidth: 110 }}>
+                          <div style={{ fontSize: 15, fontWeight: 700, color: PRIMARY }}>{v.word}</div>
+                          <div style={{ fontSize: 12, color: TEXT_MUTED }}>{v.translation}</div>
+                          {v.pronunciation && <div style={{ fontSize: 11, color: TEXT_MUTED, fontStyle: 'italic' as const, marginTop: 2 }}>🔊 {v.pronunciation}</div>}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Day tabs + quiz tab */}
+                <div style={{ display: 'flex', gap: 8, marginBottom: 24, overflowX: 'auto' as const }}>
+                  {days.map(day => (
+                    <button key={day} onClick={() => setLangActiveDay(day)}
+                      className={`day-btn${langActiveDay === day ? ' active' : ''}`}
+                      style={{ padding: '10px 18px', borderRadius: 100, border: `2px solid ${langActiveDay === day ? '#6B8FD6' : BEIGE_BORDER}`, background: langActiveDay === day ? '#6B8FD6' : BEIGE_CARD, color: langActiveDay === day ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' as const, fontFamily: 'inherit' }}>
+                      {day}
+                    </button>
+                  ))}
+                  <button onClick={() => setLangActiveDay('Quiz')}
+                    className={`day-btn${langActiveDay === 'Quiz' ? ' active' : ''}`}
+                    style={{ padding: '10px 18px', borderRadius: 100, border: `2px solid ${langActiveDay === 'Quiz' ? '#6B8FD6' : BEIGE_BORDER}`, background: langActiveDay === 'Quiz' ? '#6B8FD6' : BEIGE_CARD, color: langActiveDay === 'Quiz' ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, whiteSpace: 'nowrap' as const, fontFamily: 'inherit' }}>
+                    🧠 Quiz
+                  </button>
+                </div>
+
+                {/* Daily lesson card */}
+                {langActiveDay !== 'Quiz' && (() => {
+                  const dayData = langPlan.days?.find((d: any) => d.day === langActiveDay)
+                  if (!dayData) return null
+                  return (
+                    <div style={{ animation: 'fadeIn 0.2s ease' }}>
+                      <div style={{ background: BEIGE_CARD, borderRadius: 20, padding: 24, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+                        <div style={{ fontSize: 11, fontWeight: 700, color: '#6B8FD6', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>{langActiveDay}</div>
+                        <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 20, color: TEXT, marginBottom: 20 }}>{dayData.focus}</h3>
+
+                        {dayData.new_words?.length > 0 && (
+                          <div style={{ marginBottom: 20 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>Today's words</div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 8 }}>
+                              {dayData.new_words.map((w: string, i: number) => {
+                                const vocab = langPlan.vocabulary?.find((v: any) => v.word === w)
+                                return (
+                                  <div key={i} style={{ background: PRIMARY_BG, border: `1px solid ${PRIMARY_BORDER}`, borderRadius: 10, padding: '6px 12px' }}>
+                                    <span style={{ fontSize: 14, fontWeight: 700, color: PRIMARY }}>{w}</span>
+                                    {vocab && <span style={{ fontSize: 12, color: TEXT_MUTED, marginLeft: 6 }}>— {vocab.translation}</span>}
+                                  </div>
+                                )
+                              })}
+                            </div>
+                          </div>
+                        )}
+
+                        {dayData.phrases?.length > 0 && (
+                          <div style={{ marginBottom: 20 }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>Useful phrases</div>
+                            <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                              {dayData.phrases.map((p: any, i: number) => (
+                                <div key={i} style={{ background: GREEN_BG, borderRadius: 12, padding: '12px 16px', border: `1px solid ${GREEN_BORDER}` }}>
+                                  <div style={{ fontSize: 15, fontWeight: 700, color: GREEN_DARK }}>{p.phrase}</div>
+                                  <div style={{ fontSize: 13, color: TEXT_MUTED, marginTop: 2 }}>{p.translation}</div>
+                                  {p.pronunciation && <div style={{ fontSize: 12, color: TEXT_MUTED, fontStyle: 'italic' as const, marginTop: 2 }}>🔊 {p.pronunciation}</div>}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+
+                        {dayData.mini_lesson && (
+                          <div style={{ background: '#F0F5FF', borderRadius: 14, padding: 16, marginBottom: 16, border: '2px solid #C6D5F5' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#6080C4', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>📖 Today's lesson</div>
+                            <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.7 }}>{dayData.mini_lesson}</p>
+                          </div>
+                        )}
+
+                        {dayData.activity && (
+                          <div style={{ background: GREEN_BG, borderRadius: 14, padding: 16, marginBottom: 16, border: `1px solid ${GREEN_BORDER}` }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>🏃 Practice</div>
+                            <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.7 }}>{dayData.activity}</p>
+                          </div>
+                        )}
+
+                        {dayData.fun_fact && (
+                          <div style={{ background: '#FFFBEB', borderRadius: 14, padding: 16, border: '2px solid #FDE68A' }}>
+                            <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>⚡ Did you know?</div>
+                            <p style={{ fontSize: 14, color: '#92400E', margin: 0, lineHeight: 1.7, fontStyle: 'italic' as const }}>{dayData.fun_fact}</p>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  )
+                })()}
+
+                {/* Weekly quiz */}
+                {langActiveDay === 'Quiz' && langPlan.weekly_quiz && (
+                  <div style={{ background: BEIGE_CARD, borderRadius: 20, padding: 24, border: `2px solid ${BEIGE_BORDER}`, animation: 'fadeIn 0.2s ease' }}>
+                    <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 20, color: TEXT, marginBottom: 20 }}>Weekly Review Quiz</h3>
+                    {langPlan.weekly_quiz.map((q: any, qi: number) => {
+                      const userAnswer = langQuizAnswers[qi]
+                      return (
+                        <div key={qi} style={{ marginBottom: 20 }}>
+                          <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 10 }}>{qi + 1}. {q.question}</p>
+                          <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                            {q.options.map((opt: string, oi: number) => {
+                              let bg = BEIGE_CARD, border = BEIGE_BORDER, color = TEXT_MUTED
+                              if (!langQuizSubmitted && userAnswer === oi) { bg = '#F0F5FF'; border = '#6B8FD6'; color = '#6080C4' }
+                              if (langQuizSubmitted && oi === q.correct) { bg = GREEN_BG; border = GREEN; color = GREEN_DARK }
+                              if (langQuizSubmitted && userAnswer === oi && oi !== q.correct) { bg = '#FFF1F2'; border = '#F4A7A7'; color = '#E07575' }
+                              return (
+                                <button key={oi} onClick={() => !langQuizSubmitted && setLangQuizAnswers(p => ({ ...p, [qi]: oi }))}
+                                  style={{ padding: '12px 16px', borderRadius: 12, border: `2px solid ${border}`, background: bg, color, fontSize: 14, fontWeight: 600, textAlign: 'left' as const, fontFamily: 'inherit', cursor: langQuizSubmitted ? 'default' : 'pointer', transition: 'all 0.15s' }}>
+                                  {langQuizSubmitted && oi === q.correct && '✓ '}{langQuizSubmitted && userAnswer === oi && oi !== q.correct && '✗ '}{opt}
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )
+                    })}
+                    {!langQuizSubmitted ? (
+                      <button onClick={() => setLangQuizSubmitted(true)}
+                        style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: '#6B8FD6', color: 'white', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
+                        Submit answers →
+                      </button>
+                    ) : (
+                      <div style={{ background: GREEN_BG, borderRadius: 12, padding: 16, border: `2px solid ${GREEN}` }}>
+                        <p style={{ fontSize: 15, fontWeight: 700, color: GREEN_DARK, margin: '0 0 4px 0' }}>
+                          Score: {langPlan.weekly_quiz.filter((q: any, qi: number) => langQuizAnswers[qi] === q.correct).length} / {langPlan.weekly_quiz.length} 🎉
+                        </p>
+                        <p style={{ fontSize: 13, color: GREEN_DARK, margin: 0, opacity: 0.8 }}>Come back next week for Week {langPlan.week_number + 1}!</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </>
+            )}
+
+            {!langLoading && !langPlan && (
+              <div style={{ textAlign: 'center' as const, padding: '60px 20px', color: TEXT_MUTED }}>
+                <div style={{ fontSize: 40, marginBottom: 16 }}>🗣️</div>
+                <p style={{ fontSize: 16, fontWeight: 600 }}>Something went wrong loading your language plan.</p>
+                <button onClick={loadLanguagePlan} style={{ marginTop: 12, padding: '10px 24px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
+                  Try again
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
       </div>
     </div>
   )
