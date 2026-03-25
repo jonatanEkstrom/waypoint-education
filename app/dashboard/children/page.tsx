@@ -54,7 +54,19 @@ export default function ChildrenPage() {
   const router = useRouter()
 
   useEffect(() => {
-    loadChildren()
+    // Before loading, wipe any localStorage that doesn't belong to the current user
+    supabase.auth.getUser().then(({ data }) => {
+      const uid = data?.user?.id
+      if (!uid) { router.push('/auth'); return }
+      const stored = localStorage.getItem('activeChild')
+      if (stored) {
+        try {
+          const active = JSON.parse(stored)
+          if (active.user_id && active.user_id !== uid) localStorage.clear()
+        } catch { localStorage.clear() }
+      }
+      loadChildren()
+    })
     const check = () => setIsMobile(window.innerWidth < 640)
     check()
     window.addEventListener('resize', check)
@@ -143,10 +155,12 @@ export default function ChildrenPage() {
     setChildren(prev => prev.map(c => c.id === selected.id ? updatedChild : c))
     const stored = localStorage.getItem('activeChild')
     if (stored) {
-      const active = JSON.parse(stored)
-      if (active.id === selected.id) {
-        localStorage.setItem('activeChild', JSON.stringify(updatedChild))
-      }
+      try {
+        const active = JSON.parse(stored)
+        if (active.id === selected.id) {
+          localStorage.setItem('activeChild', JSON.stringify({ ...updatedChild, user_id: active.user_id }))
+        }
+      } catch { /* ignore */ }
     }
     setEditing(false)
   }
@@ -157,8 +171,9 @@ export default function ChildrenPage() {
     loadChildren()
   }
 
-  function startPlan(child: Child) {
-    localStorage.setItem('activeChild', JSON.stringify(child))
+  async function startPlan(child: Child) {
+    const { data: { user } } = await supabase.auth.getUser()
+    localStorage.setItem('activeChild', JSON.stringify({ ...child, user_id: user?.id }))
     localStorage.removeItem('cachedPlan')
     localStorage.removeItem('cachedPlanChild')
     localStorage.removeItem('cachedLessons')

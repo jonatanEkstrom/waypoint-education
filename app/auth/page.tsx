@@ -39,17 +39,13 @@ function AuthForm() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        localStorage.removeItem('activeChild')
-        localStorage.removeItem('cachedPlan')
-        localStorage.removeItem('cachedPlanChild')
-        localStorage.removeItem('cachedLessons')
-        localStorage.removeItem('cachedLangPlan')
-        localStorage.removeItem('cachedLangPlanKey')
+        localStorage.clear()
         router.push('/dashboard/children')
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password })
         if (error) throw error
         if (data.user) {
+          localStorage.clear()
           await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email })
           router.push('/dashboard/children')
         }
