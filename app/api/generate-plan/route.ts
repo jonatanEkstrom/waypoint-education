@@ -9,6 +9,7 @@ export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
   const { name, age_group, subjects, curriculum, learn_style, city, country, notes, language_learning } = await request.json()
+  console.log('[generate-plan] Received:', { name, language_learning, subjects, age_group })
 
   const philosophyGuide: Record<string, string> = {
     'charlotte-mason': 'Living books, nature, narration.',
@@ -32,6 +33,7 @@ export async function POST(request: NextRequest) {
   const langNote = language_learning && language_learning !== 'None'
     ? `LANGUAGE: Include 1 lesson per week focused on ${language_learning} language learning (vocabulary, phrases, or conversation relevant to the location and topics).\n`
     : ''
+  console.log('[generate-plan] langNote:', langNote || '(none — language_learning is None or missing)')
 
   const prompt = `Homeschool curriculum designer. Create a 5-day plan. Return ONLY valid JSON, nothing else.
 

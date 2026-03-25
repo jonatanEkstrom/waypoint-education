@@ -58,6 +58,14 @@ export default function DashboardPage() {
     const stored = localStorage.getItem('activeChild')
     if (!stored) { router.push('/dashboard/children'); return }
     const childData = JSON.parse(stored)
+    // Ensure language_learning has a value for older localStorage entries
+    if (!childData.language_learning) childData.language_learning = 'None'
+    console.log('[Dashboard] activeChild from localStorage:', {
+      name: childData.name,
+      language_learning: childData.language_learning,
+      subjects: childData.subjects,
+      age_group: childData.age_group,
+    })
     setChild(childData)
 
     const cachedLessons = localStorage.getItem('cachedLessons')
@@ -72,7 +80,7 @@ export default function DashboardPage() {
     // Check localStorage first (fastest)
     const cachedPlan = localStorage.getItem('cachedPlan')
     const cachedKey = localStorage.getItem('cachedPlanChild')
-    const localKey = `${childData.name}-${childData.city}-${childData.country}-${weekNumber}`
+    const localKey = `${childData.name}-${childData.city}-${childData.country}-${childData.language_learning || 'None'}-${weekNumber}`
 
     if (cachedPlan && cachedKey === localKey) {
       setPlan(JSON.parse(cachedPlan))
@@ -149,6 +157,11 @@ export default function DashboardPage() {
       setLoadingMsg(prev => (prev + 1) % LOADING_MESSAGES.length)
     }, 2500)
     try {
+      console.log('[Dashboard] Sending to /api/generate-plan:', {
+        name: childData.name,
+        language_learning: childData.language_learning,
+        subjects: childData.subjects,
+      })
       const res = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
