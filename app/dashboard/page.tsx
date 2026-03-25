@@ -77,43 +77,65 @@ export default function DashboardPage() {
   async function loadPlan(childData: any, cachedLessons: string | null) {
     const weekNumber = getWeekNumber()
 
-    // Check localStorage first (fastest)
+    // Key includes subjects (sorted for order-independence) + language so any
+    // profile change busts both the localStorage and Supabase caches.
+    const sortedSubjects = [...(childData.subjects || [])].sort().join(',')
+    const localKey = `${childData.name}-${childData.city}-${childData.country}-${childData.language_learning || 'None'}-${sortedSubjects}-${weekNumber}`
+
     const cachedPlan = localStorage.getItem('cachedPlan')
     const cachedKey = localStorage.getItem('cachedPlanChild')
-    const localKey = `${childData.name}-${childData.city}-${childData.country}-${childData.language_learning || 'None'}-${weekNumber}`
 
+    // localStorage hit — serve immediately
     if (cachedPlan && cachedKey === localKey) {
+      console.log('[Dashboard] Serving plan from localStorage cache')
       setPlan(JSON.parse(cachedPlan))
       setLoading(false)
       prefetchLessons(JSON.parse(cachedPlan), childData, cachedLessons ? JSON.parse(cachedLessons) : {})
       return
     }
 
-    // Check Supabase
+    // Profile changed (cachedKey exists but differs) — delete stale Supabase
+    // record so we don't serve a plan built with old subjects/language.
+    const profileChanged = !!cachedKey && cachedKey !== localKey
+    console.log('[Dashboard] Cache miss. profileChanged:', profileChanged, '| localKey:', localKey)
+
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        const { data } = await supabase
-          .from('weekly_plans')
-          .select('plan')
-          .eq('user_id', user.id)
-          .eq('child_name', childData.name)
-          .eq('city', childData.city)
-          .eq('country', childData.country)
-          .eq('week_number', weekNumber)
-          .single()
+        if (profileChanged) {
+          // Wipe the stale Supabase plan for this child+week
+          await supabase
+            .from('weekly_plans')
+            .delete()
+            .eq('user_id', user.id)
+            .eq('child_name', childData.name)
+            .eq('week_number', weekNumber)
+          console.log('[Dashboard] Deleted stale Supabase weekly_plan for', childData.name)
+        } else {
+          // No local cache at all — check Supabase (e.g. fresh device / cleared storage)
+          const { data } = await supabase
+            .from('weekly_plans')
+            .select('plan')
+            .eq('user_id', user.id)
+            .eq('child_name', childData.name)
+            .eq('city', childData.city)
+            .eq('country', childData.country)
+            .eq('week_number', weekNumber)
+            .single()
 
-        if (data?.plan) {
-          setPlan(data.plan)
-          localStorage.setItem('cachedPlan', JSON.stringify(data.plan))
-          localStorage.setItem('cachedPlanChild', localKey)
-          setLoading(false)
-          prefetchLessons(data.plan, childData, cachedLessons ? JSON.parse(cachedLessons) : {})
-          return
+          if (data?.plan) {
+            console.log('[Dashboard] Serving plan from Supabase cache')
+            setPlan(data.plan)
+            localStorage.setItem('cachedPlan', JSON.stringify(data.plan))
+            localStorage.setItem('cachedPlanChild', localKey)
+            setLoading(false)
+            prefetchLessons(data.plan, childData, cachedLessons ? JSON.parse(cachedLessons) : {})
+            return
+          }
         }
       }
     } catch (e) {
-      console.error('Supabase load error:', e)
+      console.error('Supabase cache error:', e)
     }
 
     // Generate new plan
