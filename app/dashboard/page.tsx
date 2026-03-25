@@ -58,8 +58,16 @@ export default function DashboardPage() {
   const [feedbackRating, setFeedbackRating] = useState(0)
   const [feedbackMsg, setFeedbackMsg] = useState('')
   const [feedbackSent, setFeedbackSent] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
   const msgInterval = useRef<any>(null)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   useEffect(() => {
     const stored = localStorage.getItem('activeChild')
@@ -611,41 +619,64 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="no-print" style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '14px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <span style={{ fontSize: 22 }}>🧭</span>
-          <div>
-            <span style={{ fontFamily: 'Georgia,serif', fontSize: 18, fontWeight: 700, color: TEXT }}>Waypoint <span style={{ color: PRIMARY }}>Education</span></span>
-            <div style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {child?.city}, {child?.country}</div>
+      <div className="no-print" style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: isMobile ? '12px 14px' : '14px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 10 : 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span style={{ fontSize: 20 }}>🧭</span>
+            <div>
+              <span style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 15 : 18, fontWeight: 700, color: TEXT }}>Waypoint <span style={{ color: PRIMARY }}>Education</span></span>
+              {!isMobile && <div style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {child?.city}, {child?.country}</div>}
+            </div>
           </div>
+          {!isMobile && (
+            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
+              {[['children', '👨‍👧 Children', '/dashboard/children'], ['journal', '📖 Journal', '/journal'], ['community', '🌍 Community', '/community'], ['worksheets', '📄 Worksheets', '/worksheets']].map(([key, label, path]) => (
+                <button key={key} onClick={() => router.push(path)}
+                  onMouseEnter={() => setHover(`nav-${key}`)} onMouseLeave={() => setHover(null)}
+                  style={btn(`nav-${key}`, { padding: '8px 14px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
+                  {label}
+                </button>
+              ))}
+              <button onClick={() => window.print()}
+                onMouseEnter={() => setHover('print')} onMouseLeave={() => setHover(null)}
+                style={btn('print', { padding: '8px 14px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: PRIMARY, fontFamily: 'inherit' }, { background: PRIMARY_BG, borderColor: PRIMARY })}>
+                🖨️ Print
+              </button>
+              <button onClick={() => { localStorage.removeItem('cachedPlan'); localStorage.removeItem('cachedPlanChild'); localStorage.removeItem('cachedLessons'); router.push('/dashboard/children') }}
+                onMouseEnter={() => setHover('newplan')} onMouseLeave={() => setHover(null)}
+                style={btn('newplan', { padding: '8px 14px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
+                + New plan
+              </button>
+              <button onClick={handleLogout}
+                onMouseEnter={() => setHover('logout')} onMouseLeave={() => setHover(null)}
+                style={btn('logout', { padding: '8px 14px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: '#E07575', fontFamily: 'inherit' }, { background: '#FFF1F2' })}>
+                Logout
+              </button>
+            </div>
+          )}
         </div>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-          {[['children', '👨‍👧 Children', '/dashboard/children'], ['journal', '📖 Journal', '/journal'], ['community', '🌍 Community', '/community'], ['worksheets', '📄 Worksheets', '/worksheets']].map(([key, label, path]) => (
-            <button key={key} onClick={() => router.push(path)}
-              onMouseEnter={() => setHover(`nav-${key}`)} onMouseLeave={() => setHover(null)}
-              style={btn(`nav-${key}`, { padding: '8px 16px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
-              {label}
+        {/* Mobile nav row */}
+        {isMobile && (
+          <div style={{ display: 'flex', gap: 6, overflowX: 'auto' as const, paddingBottom: 2 }}>
+            {[['children', '👨‍👧', '/dashboard/children'], ['journal', '📖', '/journal'], ['community', '🌍', '/community'], ['worksheets', '📄', '/worksheets']].map(([key, icon, path]) => (
+              <button key={key} onClick={() => router.push(path)}
+                style={{ padding: '7px 12px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit', flexShrink: 0, cursor: 'pointer' }}>
+                {icon}
+              </button>
+            ))}
+            <button onClick={() => { localStorage.removeItem('cachedPlan'); localStorage.removeItem('cachedPlanChild'); localStorage.removeItem('cachedLessons'); router.push('/dashboard/children') }}
+              style={{ padding: '7px 12px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', flexShrink: 0, cursor: 'pointer' }}>
+              + New
             </button>
-          ))}
-          <button onClick={() => window.print()}
-            onMouseEnter={() => setHover('print')} onMouseLeave={() => setHover(null)}
-            style={btn('print', { padding: '8px 16px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: PRIMARY, fontFamily: 'inherit' }, { background: PRIMARY_BG, borderColor: PRIMARY })}>
-            🖨️ Print
-          </button>
-          <button onClick={() => { localStorage.removeItem('cachedPlan'); localStorage.removeItem('cachedPlanChild'); localStorage.removeItem('cachedLessons'); router.push('/dashboard/children') }}
-            onMouseEnter={() => setHover('newplan')} onMouseLeave={() => setHover(null)}
-            style={btn('newplan', { padding: '8px 16px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
-            + New plan
-          </button>
-          <button onClick={handleLogout}
-            onMouseEnter={() => setHover('logout')} onMouseLeave={() => setHover(null)}
-            style={btn('logout', { padding: '8px 16px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: '#E07575', fontFamily: 'inherit' }, { background: '#FFF1F2' })}>
-            Logout
-          </button>
-        </div>
+            <button onClick={handleLogout}
+              style={{ padding: '7px 12px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 12, fontWeight: 700, color: '#E07575', fontFamily: 'inherit', flexShrink: 0, cursor: 'pointer' }}>
+              Logout
+            </button>
+          </div>
+        )}
       </div>
 
-      <div style={{ maxWidth: 800, margin: '0 auto', padding: 24 }}>
+      <div style={{ maxWidth: 800, margin: '0 auto', padding: isMobile ? '16px 12px' : 24 }}>
 
         {/* Tab toggle — only shown when child has a language set */}
         {child?.language_learning && child.language_learning !== 'None' && (

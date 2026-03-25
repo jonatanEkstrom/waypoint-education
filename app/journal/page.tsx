@@ -20,6 +20,7 @@ export default function JournalPage() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
 
   useEffect(() => {
@@ -31,6 +32,10 @@ export default function JournalPage() {
       setUserId(id)
       loadEntries(id)
     })
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
   }, [])
 
   async function loadEntries(uid: string) {
@@ -97,10 +102,10 @@ export default function JournalPage() {
           <span style={{ fontSize: 20 }}>📖</span>
           <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: TEXT }}>Travel Journal</span>
         </div>
-        <div style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {child?.city}</div>
+        {!isMobile && <div style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {child?.city}</div>}
       </div>
 
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: 24 }}>
+      <div style={{ maxWidth: 700, margin: '0 auto', padding: isMobile ? '16px 12px' : 24 }}>
 
         {/* New entry */}
         <div style={{ background: BEIGE_CARD, borderRadius: 20, padding: 24, border: `2px solid ${BEIGE_BORDER}`, marginBottom: 24, boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>

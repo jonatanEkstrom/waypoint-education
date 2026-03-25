@@ -269,7 +269,8 @@ export default function ChildrenPage() {
                       </div>
 
                       <div>
-                        <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Learning philosophy</label>
+                        <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 4 }}>Learning philosophy (not an official curriculum)</label>
+                        <p style={{ fontSize: 11, color: TEXT_MUTED, fontStyle: 'italic' as const, margin: '0 0 6px 0' }}>Waypoint is inspired by homeschooling philosophies, not official curricula.</p>
                         <select value={editForm.curriculum} onChange={e => setEditForm(p => ({ ...p, curriculum: e.target.value }))} style={inputStyle}>
                           {CURRICULUMS.map(c => <option key={c}>{c}</option>)}
                         </select>

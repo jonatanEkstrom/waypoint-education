@@ -35,6 +35,7 @@ export default function WorksheetsPage() {
   const [theme, setTheme] = useState('')
   const [loading, setLoading] = useState(false)
   const [worksheet, setWorksheet] = useState<any>(null)
+  const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
 
   const [selectedLeft, setSelectedLeft] = useState<number | null>(null)
@@ -57,6 +58,10 @@ export default function WorksheetsPage() {
     const stored = localStorage.getItem('activeChild')
     if (!stored) { router.push('/onboarding'); return }
     setChild(JSON.parse(stored))
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
   }, [])
 
   async function generateWorksheet() {
@@ -274,10 +279,10 @@ export default function WorksheetsPage() {
           <span style={{ fontSize: 20 }}>📄</span>
           <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: TEXT }}>Worksheets</span>
         </div>
-        <div style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {child?.city}</div>
+        {!isMobile && <div style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {child?.city}</div>}
       </div>
 
-      <div style={{ maxWidth: 700, margin: '0 auto', padding: 24 }}>
+      <div style={{ maxWidth: 700, margin: '0 auto', padding: isMobile ? '16px 12px' : 24 }}>
 
         {/* Generator */}
         <div style={sectionStyle}>
@@ -339,20 +344,22 @@ export default function WorksheetsPage() {
             <div style={sectionStyle}>
               <div style={sectionTitle}>🔗 Match the pairs</div>
               <div style={instructionStyle}>{worksheet.matching.instruction}</div>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {worksheet.matching.pairs.map((pair: any, i: number) => {
-                    const isMatched = matchedPairs[i] !== undefined
-                    const isSelected = selectedLeft === i
-                    return <button key={i} onClick={() => handleLeftClick(i)} style={btnStyle(isSelected, isMatched)}>{isMatched ? '✓ ' : ''}{pair.left}</button>
-                  })}
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                  {shuffledRight.map((item: string, i: number) => {
-                    const isMatched = isRightMatched(i)
-                    const isWrong = wrongMatch === i
-                    return <button key={i} onClick={() => handleRightClick(i)} style={btnStyle(false, isMatched, isWrong)}>{isMatched ? '✓ ' : ''}{item}</button>
-                  })}
+              <div style={{ overflowX: 'auto' as const }}>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, minWidth: 300 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                    {worksheet.matching.pairs.map((pair: any, i: number) => {
+                      const isMatched = matchedPairs[i] !== undefined
+                      const isSelected = selectedLeft === i
+                      return <button key={i} onClick={() => handleLeftClick(i)} style={btnStyle(isSelected, isMatched)}>{isMatched ? '✓ ' : ''}{pair.left}</button>
+                    })}
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                    {shuffledRight.map((item: string, i: number) => {
+                      const isMatched = isRightMatched(i)
+                      const isWrong = wrongMatch === i
+                      return <button key={i} onClick={() => handleRightClick(i)} style={btnStyle(false, isMatched, isWrong)}>{isMatched ? '✓ ' : ''}{item}</button>
+                    })}
+                  </div>
                 </div>
               </div>
               {Object.keys(matchedPairs).length === worksheet.matching.pairs.length && (

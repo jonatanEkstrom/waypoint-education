@@ -1,7 +1,7 @@
 'use client'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 
 const PRIMARY = '#9B8EC4'
 const PRIMARY_DARK = '#7B6BAA'
@@ -22,6 +22,14 @@ export default function LandingPage() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const [hover, setHover] = useState<string | null>(null)
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const basePrice = billing === 'monthly' ? 12.99 : billing === 'quarterly' ? 10.99 : 8.99
   const extraChildren = Math.max(0, children - 1) * 6
@@ -56,48 +64,50 @@ export default function LandingPage() {
     ...base, ...(hover === id ? hov : {}), transition: 'all 0.15s ease', cursor: 'pointer'
   })
 
+  const sectionPad = isMobile ? '48px 16px' : '80px 24px'
+
   return (
     <div style={{ minHeight: '100vh', fontFamily: 'system-ui, sans-serif', color: TEXT, background: BEIGE }}>
 
       {/* Nav */}
-      <nav style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-        <span style={{ fontFamily: 'Georgia,serif', fontSize: 20, fontWeight: 700, color: TEXT }}>🧭 Waypoint <span style={{ color: PRIMARY }}>Education</span></span>
-        <div style={{ display: 'flex', gap: 12 }}>
+      <nav style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: isMobile ? '12px 16px' : '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', position: 'sticky', top: 0, zIndex: 100, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
+        <span style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 15 : 20, fontWeight: 700, color: TEXT }}>🧭 Waypoint <span style={{ color: PRIMARY }}>Education</span></span>
+        <div style={{ display: 'flex', gap: 8 }}>
           <button onClick={() => router.push('/auth')}
             onMouseEnter={() => setHover('signin')} onMouseLeave={() => setHover(null)}
-            style={btn('signin', { padding: '8px 20px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 14, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
+            style={btn('signin', { padding: isMobile ? '7px 12px' : '8px 20px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
             Sign in
           </button>
           <button onClick={() => document.getElementById('beta')?.scrollIntoView({ behavior: 'smooth' })}
             onMouseEnter={() => setHover('navjoin')} onMouseLeave={() => setHover(null)}
-            style={btn('navjoin', { padding: '8px 20px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
-            Join beta →
+            style={btn('navjoin', { padding: isMobile ? '7px 12px' : '8px 20px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
+            {isMobile ? '→' : 'Join beta →'}
           </button>
         </div>
       </nav>
 
       {/* Hero */}
-      <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG} 0%, #EDF7F2 50%, #FFF8EC 100%)`, padding: '100px 24px' }}>
+      <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG} 0%, #EDF7F2 50%, #FFF8EC 100%)`, padding: isMobile ? '60px 16px 48px' : '100px 24px' }}>
         <div style={{ maxWidth: 720, margin: '0 auto', textAlign: 'center' }}>
-          <div style={{ display: 'inline-block', background: PRIMARY_BG, color: PRIMARY, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 28, border: `1px solid ${PRIMARY_BORDER}` }}>
+          <div style={{ display: 'inline-block', background: PRIMARY_BG, color: PRIMARY, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 24, border: `1px solid ${PRIMARY_BORDER}` }}>
             🌍 Now accepting founding families — free for 30 days
           </div>
-          <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 52, lineHeight: 1.1, marginBottom: 24, color: TEXT }}>
+          <h1 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 32 : 52, lineHeight: isMobile ? 1.2 : 1.1, marginBottom: 20, color: TEXT }}>
             The world is their classroom.<br/>
             <span style={{ color: PRIMARY }}>We write the lesson plans.</span>
           </h1>
-          <p style={{ fontSize: 19, color: TEXT_MUTED, lineHeight: 1.7, marginBottom: 48, maxWidth: 560, margin: '0 auto 48px' }}>
+          <p style={{ fontSize: isMobile ? 16 : 19, color: TEXT_MUTED, lineHeight: 1.7, marginBottom: 36, maxWidth: 560, margin: '0 auto 36px' }}>
             AI-generated weekly lesson plans tailored to your child's age, location and learning style. From Bangkok to Barcelona — school follows you.
           </p>
-          <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap', marginBottom: 20 }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexDirection: isMobile ? 'column' as const : 'row' as const, alignItems: 'center', marginBottom: 20 }}>
             <button onClick={() => document.getElementById('beta')?.scrollIntoView({ behavior: 'smooth' })}
               onMouseEnter={() => setHover('herojoin')} onMouseLeave={() => setHover(null)}
-              style={btn('herojoin', { padding: '18px 40px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 18, fontWeight: 800, fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(155,142,196,0.35)' }, { background: PRIMARY_DARK })}>
+              style={btn('herojoin', { padding: isMobile ? '15px 28px' : '18px 40px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: isMobile ? 16 : 18, fontWeight: 800, fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(155,142,196,0.35)', width: isMobile ? '100%' : 'auto' }, { background: PRIMARY_DARK })}>
               Join 50 founding families →
             </button>
             <button onClick={() => document.getElementById('features')?.scrollIntoView({ behavior: 'smooth' })}
               onMouseEnter={() => setHover('herofeatures')} onMouseLeave={() => setHover(null)}
-              style={btn('herofeatures', { padding: '18px 40px', borderRadius: 100, border: `2px solid ${PRIMARY_BORDER}`, background: BEIGE_CARD, color: PRIMARY, fontSize: 18, fontWeight: 800, fontFamily: 'inherit' }, { background: PRIMARY_BG })}>
+              style={btn('herofeatures', { padding: isMobile ? '15px 28px' : '18px 40px', borderRadius: 100, border: `2px solid ${PRIMARY_BORDER}`, background: BEIGE_CARD, color: PRIMARY, fontSize: isMobile ? 16 : 18, fontWeight: 800, fontFamily: 'inherit', width: isMobile ? '100%' : 'auto' }, { background: PRIMARY_BG })}>
               See how it works
             </button>
           </div>
@@ -106,27 +116,27 @@ export default function LandingPage() {
       </div>
 
       {/* Social proof */}
-      <div style={{ background: BEIGE_CARD, padding: '28px 24px', borderBottom: `2px solid ${BEIGE_BORDER}` }}>
-        <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: 32, justifyContent: 'center', flexWrap: 'wrap', alignItems: 'center' }}>
-          {['🌍 Works in any country', '👶 Ages 4–18', '📚 6 teaching philosophies', '⚡ Plan ready in 30 seconds'].map(item => (
-            <span key={item} style={{ fontSize: 14, fontWeight: 700, color: TEXT_MUTED }}>{item}</span>
+      <div style={{ background: BEIGE_CARD, padding: isMobile ? '20px 16px' : '28px 24px', borderBottom: `2px solid ${BEIGE_BORDER}` }}>
+        <div style={{ maxWidth: 800, margin: '0 auto', display: 'flex', gap: isMobile ? 12 : 32, justifyContent: 'center', flexWrap: 'wrap' as const, alignItems: 'center' }}>
+          {['🌍 Works in any country', '👶 Ages 4–18', '📚 6 philosophies', '⚡ Plan in 30 seconds'].map(item => (
+            <span key={item} style={{ fontSize: isMobile ? 12 : 14, fontWeight: 700, color: TEXT_MUTED }}>{item}</span>
           ))}
         </div>
       </div>
 
       {/* Beta signup */}
-      <div id="beta" style={{ background: `linear-gradient(135deg, ${PRIMARY}, ${GREEN})`, padding: '80px 24px', textAlign: 'center' }}>
+      <div id="beta" style={{ background: `linear-gradient(135deg, ${PRIMARY}, ${GREEN})`, padding: sectionPad, textAlign: 'center' as const }}>
         <div style={{ maxWidth: 560, margin: '0 auto' }}>
-          <div style={{ fontSize: 48, marginBottom: 16 }}>🧭</div>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, color: 'white', marginBottom: 12 }}>Join 50 founding families</h2>
-          <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: 17, marginBottom: 12 }}>Get free access for 30 days. Help shape the future of Waypoint.</p>
-          <div style={{ display: 'flex', gap: 8, marginBottom: 8, background: 'rgba(255,255,255,0.15)', borderRadius: 16, padding: 8 }}>
-            {['✓ 30 days completely free', '✓ No credit card', '✓ Your feedback shapes the product'].map(p => (
-              <span key={p} style={{ flex: 1, fontSize: 12, fontWeight: 700, color: 'white', textAlign: 'center' as const }}>{p}</span>
+          <div style={{ fontSize: isMobile ? 40 : 48, marginBottom: 16 }}>🧭</div>
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 36, color: 'white', marginBottom: 12 }}>Join 50 founding families</h2>
+          <p style={{ color: 'rgba(255,255,255,0.9)', fontSize: isMobile ? 15 : 17, marginBottom: 12 }}>Get free access for 30 days. Help shape the future of Waypoint.</p>
+          <div style={{ display: 'flex', gap: 8, marginBottom: 8, background: 'rgba(255,255,255,0.15)', borderRadius: 16, padding: 8, flexDirection: isMobile ? 'column' as const : 'row' as const }}>
+            {['✓ 30 days free', '✓ No credit card', '✓ Your feedback shapes us'].map(p => (
+              <span key={p} style={{ flex: 1, fontSize: 12, fontWeight: 700, color: 'white', textAlign: 'center' as const, padding: isMobile ? '4px 0' : 0 }}>{p}</span>
             ))}
           </div>
           {!submitted ? (
-            <div style={{ display: 'flex', gap: 8, marginTop: 24 }}>
+            <div style={{ display: 'flex', gap: 8, marginTop: 24, flexDirection: isMobile ? 'column' as const : 'row' as const }}>
               <input value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="your@email.com"
                 style={{ flex: 1, padding: '16px 20px', borderRadius: 100, border: 'none', fontSize: 15, fontFamily: 'inherit', outline: 'none', color: TEXT }} />
@@ -149,14 +159,14 @@ export default function LandingPage() {
       </div>
 
       {/* Features */}
-      <div id="features" style={{ background: BEIGE, padding: '80px 24px' }}>
+      <div id="features" style={{ background: BEIGE, padding: sectionPad }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, textAlign: 'center', marginBottom: 16, color: TEXT }}>Everything you need to homeschool anywhere</h2>
-          <p style={{ textAlign: 'center', color: TEXT_MUTED, fontSize: 17, marginBottom: 48 }}>No planning stress. No missed school days. Just learning that moves with you.</p>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 36, textAlign: 'center', marginBottom: 12, color: TEXT }}>Everything you need to homeschool anywhere</h2>
+          <p style={{ textAlign: 'center', color: TEXT_MUTED, fontSize: isMobile ? 15 : 17, marginBottom: 36 }}>No planning stress. No missed school days. Just learning that moves with you.</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
             {features.map(f => (
-              <div key={f.title} style={{ background: BEIGE_CARD, borderRadius: 20, padding: 28, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
-                <div style={{ fontSize: 36, marginBottom: 16 }}>{f.icon}</div>
+              <div key={f.title} style={{ background: BEIGE_CARD, borderRadius: 20, padding: isMobile ? 20 : 28, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
+                <div style={{ fontSize: 32, marginBottom: 12 }}>{f.icon}</div>
                 <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 18, marginBottom: 8, color: TEXT }}>{f.title}</h3>
                 <p style={{ color: TEXT_MUTED, fontSize: 14, lineHeight: 1.6, margin: 0 }}>{f.desc}</p>
               </div>
@@ -166,20 +176,20 @@ export default function LandingPage() {
       </div>
 
       {/* Testimonials */}
-      <div style={{ background: BEIGE_CARD, padding: '80px 24px' }}>
+      <div style={{ background: BEIGE_CARD, padding: sectionPad }}>
         <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, textAlign: 'center', marginBottom: 56, color: TEXT }}>Loved by worldschooling families</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 24 }}>
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 36, textAlign: 'center', marginBottom: isMobile ? 28 : 56, color: TEXT }}>Loved by worldschooling families</h2>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
             {[
               { quote: "We've been traveling Southeast Asia for 8 months. Waypoint has been a lifesaver — the kids actually look forward to lessons now!", name: 'Sarah M.', location: 'Chiang Mai, Thailand', emoji: '🇹🇭' },
               { quote: "I was terrified about homeschooling while traveling. Waypoint made it so easy. The local tips are incredible — yesterday we learned about Roman history at an actual forum!", name: 'Marco & Lisa', location: 'Rome, Italy', emoji: '🇮🇹' },
               { quote: "The worksheets are amazing. My daughter loves the matching games and the AI grading means I don't have to do it myself!", name: 'Emma K.', location: 'Barcelona, Spain', emoji: '🇪🇸' },
             ].map(t => (
-              <div key={t.name} style={{ background: BEIGE, borderRadius: 20, padding: 28, border: `2px solid ${BEIGE_BORDER}` }}>
-                <div style={{ fontSize: 20, marginBottom: 16, color: '#F5C842' }}>⭐⭐⭐⭐⭐</div>
-                <p style={{ fontSize: 15, color: TEXT, lineHeight: 1.7, fontStyle: 'italic', marginBottom: 20 }}>"{t.quote}"</p>
+              <div key={t.name} style={{ background: BEIGE, borderRadius: 20, padding: isMobile ? 20 : 28, border: `2px solid ${BEIGE_BORDER}` }}>
+                <div style={{ fontSize: 20, marginBottom: 12, color: '#F5C842' }}>⭐⭐⭐⭐⭐</div>
+                <p style={{ fontSize: 15, color: TEXT, lineHeight: 1.7, fontStyle: 'italic', marginBottom: 16 }}>"{t.quote}"</p>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 100, background: PRIMARY_BG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20 }}>{t.emoji}</div>
+                  <div style={{ width: 40, height: 40, borderRadius: 100, background: PRIMARY_BG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{t.emoji}</div>
                   <div>
                     <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{t.name}</div>
                     <div style={{ fontSize: 12, color: TEXT_MUTED }}>{t.location}</div>
@@ -192,42 +202,42 @@ export default function LandingPage() {
       </div>
 
       {/* Pricing */}
-      <div id="pricing" style={{ background: BEIGE, padding: '80px 24px' }}>
-        <div style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' }}>
+      <div id="pricing" style={{ background: BEIGE, padding: sectionPad }}>
+        <div style={{ maxWidth: 600, margin: '0 auto', textAlign: 'center' as const }}>
           <div style={{ display: 'inline-block', background: '#EDF7F2', color: GREEN_DARK, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 16, border: `1px solid ${GREEN}` }}>
             🎁 First 50 families get 30 days free
           </div>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, marginBottom: 16, color: TEXT }}>Simple, transparent pricing</h2>
-          <p style={{ color: TEXT_MUTED, fontSize: 17, marginBottom: 40 }}>After your free month, choose the plan that fits your family.</p>
-          <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginBottom: 32, background: BEIGE_CARD, borderRadius: 100, padding: 6, border: `2px solid ${BEIGE_BORDER}`, width: 'fit-content', margin: '0 auto 32px' }}>
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 36, marginBottom: 12, color: TEXT }}>Simple, transparent pricing</h2>
+          <p style={{ color: TEXT_MUTED, fontSize: isMobile ? 15 : 17, marginBottom: 32 }}>After your free month, choose the plan that fits your family.</p>
+          <div style={{ display: 'flex', gap: 6, justifyContent: 'center', flexWrap: 'wrap' as const, marginBottom: 28, background: BEIGE_CARD, borderRadius: 100, padding: 5, border: `2px solid ${BEIGE_BORDER}`, width: 'fit-content', margin: '0 auto 28px' }}>
             {(['monthly', 'quarterly', 'yearly'] as const).map(b => (
               <button key={b} onClick={() => setBilling(b)}
-                style={{ padding: '8px 20px', borderRadius: 100, border: 'none', background: billing === b ? PRIMARY : 'transparent', color: billing === b ? 'white' : TEXT_MUTED, cursor: 'pointer', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', transition: 'all 0.15s' }}>
+                style={{ padding: isMobile ? '7px 12px' : '8px 20px', borderRadius: 100, border: 'none', background: billing === b ? PRIMARY : 'transparent', color: billing === b ? 'white' : TEXT_MUTED, cursor: 'pointer', fontSize: isMobile ? 12 : 13, fontWeight: 700, fontFamily: 'inherit', transition: 'all 0.15s' }}>
                 {b === 'monthly' ? 'Monthly' : b === 'quarterly' ? 'Quarterly' : 'Yearly'}
-                {b === 'quarterly' && <span style={{ marginLeft: 6, background: '#FFF8EC', color: '#C49040', padding: '2px 6px', borderRadius: 100, fontSize: 10 }}>-15%</span>}
-                {b === 'yearly' && <span style={{ marginLeft: 6, background: '#EDF7F2', color: GREEN_DARK, padding: '2px 6px', borderRadius: 100, fontSize: 10 }}>-31%</span>}
+                {b === 'quarterly' && <span style={{ marginLeft: 4, background: '#FFF8EC', color: '#C49040', padding: '2px 5px', borderRadius: 100, fontSize: 10 }}>-15%</span>}
+                {b === 'yearly' && <span style={{ marginLeft: 4, background: '#EDF7F2', color: GREEN_DARK, padding: '2px 5px', borderRadius: 100, fontSize: 10 }}>-31%</span>}
               </button>
             ))}
           </div>
-          <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: 40, border: `2px solid ${PRIMARY}`, boxShadow: '0 8px 32px rgba(155,142,196,0.12)' }}>
-            <div style={{ fontSize: 48, marginBottom: 8 }}>🧭</div>
-            <div style={{ marginBottom: 24 }}>
-              <span style={{ fontFamily: 'Georgia,serif', fontSize: 48, fontWeight: 700, color: TEXT }}>${totalMonthly.toFixed(2)}</span>
+          <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: isMobile ? 20 : 40, border: `2px solid ${PRIMARY}`, boxShadow: '0 8px 32px rgba(155,142,196,0.12)' }}>
+            <div style={{ fontSize: isMobile ? 36 : 48, marginBottom: 8 }}>🧭</div>
+            <div style={{ marginBottom: 20 }}>
+              <span style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 36 : 48, fontWeight: 700, color: TEXT }}>${totalMonthly.toFixed(2)}</span>
               <span style={{ color: TEXT_MUTED, fontSize: 16 }}>/month</span>
               {billing !== 'monthly' && <div style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, marginTop: 4 }}>Save ${savings}/year compared to monthly</div>}
               {billing === 'yearly' && <div style={{ fontSize: 13, color: TEXT_MUTED, marginTop: 4 }}>Billed as ${totalYearly}/year</div>}
             </div>
-            <div style={{ background: BEIGE, borderRadius: 16, padding: 16, marginBottom: 24, border: `1px solid ${BEIGE_BORDER}` }}>
+            <div style={{ background: BEIGE, borderRadius: 16, padding: 16, marginBottom: 20, border: `1px solid ${BEIGE_BORDER}` }}>
               <div style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 700, marginBottom: 12 }}>NUMBER OF CHILDREN</div>
               <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                 {[1, 2, 3, 4].map(n => (
                   <button key={n} onClick={() => setChildren(n)}
-                    style={{ width: 48, height: 48, borderRadius: 12, border: `2px solid ${children === n ? PRIMARY : BEIGE_BORDER}`, background: children === n ? PRIMARY : BEIGE_CARD, color: children === n ? 'white' : TEXT_MUTED, cursor: 'pointer', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', transition: 'all 0.15s' }}>{n}</button>
+                    style={{ width: 44, height: 44, borderRadius: 12, border: `2px solid ${children === n ? PRIMARY : BEIGE_BORDER}`, background: children === n ? PRIMARY : BEIGE_CARD, color: children === n ? 'white' : TEXT_MUTED, cursor: 'pointer', fontSize: 16, fontWeight: 700, fontFamily: 'inherit', transition: 'all 0.15s' }}>{n}</button>
                 ))}
               </div>
               {children > 1 && <div style={{ fontSize: 12, color: TEXT_MUTED, marginTop: 8 }}>Base ${billing === 'monthly' ? '12.99' : billing === 'quarterly' ? '10.99' : '8.99'} + {children - 1} extra {children === 2 ? 'child' : 'children'} × $6</div>}
             </div>
-            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 32px 0', textAlign: 'left' }}>
+            <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', textAlign: 'left' as const }}>
               {[
                 'AI-generated weekly lesson plans',
                 'Interactive worksheets with AI grading',
@@ -236,8 +246,8 @@ export default function LandingPage() {
                 `Up to ${children} ${children === 1 ? 'child' : 'children'}`,
                 '30-day free trial for founding families'
               ].map(item => (
-                <li key={item} style={{ padding: '8px 0', fontSize: 15, color: TEXT, display: 'flex', gap: 10, alignItems: 'center', borderBottom: `1px solid ${BEIGE_BORDER}` }}>
-                  <span style={{ color: GREEN_DARK, fontWeight: 700 }}>✓</span> {item}
+                <li key={item} style={{ padding: '8px 0', fontSize: 14, color: TEXT, display: 'flex', gap: 10, alignItems: 'center', borderBottom: `1px solid ${BEIGE_BORDER}` }}>
+                  <span style={{ color: GREEN_DARK, fontWeight: 700, flexShrink: 0 }}>✓</span> {item}
                 </li>
               ))}
             </ul>
@@ -252,20 +262,20 @@ export default function LandingPage() {
       </div>
 
       {/* FAQ */}
-      <div style={{ background: BEIGE_CARD, padding: '80px 24px' }}>
+      <div style={{ background: BEIGE_CARD, padding: sectionPad }}>
         <div style={{ maxWidth: 700, margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 36, textAlign: 'center', marginBottom: 56, color: TEXT }}>Frequently asked questions</h2>
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 36, textAlign: 'center', marginBottom: isMobile ? 28 : 56, color: TEXT }}>Frequently asked questions</h2>
           {faqs.map(faq => (
-            <div key={faq.q} style={{ borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '24px 0' }}>
-              <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 18, marginBottom: 10, color: TEXT }}>{faq.q}</h3>
-              <p style={{ color: TEXT_MUTED, fontSize: 15, lineHeight: 1.7, margin: 0 }}>{faq.a}</p>
+            <div key={faq.q} style={{ borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '20px 0' }}>
+              <h3 style={{ fontFamily: 'Georgia,serif', fontSize: 17, marginBottom: 8, color: TEXT }}>{faq.q}</h3>
+              <p style={{ color: TEXT_MUTED, fontSize: 14, lineHeight: 1.7, margin: 0 }}>{faq.a}</p>
             </div>
           ))}
         </div>
       </div>
 
       {/* Footer */}
-      <div style={{ background: TEXT, padding: '32px 24px', textAlign: 'center' }}>
+      <div style={{ background: TEXT, padding: '28px 24px', textAlign: 'center' as const }}>
         <span style={{ fontFamily: 'Georgia,serif', fontSize: 18, fontWeight: 700, color: 'white' }}>🧭 Waypoint <span style={{ color: PRIMARY }}>Education</span></span>
         <p style={{ color: '#9E9188', fontSize: 13, marginTop: 8, marginBottom: 12 }}>© 2026 Waypoint Education · The world is their classroom.</p>
         <div style={{ display: 'flex', gap: 24, justifyContent: 'center' }}>

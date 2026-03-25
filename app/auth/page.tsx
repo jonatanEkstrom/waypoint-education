@@ -1,5 +1,5 @@
 'use client'
-import { useState, Suspense } from 'react'
+import { useState, useEffect, Suspense } from 'react'
 import { supabase } from '../lib/supabase'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
@@ -22,7 +22,15 @@ function AuthForm() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [agreedToTerms, setAgreedToTerms] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   async function handleAuth() {
     setLoading(true)
@@ -57,7 +65,7 @@ function AuthForm() {
   }
 
   return (
-    <div style={{ minHeight: '100vh', background: BEIGE, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div style={{ minHeight: '100vh', background: BEIGE, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 16 : 24 }}>
       <div style={{ width: '100%', maxWidth: 420 }}>
 
         <div style={{ textAlign: 'center', marginBottom: 28 }}>
@@ -68,7 +76,7 @@ function AuthForm() {
           <p style={{ color: TEXT_MUTED, fontSize: 14, fontWeight: 600 }}>The world is their classroom.</p>
         </div>
 
-        <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: 32, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+        <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: isMobile ? 20 : 32, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 20, marginBottom: 24, color: TEXT }}>
             {isLogin ? 'Welcome back 👋' : 'Create your account 🚀'}
           </h2>

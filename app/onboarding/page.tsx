@@ -44,7 +44,15 @@ export default function OnboardingPage() {
   const [showCityDropdown, setShowCityDropdown] = useState(false)
   const [notes, setNotes] = useState('')
   const [loading, setLoading] = useState(false)
+  const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
+  }, [])
 
   const filteredCountries = allCountries.filter(c =>
     c.name.toLowerCase().includes(countrySearch.toLowerCase())
@@ -172,7 +180,7 @@ export default function OnboardingPage() {
   const stepLabels = ['Child', 'Philosophy', 'Location', 'Style']
 
   return (
-    <div style={{ minHeight: '100vh', background: BEIGE, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+    <div style={{ minHeight: '100vh', background: BEIGE, display: 'flex', alignItems: 'flex-start', justifyContent: 'center', padding: isMobile ? '20px 12px' : 24, paddingTop: isMobile ? 20 : 40 }}>
       <div style={{ width: '100%', maxWidth: 540 }}>
 
         <div style={{ textAlign: 'center', marginBottom: 24 }}>
@@ -191,7 +199,7 @@ export default function OnboardingPage() {
           ))}
         </div>
 
-        <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: 32, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+        <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: isMobile ? 20 : 32, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
 
           {step === 1 && (
             <>
@@ -224,8 +232,9 @@ export default function OnboardingPage() {
 
           {step === 2 && (
             <>
-              <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 24, color: TEXT, marginBottom: 6 }}>Choose your philosophy 📚</h2>
-              <p style={{ color: TEXT_MUTED, marginBottom: 24, fontSize: 15 }}>The foundation every lesson is built on.</p>
+              <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 20 : 24, color: TEXT, marginBottom: 6 }}>Learning philosophy (not an official curriculum) 📚</h2>
+              <p style={{ color: TEXT_MUTED, marginBottom: 4, fontSize: 15 }}>The foundation every lesson is built on.</p>
+              <p style={{ color: TEXT_MUTED, fontSize: 12, marginBottom: 20, fontStyle: 'italic' as const }}>Waypoint is inspired by homeschooling philosophies, not official curricula.</p>
               {curricula.map(c => (
                 <button key={c.id} style={ccardStyle(curriculum === c.id)} onClick={() => setCurriculum(c.id)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>

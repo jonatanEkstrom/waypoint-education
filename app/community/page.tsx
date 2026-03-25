@@ -28,6 +28,7 @@ export default function CommunityPage() {
   const [hover, setHover] = useState<string | null>(null)
   const [saved, setSaved] = useState(false)
   const [child, setChild] = useState<any>(null)
+  const [isMobile, setIsMobile] = useState(false)
   const [form, setForm] = useState({
     display_name: '',
     bio: '',
@@ -39,6 +40,10 @@ export default function CommunityPage() {
     const stored = localStorage.getItem('activeChild')
     if (stored) setChild(JSON.parse(stored))
     loadData()
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => window.removeEventListener('resize', check)
   }, [])
 
   async function loadData() {
@@ -114,22 +119,22 @@ export default function CommunityPage() {
     <div style={{ minHeight: '100vh', background: BEIGE }}>
 
       {/* Topbar */}
-      <div style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+      <div style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '12px 16px', display: 'flex', flexDirection: isMobile ? 'column' as const : 'row' as const, alignItems: isMobile ? 'flex-start' : 'center', gap: isMobile ? 10 : 0, justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={() => router.push('/dashboard')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: TEXT_MUTED, padding: '0 8px 0 0' }}>←</button>
           <span style={{ fontSize: 20 }}>🌍</span>
           <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: TEXT }}>Community</span>
         </div>
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, width: isMobile ? '100%' : 'auto' }}>
           <button onClick={() => setTab('discover')}
             onMouseEnter={() => setHover('tab-discover')} onMouseLeave={() => setHover(null)}
-            style={btn('tab-discover', { padding: '8px 16px', borderRadius: 100, border: `2px solid ${tab === 'discover' ? PRIMARY : BEIGE_BORDER}`, background: tab === 'discover' ? PRIMARY : BEIGE_CARD, color: tab === 'discover' ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { borderColor: PRIMARY })}>
+            style={btn('tab-discover', { flex: isMobile ? 1 : undefined, padding: '8px 14px', borderRadius: 100, border: `2px solid ${tab === 'discover' ? PRIMARY : BEIGE_BORDER}`, background: tab === 'discover' ? PRIMARY : BEIGE_CARD, color: tab === 'discover' ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', textAlign: 'center' as const }, { borderColor: PRIMARY })}>
             🔍 Discover
           </button>
           <button onClick={() => setTab('profile')}
             onMouseEnter={() => setHover('tab-profile')} onMouseLeave={() => setHover(null)}
-            style={btn('tab-profile', { padding: '8px 16px', borderRadius: 100, border: `2px solid ${tab === 'profile' ? PRIMARY : BEIGE_BORDER}`, background: tab === 'profile' ? PRIMARY : BEIGE_CARD, color: tab === 'profile' ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { borderColor: PRIMARY })}>
+            style={btn('tab-profile', { flex: isMobile ? 1 : undefined, padding: '8px 14px', borderRadius: 100, border: `2px solid ${tab === 'profile' ? PRIMARY : BEIGE_BORDER}`, background: tab === 'profile' ? PRIMARY : BEIGE_CARD, color: tab === 'profile' ? 'white' : TEXT_MUTED, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', textAlign: 'center' as const }, { borderColor: PRIMARY })}>
             👤 My profile
           </button>
         </div>
@@ -149,7 +154,7 @@ export default function CommunityPage() {
           <>
             <div style={{ background: BEIGE_CARD, borderRadius: 20, padding: 20, border: `2px solid ${BEIGE_BORDER}`, marginBottom: 24, boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
               <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 19, color: TEXT, marginBottom: 16 }}>🌍 Find families near you</h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 12 }}>
                 <div>
                   <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>City</label>
                   <input value={filterCity} onChange={e => setFilterCity(e.target.value)}
