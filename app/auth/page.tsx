@@ -39,8 +39,12 @@ function AuthForm() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        localStorage.removeItem('cachedPlan')
         localStorage.removeItem('activeChild')
+        localStorage.removeItem('cachedPlan')
+        localStorage.removeItem('cachedPlanChild')
+        localStorage.removeItem('cachedLessons')
+        localStorage.removeItem('cachedLangPlan')
+        localStorage.removeItem('cachedLangPlanKey')
         router.push('/dashboard/children')
       } else {
         const { data, error } = await supabase.auth.signUp({ email, password })

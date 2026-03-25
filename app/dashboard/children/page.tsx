@@ -73,6 +73,21 @@ export default function ChildrenPage() {
         color_index: c.color_index || 0, language_learning: c.language_learning || 'None'
       }))
       setChildren(mapped)
+      // Clear stale activeChild if it doesn't belong to this user's children
+      const stored = localStorage.getItem('activeChild')
+      if (stored) {
+        try {
+          const active = JSON.parse(stored)
+          if (!mapped.find(c => c.id === active.id)) {
+            localStorage.removeItem('activeChild')
+            localStorage.removeItem('cachedPlan')
+            localStorage.removeItem('cachedPlanChild')
+            localStorage.removeItem('cachedLessons')
+            localStorage.removeItem('cachedLangPlan')
+            localStorage.removeItem('cachedLangPlanKey')
+          }
+        } catch { localStorage.removeItem('activeChild') }
+      }
     }
   }
 
