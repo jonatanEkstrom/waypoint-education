@@ -159,6 +159,18 @@ export default function ChildrenPage() {
         const active = JSON.parse(stored)
         if (active.id === selected.id) {
           localStorage.setItem('activeChild', JSON.stringify({ ...updatedChild, user_id: active.user_id }))
+          // If language or subjects changed, bust plan + lang plan caches so dashboard regenerates
+          const langChanged = active.language_learning !== updatedChild.language_learning
+          const subjectsChanged = JSON.stringify((active.subjects || []).sort()) !== JSON.stringify((updatedChild.subjects || []).sort())
+          if (langChanged || subjectsChanged) {
+            localStorage.removeItem('cachedPlan')
+            localStorage.removeItem('cachedPlanChild')
+            localStorage.removeItem('cachedLessons')
+          }
+          if (langChanged) {
+            localStorage.removeItem('cachedLangPlan')
+            localStorage.removeItem('cachedLangPlanKey')
+          }
         }
       } catch { /* ignore */ }
     }
@@ -177,6 +189,8 @@ export default function ChildrenPage() {
     localStorage.removeItem('cachedPlan')
     localStorage.removeItem('cachedPlanChild')
     localStorage.removeItem('cachedLessons')
+    localStorage.removeItem('cachedLangPlan')
+    localStorage.removeItem('cachedLangPlanKey')
     router.push('/dashboard')
   }
 
