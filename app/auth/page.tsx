@@ -39,7 +39,9 @@ function AuthForm() {
       if (isLogin) {
         const { error } = await supabase.auth.signInWithPassword({ email, password })
         if (error) throw error
-        localStorage.clear()
+        // Do NOT clear localStorage here — it wipes the Supabase session token and
+        // triggers the client's storage listener, nullifying the session before the
+        // redirect lands. Cross-user cleanup is handled by /dashboard/children.
         router.push('/dashboard/children')
       } else {
         const { data, error } = await supabase.auth.signUp({
@@ -50,7 +52,6 @@ function AuthForm() {
         if (error) throw error
         if (data.session) {
           // Email confirmation disabled — session is live immediately
-          localStorage.clear()
           await supabase.from('profiles').upsert({ id: data.user!.id, email: data.user!.email })
           router.push('/dashboard/children')
         } else {
