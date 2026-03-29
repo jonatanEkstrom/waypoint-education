@@ -70,7 +70,8 @@ function AuthForm() {
     width: '100%', padding: '13px 16px', borderRadius: 14,
     border: `2px solid ${BEIGE_BORDER}`, fontSize: 15, fontFamily: 'inherit',
     outline: 'none', boxSizing: 'border-box' as const,
-    background: BEIGE, color: TEXT
+    background: BEIGE_CARD, color: TEXT,
+    boxShadow: 'inset 0 2px 4px rgba(0,0,0,0.05)'
   }
 
   return (
