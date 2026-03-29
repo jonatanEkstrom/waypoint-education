@@ -42,12 +42,20 @@ function AuthForm() {
         localStorage.clear()
         router.push('/dashboard/children')
       } else {
-        const { data, error } = await supabase.auth.signUp({ email, password })
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
+        })
         if (error) throw error
-        if (data.user) {
+        if (data.session) {
+          // Email confirmation disabled — session is live immediately
           localStorage.clear()
-          await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email })
+          await supabase.from('profiles').upsert({ id: data.user!.id, email: data.user!.email })
           router.push('/dashboard/children')
+        } else {
+          // Email confirmation required — tell the user to check their inbox
+          setError('__check_email__')
         }
       }
     } catch (e: any) {
@@ -116,11 +124,15 @@ function AuthForm() {
             </div>
           )}
 
-          {error && (
+          {error === '__check_email__' ? (
+            <p style={{ color: GREEN_DARK, fontSize: 13, marginBottom: 16, fontWeight: 600, background: '#F0FBF4', padding: '10px 14px', borderRadius: 10, border: `1px solid #A8D5BA` }}>
+              ✅ Check your email and click the confirmation link to activate your account.
+            </p>
+          ) : error ? (
             <p style={{ color: '#E07575', fontSize: 13, marginBottom: 16, fontWeight: 600, background: '#FFF1F2', padding: '10px 14px', borderRadius: 10 }}>
               {error}
             </p>
-          )}
+          ) : null}
 
           <button onClick={handleAuth} disabled={loading || !email || !password || (!isLogin && !agreedToTerms)}
             style={{ width: '100%', padding: '15px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 16, fontWeight: 800, cursor: loading ? 'not-allowed' : 'pointer', opacity: loading || !email || !password ? 0.5 : 1, fontFamily: 'inherit', transition: 'all 0.15s' }}>

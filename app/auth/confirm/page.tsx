@@ -18,24 +18,58 @@ function ConfirmHandler() {
 
   useEffect(() => {
     async function confirm() {
+      // --- Flow 1: token_hash + type in query string (Supabase default for email OTP) ---
       const tokenHash = params.get('token_hash')
       const type = params.get('type') as 'signup' | 'email' | null
 
-      if (!tokenHash || !type) {
-        setError('Invalid confirmation link.')
-        setStatus('error')
+      if (tokenHash && type) {
+        const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
+        if (error) {
+          setError(error.message)
+          setStatus('error')
+          return
+        }
+        localStorage.clear()
+        router.replace('/dashboard/children')
         return
       }
 
-      const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type })
-      if (error) {
-        setError(error.message)
-        setStatus('error')
+      // --- Flow 2: access_token + refresh_token in URL hash fragment (older / implicit flow) ---
+      const hash = typeof window !== 'undefined' ? window.location.hash : ''
+      if (hash) {
+        const hashParams = new URLSearchParams(hash.slice(1))
+        const accessToken = hashParams.get('access_token')
+        const refreshToken = hashParams.get('refresh_token')
+
+        if (accessToken && refreshToken) {
+          const { error } = await supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+          if (error) {
+            setError(error.message)
+            setStatus('error')
+            return
+          }
+          localStorage.clear()
+          router.replace('/dashboard/children')
+          return
+        }
+      }
+
+      // --- Flow 3: code in query string (PKCE) ---
+      const code = params.get('code')
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code)
+        if (error) {
+          setError(error.message)
+          setStatus('error')
+          return
+        }
+        localStorage.clear()
+        router.replace('/dashboard/children')
         return
       }
 
-      localStorage.clear()
-      router.replace('/dashboard/children')
+      setError('Invalid or expired confirmation link.')
+      setStatus('error')
     }
 
     confirm()
