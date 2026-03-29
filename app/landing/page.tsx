@@ -175,29 +175,25 @@ export default function LandingPage() {
         </div>
       </div>
 
-      {/* Testimonials */}
-      <div style={{ background: BEIGE_CARD, padding: sectionPad }}>
-        <div style={{ maxWidth: 900, margin: '0 auto' }}>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 36, textAlign: 'center', marginBottom: isMobile ? 28 : 56, color: TEXT }}>Loved by worldschooling families</h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
-            {[
-              { quote: "We've been traveling Southeast Asia for 8 months. Waypoint has been a lifesaver — the kids actually look forward to lessons now!", name: 'Sarah M.', location: 'Chiang Mai, Thailand', emoji: '🇹🇭' },
-              { quote: "I was terrified about homeschooling while traveling. Waypoint made it so easy. The local tips are incredible — yesterday we learned about Roman history at an actual forum!", name: 'Marco & Lisa', location: 'Rome, Italy', emoji: '🇮🇹' },
-              { quote: "The worksheets are amazing. My daughter loves the matching games and the AI grading means I don't have to do it myself!", name: 'Emma K.', location: 'Barcelona, Spain', emoji: '🇪🇸' },
-            ].map(t => (
-              <div key={t.name} style={{ background: BEIGE, borderRadius: 20, padding: isMobile ? 20 : 28, border: `2px solid ${BEIGE_BORDER}` }}>
-                <div style={{ fontSize: 20, marginBottom: 12, color: '#F5C842' }}>⭐⭐⭐⭐⭐</div>
-                <p style={{ fontSize: 15, color: TEXT, lineHeight: 1.7, fontStyle: 'italic', marginBottom: 16 }}>"{t.quote}"</p>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <div style={{ width: 40, height: 40, borderRadius: 100, background: PRIMARY_BG, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>{t.emoji}</div>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: TEXT }}>{t.name}</div>
-                    <div style={{ fontSize: 12, color: TEXT_MUTED }}>{t.location}</div>
-                  </div>
-                </div>
-              </div>
+      {/* Founding families */}
+      <div style={{ background: BEIGE_CARD, padding: sectionPad, textAlign: 'center' as const }}>
+        <div style={{ maxWidth: 600, margin: '0 auto' }}>
+          <div style={{ fontSize: isMobile ? 36 : 48, marginBottom: 16 }}>🌍</div>
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 36, marginBottom: 16, color: TEXT }}>Be among the first founding families</h2>
+          <p style={{ color: TEXT_MUTED, fontSize: isMobile ? 15 : 17, lineHeight: 1.7, marginBottom: 32, maxWidth: 480, margin: '0 auto 32px' }}>
+            We're building Waypoint with a small group of worldschooling families who care deeply about real-world education. Your feedback will shape everything.
+          </p>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' as const, marginBottom: 32 }}>
+            {['🗺️ 30 days free', '✉️ Direct access to the founders', '🛠️ Shape the product roadmap'].map(item => (
+              <span key={item} style={{ background: PRIMARY_BG, color: PRIMARY, padding: '8px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, border: `1px solid ${PRIMARY_BORDER}` }}>{item}</span>
             ))}
           </div>
+          <button
+            onClick={() => document.getElementById('beta')?.scrollIntoView({ behavior: 'smooth' })}
+            onMouseEnter={() => setHover('foundingbtn')} onMouseLeave={() => setHover(null)}
+            style={btn('foundingbtn', { padding: '14px 32px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 16, fontWeight: 800, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
+            Claim your founding family spot →
+          </button>
         </div>
       </div>
 
