@@ -459,7 +459,7 @@ export default function DashboardPage() {
   return (
     <div style={{ minHeight: '100vh', background: BEIGE }}>
       <style>{`
-        @media print { .no-print { display: none !important; } }
+        @media print { .no-print { display: none !important; } .lesson-card { page-break-inside: avoid; break-inside: avoid; } }
         @keyframes fadeIn { from { opacity:0; transform:translateY(8px) } to { opacity:1; transform:translateY(0) } }
         @keyframes spin { to { transform: rotate(360deg) } }
         .day-btn { transition: all 0.15s ease; cursor: pointer; }
@@ -750,7 +750,7 @@ export default function DashboardPage() {
               const isCached = !!lessonCache[id]
 
               return (
-                <div key={i} style={{ background: BEIGE_CARD, borderRadius: 20, padding: 24, marginBottom: 16, border: `2px solid ${done ? GREEN : BEIGE_BORDER}`, opacity: done ? 0.85 : 1, animation: 'fadeIn 0.3s ease', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
+                <div key={i} className="lesson-card" style={{ background: BEIGE_CARD, borderRadius: 20, padding: 24, marginBottom: 16, border: `2px solid ${done ? GREEN : BEIGE_BORDER}`, opacity: done ? 0.85 : 1, animation: 'fadeIn 0.3s ease', boxShadow: '0 1px 6px rgba(0,0,0,0.05)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                     <span style={{ padding: '4px 12px', borderRadius: 100, background: sc.bg, color: sc.text, fontSize: 12, fontWeight: 700, border: `1px solid ${sc.border}` }}>{lesson.subject}</span>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>

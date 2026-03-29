@@ -139,7 +139,7 @@ export default function LandingPage() {
             <div style={{ display: 'flex', gap: 8, marginTop: 24, flexDirection: isMobile ? 'column' as const : 'row' as const }}>
               <input value={email} onChange={e => setEmail(e.target.value)}
                 placeholder="your@email.com"
-                style={{ flex: 1, padding: '16px 20px', borderRadius: 100, border: 'none', fontSize: 15, fontFamily: 'inherit', outline: 'none', color: TEXT }} />
+                style={{ flex: 1, padding: '16px 20px', borderRadius: 100, border: '2px solid #E8E2D9', fontSize: 15, fontFamily: 'inherit', outline: 'none', color: TEXT, background: '#FFFFFF' }} />
               <button onClick={handleBetaSignup}
                 onMouseEnter={() => setHover('betajoin')} onMouseLeave={() => setHover(null)}
                 style={btn('betajoin', { padding: '16px 28px', borderRadius: 100, border: 'none', background: TEXT, color: 'white', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', whiteSpace: 'nowrap' as const }, { background: '#1a1a1a' })}>
