@@ -64,7 +64,7 @@ function AuthForm() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
-        }).catch(() => {/* non-critical, ignore */})
+        }).then(r => r.json()).then(j => console.log('[welcome-email] response:', j)).catch(e => console.error('[welcome-email] fetch error:', e))
 
         if (data.session) {
           // Email confirmation disabled — session is live immediately

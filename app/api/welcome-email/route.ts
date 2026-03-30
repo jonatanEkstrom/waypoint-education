@@ -4,11 +4,15 @@ import { Resend } from 'resend'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: NextRequest) {
+  const apiKey = process.env.RESEND_API_KEY
+  console.log('[welcome-email] RESEND_API_KEY present:', !!apiKey, '| length:', apiKey?.length ?? 0)
+
   try {
     const { email } = await request.json()
+    console.log('[welcome-email] Sending to:', email)
     if (!email) return NextResponse.json({ error: 'Missing email' }, { status: 400 })
 
-    await resend.emails.send({
+    const { data, error } = await resend.emails.send({
       from: 'Waypoint Education <noreply@waypointeducation.world>',
       to: email,
       subject: 'Welcome to Waypoint Education 🧭',
@@ -83,8 +87,15 @@ export async function POST(request: NextRequest) {
 </html>`,
     })
 
-    return NextResponse.json({ success: true })
+    if (error) {
+      console.error('[welcome-email] Resend API error:', JSON.stringify(error))
+      return NextResponse.json({ error }, { status: 500 })
+    }
+
+    console.log('[welcome-email] Sent successfully, id:', data?.id)
+    return NextResponse.json({ success: true, id: data?.id })
   } catch (error: any) {
+    console.error('[welcome-email] Unexpected error:', error?.message, error)
     return NextResponse.json({ error: error.message }, { status: 500 })
   }
 }
