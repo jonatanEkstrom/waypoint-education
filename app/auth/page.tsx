@@ -69,14 +69,10 @@ function AuthForm() {
         }).then(r => r.json()).then(j => console.log('[welcome-email] response:', j)).catch(e => console.error('[welcome-email] fetch error:', e))
         console.log('[signup] welcome-email fetch complete')
 
-        if (data.session) {
-          // Email confirmation disabled — session is live immediately
-          await supabase.from('profiles').upsert({ id: data.user!.id, email: data.user!.email })
-          router.push('/dashboard/children')
-        } else {
-          // Email confirmation required — tell the user to check their inbox
-          setError('__check_email__')
+        if (data.user) {
+          await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email })
         }
+        router.push('/dashboard/children')
       }
     } catch (e: any) {
       setError(e.message)
