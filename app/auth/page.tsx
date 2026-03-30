@@ -62,11 +62,17 @@ function AuthForm() {
         console.log('[signup] signUp succeeded, data.session:', !!data.session, '| data.user:', data.user?.id)
         // Fire welcome email regardless of whether confirmation is required
         console.log('[signup] firing welcome-email fetch for:', email)
-        await fetch('/api/welcome-email', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email }),
-        }).then(r => r.json()).then(j => console.log('[welcome-email] response:', j)).catch(e => console.error('[welcome-email] fetch error:', e))
+        try {
+          const res = await fetch('/api/welcome-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email }),
+          })
+          const json = await res.json()
+          console.log('[welcome-email] status:', res.status, '| response:', json)
+        } catch (e) {
+          console.error('[welcome-email] fetch failed:', e)
+        }
         console.log('[signup] welcome-email fetch complete')
 
         if (data.user) {
