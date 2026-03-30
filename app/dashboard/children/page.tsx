@@ -335,14 +335,18 @@ export default function ChildrenPage() {
                       </div>
 
                       <div>
-                        <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>Interests</label>
+                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+                          <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Interests</label>
+                          <span style={{ fontSize: 12, color: editForm.subjects.length >= 8 ? '#E07575' : TEXT_MUTED, fontWeight: 600 }}>Max 8 subjects ({editForm.subjects.length}/8)</span>
+                        </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
                           {['Math', 'Science', 'History', 'Art', 'Music', 'Coding', 'Nature', 'Sports', 'Language', 'Technology'].map(s => {
                             const on = editForm.subjects.includes(s)
+                            const atMax = editForm.subjects.length >= 8
                             return (
-                              <button key={s} onClick={() => setEditForm(p => ({ ...p, subjects: on ? p.subjects.filter(x => x !== s) : [...p.subjects, s] }))}
+                              <button key={s} onClick={() => { if (on || !atMax) setEditForm(p => ({ ...p, subjects: on ? p.subjects.filter(x => x !== s) : [...p.subjects, s] })) }}
                                 onMouseEnter={() => setHover(`esubj-${s}`)} onMouseLeave={() => setHover(null)}
-                                style={btn(`esubj-${s}`, { padding: '6px 14px', borderRadius: 100, border: `2px solid ${on ? PRIMARY : BEIGE_BORDER}`, background: on ? PRIMARY_BG : BEIGE_CARD, color: on ? PRIMARY : TEXT_MUTED, fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
+                                style={btn(`esubj-${s}`, { padding: '6px 14px', borderRadius: 100, border: `2px solid ${on ? PRIMARY : BEIGE_BORDER}`, background: on ? PRIMARY_BG : BEIGE_CARD, color: on ? PRIMARY : TEXT_MUTED, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', opacity: !on && atMax ? 0.4 : 1, cursor: !on && atMax ? 'default' : 'pointer' }, { borderColor: on || !atMax ? PRIMARY : BEIGE_BORDER, color: on || !atMax ? PRIMARY : TEXT_MUTED })}>
                                 {s}
                               </button>
                             )
@@ -470,14 +474,18 @@ export default function ChildrenPage() {
                   </div>
 
                   <div>
-                    <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 8 }}>Interests</label>
+                    <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
+                      <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Interests</label>
+                      <span style={{ fontSize: 12, color: form.subjects.length >= 8 ? '#E07575' : TEXT_MUTED, fontWeight: 600 }}>Max 8 subjects ({form.subjects.length}/8)</span>
+                    </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
                       {['Math', 'Science', 'History', 'Art', 'Music', 'Coding', 'Nature', 'Sports', 'Language', 'Technology'].map(s => {
                         const on = form.subjects.includes(s)
+                        const atMax = form.subjects.length >= 8
                         return (
-                          <button key={s} onClick={() => setForm(p => ({ ...p, subjects: on ? p.subjects.filter(x => x !== s) : [...p.subjects, s] }))}
+                          <button key={s} onClick={() => { if (on || !atMax) setForm(p => ({ ...p, subjects: on ? p.subjects.filter(x => x !== s) : [...p.subjects, s] })) }}
                             onMouseEnter={() => setHover(`subj-${s}`)} onMouseLeave={() => setHover(null)}
-                            style={btn(`subj-${s}`, { padding: '6px 14px', borderRadius: 100, border: `2px solid ${on ? PRIMARY : BEIGE_BORDER}`, background: on ? PRIMARY_BG : BEIGE_CARD, color: on ? PRIMARY : TEXT_MUTED, fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
+                            style={btn(`subj-${s}`, { padding: '6px 14px', borderRadius: 100, border: `2px solid ${on ? PRIMARY : BEIGE_BORDER}`, background: on ? PRIMARY_BG : BEIGE_CARD, color: on ? PRIMARY : TEXT_MUTED, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', opacity: !on && atMax ? 0.4 : 1, cursor: !on && atMax ? 'default' : 'pointer' }, { borderColor: on || !atMax ? PRIMARY : BEIGE_BORDER, color: on || !atMax ? PRIMARY : TEXT_MUTED })}>
                             {s}
                           </button>
                         )

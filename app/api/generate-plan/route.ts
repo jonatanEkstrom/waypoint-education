@@ -28,23 +28,38 @@ export async function POST(request: NextRequest) {
 
   const philosophy = philosophyGuide[curriculum] || philosophyGuide['eclectic']
   const style = styleGuide[learn_style] || ''
-  const topSubjects = (subjects || []).slice(0, 3).join(', ')
   const extraNotes = notes ? `Notes: ${notes}` : ''
+
+  // Distribute ALL subjects evenly across 10 lesson slots (2 per day × 5 days).
+  // Cycling ensures every subject appears at least once (up to 8 subjects).
+  const allSubjects: string[] = subjects && subjects.length > 0 ? subjects : ['General Studies']
+  const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
+  const slots = Array.from({ length: 10 }, (_, i) => allSubjects[i % allSubjects.length])
+  const scheduleLines = days.map((day, d) =>
+    `${day}: "${slots[d * 2]}", "${slots[d * 2 + 1]}"`
+  ).join('\n')
+
   const langNote = language_learning && language_learning !== 'None'
-    ? `LANGUAGE: Include 1 lesson per week focused on ${language_learning} language learning (vocabulary, phrases, or conversation relevant to the location and topics).\n`
+    ? `LANGUAGE: One of the lessons this week must focus on ${language_learning} (vocabulary, phrases, or conversation tied to the location).\n`
     : ''
   console.log('[generate-plan] langNote:', langNote || '(none — language_learning is None or missing)')
 
   const prompt = `Homeschool curriculum designer. Create a 5-day plan. Return ONLY valid JSON, nothing else.
 
 CHILD: ${name}, ${age_group}, ${city}, ${country}
-SUBJECTS: ${topSubjects}
+ALL SUBJECTS: ${allSubjects.join(', ')}
 PHILOSOPHY: ${philosophy}
 STYLE: ${style}
 ${langNote}${extraNotes}
 
-IMPORTANT: Keep every field SHORT — max 15 words each. Adapt difficulty strictly to age — ${age_group} should get age-appropriate, challenging content. A 16-18 year old gets advanced, complex tasks. A 4-6 year old gets simple, playful tasks.
+SUBJECT SCHEDULE — follow exactly. Each lesson's "subject" field must match the assigned subject below:
+${scheduleLines}
 
+RULES:
+- Every subject listed in ALL SUBJECTS must appear at least once across the week.
+- Do not substitute, skip, or repeat subjects beyond what the schedule above specifies.
+- Keep every field SHORT — max 15 words each.
+- Adapt difficulty strictly to age: ${age_group}. 4-6 yrs = simple/playful. 16-18 yrs = advanced/complex.
 
 {"week_theme":"string","days":[{"day":"Monday","focus":"string","lessons":[{"subject":"string","title":"string","duration":"30 min","method":"string","goal":"string","activity":"string","reflection":"string","milestone":"string","local_tip":"string","materials":"string"}]}]}
 
