@@ -1,7 +1,7 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
 import { supabase } from '../lib/supabase'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 
 const PRIMARY = '#9B8EC4'
@@ -24,6 +24,7 @@ function AuthForm() {
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
+  const params = useSearchParams()
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640)
@@ -31,6 +32,14 @@ function AuthForm() {
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
+
+  useEffect(() => {
+    const prefill = params.get('email')
+    if (prefill) {
+      setEmail(prefill)
+      setIsLogin(false)
+    }
+  }, [params])
 
   async function handleAuth() {
     setLoading(true)

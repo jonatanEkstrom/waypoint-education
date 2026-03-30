@@ -20,7 +20,6 @@ export default function LandingPage() {
   const [billing, setBilling] = useState<'monthly' | 'quarterly' | 'yearly'>('monthly')
   const [children, setChildren] = useState(1)
   const [email, setEmail] = useState('')
-  const [submitted, setSubmitted] = useState(false)
   const [hover, setHover] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
 
@@ -55,9 +54,9 @@ export default function LandingPage() {
     { q: 'Which teaching philosophies are supported?', a: 'Charlotte Mason, Classical (Trivium), Unschooling, Montessori, and Eclectic. You choose when you set up your child\'s profile.' },
   ]
 
-  async function handleBetaSignup() {
-    if (!email) return
-    setSubmitted(true)
+  function goToAuth() {
+    const params = email ? `?email=${encodeURIComponent(email)}` : ''
+    router.push(`/auth${params}`)
   }
 
   const btn = (id: string, base: React.CSSProperties, hov: React.CSSProperties): React.CSSProperties => ({
@@ -135,26 +134,17 @@ export default function LandingPage() {
               <span key={p} style={{ flex: 1, fontSize: 12, fontWeight: 700, color: 'white', textAlign: 'center' as const, padding: isMobile ? '4px 0' : 0 }}>{p}</span>
             ))}
           </div>
-          {!submitted ? (
-            <div style={{ display: 'flex', gap: 8, marginTop: 24, flexDirection: isMobile ? 'column' as const : 'row' as const }}>
-              <input value={email} onChange={e => setEmail(e.target.value)}
-                placeholder="your@email.com"
-                style={{ flex: 1, padding: '16px 20px', borderRadius: 100, border: '2px solid #E8E2D9', fontSize: 15, fontFamily: 'inherit', outline: 'none', color: TEXT, background: '#FFFFFF' }} />
-              <button onClick={handleBetaSignup}
-                onMouseEnter={() => setHover('betajoin')} onMouseLeave={() => setHover(null)}
-                style={btn('betajoin', { padding: '16px 28px', borderRadius: 100, border: 'none', background: TEXT, color: 'white', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', whiteSpace: 'nowrap' as const }, { background: '#1a1a1a' })}>
-                Get free access →
-              </button>
-            </div>
-          ) : (
-            <div style={{ background: 'rgba(255,255,255,0.2)', borderRadius: 16, padding: '24px', marginTop: 24 }}>
-              <div style={{ fontSize: 32, marginBottom: 8 }}>🎉</div>
-              <p style={{ color: 'white', fontSize: 17, fontWeight: 700, margin: 0 }}>You're on the list! We'll be in touch shortly.</p>
-              <button onClick={() => router.push('/auth')} style={{ marginTop: 16, padding: '12px 28px', borderRadius: 100, border: 'none', background: 'white', color: PRIMARY, fontSize: 14, fontWeight: 800, cursor: 'pointer', fontFamily: 'inherit' }}>
-                Or create your account now →
-              </button>
-            </div>
-          )}
+          <div style={{ display: 'flex', gap: 8, marginTop: 24, flexDirection: isMobile ? 'column' as const : 'row' as const }}>
+            <input value={email} onChange={e => setEmail(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && goToAuth()}
+              placeholder="your@email.com"
+              style={{ flex: 1, padding: '16px 20px', borderRadius: 100, border: '2px solid #E8E2D9', fontSize: 15, fontFamily: 'inherit', outline: 'none', color: TEXT, background: '#FFFFFF' }} />
+            <button onClick={goToAuth}
+              onMouseEnter={() => setHover('betajoin')} onMouseLeave={() => setHover(null)}
+              style={btn('betajoin', { padding: '16px 28px', borderRadius: 100, border: 'none', background: TEXT, color: 'white', fontSize: 15, fontWeight: 800, fontFamily: 'inherit', whiteSpace: 'nowrap' as const }, { background: '#1a1a1a' })}>
+              Create your account →
+            </button>
+          </div>
         </div>
       </div>
 
