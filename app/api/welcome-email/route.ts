@@ -36,22 +36,22 @@ export async function POST(request: NextRequest) {
         You're in! Welcome to the family 🎉
       </h2>
       <p style="font-size:15px;line-height:1.7;color:#2D2D2D;margin:0 0 16px">
-        We're so glad you're here. Waypoint was built for families who believe that the best classroom is the world itself — and you're one of the first to join us.
+        We're so glad you're here. Your Waypoint account is created and ready to go — you're one of the first families to join us.
       </p>
       <p style="font-size:15px;line-height:1.7;color:#2D2D2D;margin:0 0 24px">
-        Your 30-day free trial starts now. To get your first lesson plan, there's just one thing to do:
+        Your 30-day free trial starts the moment you sign in. Head to <strong>waypointeducation.world</strong> to get started.
       </p>
 
       <div style="background:#F0EBF9;border-radius:14px;padding:20px 24px;border:1px solid #DDD0F0;margin-bottom:28px">
-        <p style="font-size:15px;font-weight:700;color:#9B8EC4;margin:0 0 8px">👉 Add your child's profile</p>
+        <p style="font-size:15px;font-weight:700;color:#9B8EC4;margin:0 0 8px">👉 First thing to do after signing in</p>
         <p style="font-size:14px;line-height:1.6;color:#2D2D2D;margin:0">
-          Tell us your child's age, location, learning style and favourite subjects. Waypoint uses this to generate lesson plans that actually fit your family — not a generic curriculum.
+          Add your child's profile — age, location, learning style and favourite subjects. Waypoint uses this to generate lesson plans that actually fit your family, not a generic curriculum.
         </p>
       </div>
 
-      <a href="https://waypointeducation.world/dashboard/children"
+      <a href="https://waypointeducation.world/auth"
         style="display:block;text-align:center;background:#9B8EC4;color:white;font-size:15px;font-weight:800;padding:16px 28px;border-radius:100px;text-decoration:none;font-family:inherit">
-        Set up your child's profile →
+        Sign in to Waypoint →
       </a>
     </div>
 
