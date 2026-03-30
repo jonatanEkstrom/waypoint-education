@@ -144,7 +144,7 @@ export default function CommunityPage() {
         <div style={{ background: '#FFFBEB', border: '2px solid #FDE68A', borderRadius: 16, padding: '14px 20px', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
   <span style={{ fontSize: 20 }}>🚧</span>
   <div>
-    <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>Beta version</span>
+    <span style={{ fontSize: 14, fontWeight: 700, color: '#D97706' }}>For founding families</span>
     <span style={{ fontSize: 14, color: '#92400E' }}> — The full community with live location-based family discovery and chat is coming soon. You're among the first! 🌍</span>
   </div>
 </div>

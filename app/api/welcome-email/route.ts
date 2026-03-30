@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
         ${[
           ['🗺️', 'Generate a location-based lesson plan in 30 seconds'],
           ['📄', 'Create printable worksheets your kids will actually enjoy'],
-          ['📖', 'Start a travel journal — let AI write the stories from your adventures'],
+          ['📖', 'Start a travel journal — capture your family\'s adventures'],
           ['🧠', 'Run a quick quiz to see what sticks'],
         ].map(([icon, text]) => `
         <div style="display:flex;align-items:center;gap:10px">

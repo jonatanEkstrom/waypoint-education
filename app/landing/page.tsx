@@ -40,7 +40,7 @@ export default function LandingPage() {
     { icon: '🗺️', title: 'Location-based lessons', desc: 'Every lesson connects to where you are right now — markets, temples, beaches and more.' },
     { icon: '🤖', title: 'AI-powered planning', desc: 'Claude generates a full 5-day lesson plan in seconds, tailored to your child\'s age and learning style.' },
     { icon: '📄', title: 'Interactive worksheets', desc: 'Fun, printable worksheets with matching, fill-in-the-blank, quizzes and AI grading.' },
-    { icon: '📖', title: 'Travel journal', desc: 'Document your adventures with AI-written stories based on your child\'s own words.' },
+    { icon: '📖', title: 'Travel journal', desc: 'Document your family\'s adventures — capture memories, reflections, and discoveries from every destination.' },
     { icon: '👨‍👩‍👧', title: 'Parent tips included', desc: 'Every lesson comes with practical guidance on how to teach it — no teaching degree required.' },
     { icon: '🧠', title: 'Built-in quizzes', desc: 'Mini quizzes after each lesson to reinforce learning and track progress.' },
   ]
@@ -80,7 +80,7 @@ export default function LandingPage() {
           <button onClick={() => document.getElementById('beta')?.scrollIntoView({ behavior: 'smooth' })}
             onMouseEnter={() => setHover('navjoin')} onMouseLeave={() => setHover(null)}
             style={btn('navjoin', { padding: isMobile ? '7px 12px' : '8px 20px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
-            {isMobile ? '→' : 'Join beta →'}
+            {isMobile ? '→' : 'Join founding families →'}
           </button>
         </div>
       </nav>
@@ -227,7 +227,7 @@ export default function LandingPage() {
               {[
                 'AI-generated weekly lesson plans',
                 'Interactive worksheets with AI grading',
-                'Travel journal with AI stories',
+                'Travel journal',
                 'Works in every country & city',
                 `Up to ${children} ${children === 1 ? 'child' : 'children'}`,
                 '30-day free trial for founding families'
