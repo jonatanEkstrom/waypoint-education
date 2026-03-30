@@ -59,12 +59,15 @@ function AuthForm() {
           options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
         })
         if (error) throw error
+        console.log('[signup] signUp succeeded, data.session:', !!data.session, '| data.user:', data.user?.id)
         // Fire welcome email regardless of whether confirmation is required
+        console.log('[signup] firing welcome-email fetch for:', email)
         fetch('/api/welcome-email', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email }),
         }).then(r => r.json()).then(j => console.log('[welcome-email] response:', j)).catch(e => console.error('[welcome-email] fetch error:', e))
+        console.log('[signup] welcome-email fetch fired (non-blocking)')
 
         if (data.session) {
           // Email confirmation disabled — session is live immediately
