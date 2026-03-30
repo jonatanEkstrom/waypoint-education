@@ -50,6 +50,13 @@ function AuthForm() {
           options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
         })
         if (error) throw error
+        // Fire welcome email regardless of whether confirmation is required
+        fetch('/api/welcome-email', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email }),
+        }).catch(() => {/* non-critical, ignore */})
+
         if (data.session) {
           // Email confirmation disabled — session is live immediately
           await supabase.from('profiles').upsert({ id: data.user!.id, email: data.user!.email })
@@ -87,6 +94,18 @@ function AuthForm() {
         </div>
 
         <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: isMobile ? 20 : 32, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 4px 24px rgba(0,0,0,0.06)' }}>
+          {/* Mode toggle */}
+          <div style={{ display: 'flex', background: BEIGE, borderRadius: 14, padding: 4, marginBottom: 24, border: `2px solid ${BEIGE_BORDER}` }}>
+            <button onClick={() => { setIsLogin(true); setError(''); setAgreedToTerms(false) }}
+              style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: isLogin ? BEIGE_CARD : 'transparent', color: isLogin ? TEXT : TEXT_MUTED, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', boxShadow: isLogin ? '0 1px 4px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.15s' }}>
+              Sign in
+            </button>
+            <button onClick={() => { setIsLogin(false); setError(''); setAgreedToTerms(false) }}
+              style={{ flex: 1, padding: '10px', borderRadius: 10, border: 'none', background: !isLogin ? BEIGE_CARD : 'transparent', color: !isLogin ? TEXT : TEXT_MUTED, fontWeight: 700, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', boxShadow: !isLogin ? '0 1px 4px rgba(0,0,0,0.08)' : 'none', transition: 'all 0.15s' }}>
+              Sign up
+            </button>
+          </div>
+
           <h2 style={{ fontFamily: 'Georgia, serif', fontSize: 20, marginBottom: 24, color: TEXT }}>
             {isLogin ? 'Welcome back 👋' : 'Create your account 🚀'}
           </h2>
@@ -141,13 +160,6 @@ function AuthForm() {
             {loading ? 'Loading...' : isLogin ? 'Sign in →' : 'Create account →'}
           </button>
 
-          <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>
-            {isLogin ? "Don't have an account? " : 'Already have an account? '}
-            <button onClick={() => { setIsLogin(!isLogin); setError(''); setAgreedToTerms(false) }}
-              style={{ background: 'none', border: 'none', color: PRIMARY, cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'inherit' }}>
-              {isLogin ? 'Sign up free' : 'Sign in'}
-            </button>
-          </p>
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>
