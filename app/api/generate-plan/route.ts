@@ -30,13 +30,13 @@ export async function POST(request: NextRequest) {
   const style = styleGuide[learn_style] || ''
   const extraNotes = notes ? `Notes: ${notes}` : ''
 
-  // Distribute ALL subjects evenly across 10 lesson slots (2 per day × 5 days).
+  // Distribute ALL subjects evenly across 15 lesson slots (3 per day × 5 days).
   // Cycling ensures every subject appears at least once (up to 8 subjects).
   const allSubjects: string[] = subjects && subjects.length > 0 ? subjects : ['General Studies']
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-  const slots = Array.from({ length: 10 }, (_, i) => allSubjects[i % allSubjects.length])
+  const slots = Array.from({ length: 15 }, (_, i) => allSubjects[i % allSubjects.length])
   const scheduleLines = days.map((day, d) =>
-    `${day}: "${slots[d * 2]}", "${slots[d * 2 + 1]}"`
+    `${day}: "${slots[d * 3]}", "${slots[d * 3 + 1]}", "${slots[d * 3 + 2]}"`
   ).join('\n')
 
   const langNote = language_learning && language_learning !== 'None'
@@ -63,11 +63,11 @@ RULES:
 
 {"week_theme":"string","days":[{"day":"Monday","focus":"string","lessons":[{"subject":"string","title":"string","duration":"30 min","method":"string","goal":"string","activity":"string","reflection":"string","milestone":"string","local_tip":"string","materials":"string"}]}]}
 
-Return all 5 days (Monday-Friday), exactly 2 lessons each. ONLY JSON.`
+Return all 5 days (Monday-Friday), exactly 3 lessons each. ONLY JSON.`
 
   const stream = await client.messages.stream({
     model: 'claude-sonnet-4-5',
-    max_tokens: 3000,
+    max_tokens: 4500,
     messages: [{ role: 'user', content: prompt }]
   })
 
