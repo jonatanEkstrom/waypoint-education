@@ -32,8 +32,14 @@ export async function POST(req: NextRequest) {
       line_items: [{ price: price_id, quantity: 1 }],
       subscription_data: {
         trial_period_days: 10,
+        trial_settings: {
+          end_behavior: {
+            missing_payment_method: 'cancel',
+          },
+        },
         metadata: { user_id },
       },
+      payment_method_collection: 'always',
       metadata: { user_id },
       success_url: `${base}/dashboard`,
       cancel_url: `${base}/pricing`,
