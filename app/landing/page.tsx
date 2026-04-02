@@ -108,7 +108,7 @@ export default function LandingPage() {
       <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG} 0%, #EDF7F2 50%, #FFF8EC 100%)`, padding: isMobile ? '64px 16px 52px' : '108px 24px 96px' }}>
         <div style={{ maxWidth: 740, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ display: 'inline-block', background: '#FFF8EC', color: ORANGE, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 28, border: '1px solid #FBDFA3' }}>
-            ✈️ 10-day free trial · No credit card required
+            ✈️ 10 days free · Card required · Charged after trial
           </div>
           <h1 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 34 : 56, lineHeight: isMobile ? 1.2 : 1.1, marginBottom: 22, color: TEXT }}>
             Every destination<br />
@@ -129,7 +129,7 @@ export default function LandingPage() {
               See how it works
             </button>
           </div>
-          <p style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>10 days free · No charge until trial ends · Cancel anytime</p>
+          <p style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>10 days free · Card required · Cancel anytime</p>
         </div>
       </div>
 
@@ -196,7 +196,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 52 }}>
             <div style={{ display: 'inline-block', background: '#EDF7F2', color: GREEN_DARK, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 16, border: `1px solid ${GREEN}` }}>
-              🎁 Start with a 10-day free trial
+              🎁 10 days free · Card required · Cancel anytime
             </div>
             <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 38, marginBottom: 12, color: TEXT }}>
               Simple, transparent pricing
@@ -242,7 +242,7 @@ export default function LandingPage() {
                     'Travel journal',
                     'Ages 4–18 supported',
                     '6 teaching philosophies',
-                    '10-day free trial included',
+                    '10 days free, then $12.99/month',
                   ].map(item => (
                     <li key={item} style={{ padding: '7px 0', fontSize: 13, color: TEXT, display: 'flex', gap: 8, alignItems: 'flex-start', borderBottom: `1px solid ${BEIGE_BORDER}` }}>
                       <span style={{ color: GREEN_DARK, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span> {item}
@@ -264,7 +264,7 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: 'center', fontSize: 13, color: TEXT_MUTED, marginTop: 24, fontWeight: 600 }}>
-            10 days free · No charge until trial ends · Cancel anytime
+            10 days free · Card required · Cancel anytime
           </p>
         </div>
       </div>
@@ -284,7 +284,7 @@ export default function LandingPage() {
             style={btn('midcta', { padding: '16px 40px', borderRadius: 100, border: 'none', background: 'white', color: PRIMARY, fontSize: 16, fontWeight: 800, fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }, { background: '#f5f0ff' })}>
             Create your free account →
           </button>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 14, fontWeight: 600 }}>No credit card required to start</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 14, fontWeight: 600 }}>Card required · No charge for 10 days</p>
         </div>
       </div>
 
