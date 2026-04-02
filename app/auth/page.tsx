@@ -78,7 +78,7 @@ function AuthForm() {
         if (data.user) {
           await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email })
         }
-        router.push('/dashboard/children')
+        router.push('/pricing')
       }
     } catch (e: any) {
       setError(e.message)

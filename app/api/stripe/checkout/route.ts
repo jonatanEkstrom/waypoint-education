@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient } from '@supabase/supabase-js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
@@ -12,17 +11,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const customer = await stripe.customers.create({ email })
-
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
-    await supabase.from('profiles').upsert({
-      id: user_id,
-      stripe_customer_id: customer.id,
-    })
+    const customer = await stripe.customers.create({ email, metadata: { user_id } })
 
     const base = process.env.NEXT_PUBLIC_APP_URL ?? 'https://waypoint-education.vercel.app'
     const session = await stripe.checkout.sessions.create({

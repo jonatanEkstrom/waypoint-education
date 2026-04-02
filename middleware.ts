@@ -36,30 +36,30 @@ export async function middleware(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, trial_end_date')
+    .select('subscription_status, trial_end_date, stripe_customer_id')
     .eq('id', user.id)
     .single()
 
-  // No profile row yet → new user, allow through
-  if (!profile) return res
-
-  const { subscription_status, trial_end_date } = profile
-
-  if (subscription_status === 'active') return res
-
-  if (subscription_status === 'expired') {
+  // No profile row → send to pricing
+  if (!profile) {
     return NextResponse.redirect(new URL('/pricing', req.url))
   }
 
+  const { subscription_status, trial_end_date, stripe_customer_id } = profile
+
+  // Paid and active
+  if (subscription_status === 'active') return res
+
+  // Trial: card must be on file AND trial must not have expired
   if (subscription_status === 'trial') {
-    if (trial_end_date && new Date() > new Date(trial_end_date)) {
-      return NextResponse.redirect(new URL('/pricing', req.url))
-    }
-    return res
+    const cardOnFile = !!stripe_customer_id
+    const trialValid = trial_end_date ? new Date() < new Date(trial_end_date) : false
+    if (cardOnFile && trialValid) return res
+    return NextResponse.redirect(new URL('/pricing', req.url))
   }
 
-  // Unknown/null status → allow through (covers new users before migration runs)
-  return res
+  // Expired or any other status
+  return NextResponse.redirect(new URL('/pricing', req.url))
 }
 
 export const config = {
