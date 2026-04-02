@@ -36,14 +36,14 @@ export async function middleware(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, trial_start_date')
+    .select('subscription_status, trial_end_date')
     .eq('id', user.id)
     .single()
 
-  // No profile row yet → new user still in trial grace period, allow through
+  // No profile row yet → new user, allow through
   if (!profile) return res
 
-  const { subscription_status, trial_start_date } = profile
+  const { subscription_status, trial_end_date } = profile
 
   if (subscription_status === 'active') return res
 
@@ -52,17 +52,14 @@ export async function middleware(req: NextRequest) {
   }
 
   if (subscription_status === 'trial') {
-    if (trial_start_date) {
-      const trialEnd = new Date(new Date(trial_start_date).getTime() + 10 * 24 * 60 * 60 * 1000)
-      if (new Date() > trialEnd) {
-        return NextResponse.redirect(new URL('/pricing', req.url))
-      }
+    if (trial_end_date && new Date() > new Date(trial_end_date)) {
+      return NextResponse.redirect(new URL('/pricing', req.url))
     }
     return res
   }
 
-  // Unknown status → redirect to pricing
-  return NextResponse.redirect(new URL('/pricing', req.url))
+  // Unknown/null status → allow through (covers new users before migration runs)
+  return res
 }
 
 export const config = {
