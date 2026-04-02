@@ -177,7 +177,7 @@ function AuthForm() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>
-          10-day free trial · No charge until trial ends · Cancel anytime
+          10-day free trial · Then $12.99/month · Cancel anytime
         </p>
         <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 12 }}>
           <Link href="/privacy" style={{ fontSize: 12, color: TEXT_MUTED, textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</Link>
