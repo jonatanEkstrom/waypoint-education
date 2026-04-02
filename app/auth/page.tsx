@@ -127,7 +127,7 @@ function AuthForm() {
           {!isLogin && (
             <div style={{ background: BEIGE, borderRadius: 12, padding: '12px 16px', marginBottom: 20, border: `1px solid ${BEIGE_BORDER}` }}>
               <p style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, margin: 0 }}>
-                🎉 Founding family access — completely free for 30 days, no credit card required
+                ✨ Start your 10-day free trial — then $12.99/month
               </p>
             </div>
           )}
@@ -177,7 +177,7 @@ function AuthForm() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>
-          Founding family access · 30 days free · No credit card required
+          10-day free trial · No charge until trial ends · Cancel anytime
         </p>
         <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 12 }}>
           <Link href="/privacy" style={{ fontSize: 12, color: TEXT_MUTED, textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</Link>
