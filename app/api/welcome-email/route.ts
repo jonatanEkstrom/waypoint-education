@@ -33,30 +33,34 @@ export async function POST(request: NextRequest) {
 
     <div style="background:#FFFFFF;border-radius:20px;padding:36px;border:2px solid #E8E2D9;box-shadow:0 4px 24px rgba(0,0,0,0.06)">
       <h2 style="font-family:Georgia,serif;font-size:22px;margin:0 0 16px;color:#2D2D2D">
-        You're in! Welcome to the family 🎉
+        Welcome aboard! Your adventure starts here 🌍
       </h2>
       <p style="font-size:15px;line-height:1.7;color:#2D2D2D;margin:0 0 16px">
-        We're so glad you're here. Your Waypoint account is created and ready to go — you're one of the first families to join us.
+        Your Waypoint account is ready. We're thrilled to have your family on board — wherever in the world you're headed, school is coming with you.
       </p>
       <p style="font-size:15px;line-height:1.7;color:#2D2D2D;margin:0 0 24px">
-        Your 30-day free trial starts the moment you sign in. Head to <strong>waypointeducation.world</strong> to get started.
+        Your <strong>10-day free trial</strong> has started. Choose a plan and enter your card to unlock the full app — you won't be charged a thing for 10 days. After that, your chosen plan kicks in automatically. Cancel any time before day 10 and you'll never see a charge.
       </p>
 
       <div style="background:#F0EBF9;border-radius:14px;padding:20px 24px;border:1px solid #DDD0F0;margin-bottom:28px">
-        <p style="font-size:15px;font-weight:700;color:#9B8EC4;margin:0 0 8px">👉 First thing to do after signing in</p>
+        <p style="font-size:15px;font-weight:700;color:#9B8EC4;margin:0 0 8px">👉 Next step: choose your plan</p>
         <p style="font-size:14px;line-height:1.6;color:#2D2D2D;margin:0">
-          Add your child's profile — age, location, learning style and favourite subjects. Waypoint uses this to generate lesson plans that actually fit your family, not a generic curriculum.
+          Pick monthly, quarterly or yearly — then add your child's profile (age, location, learning style). Waypoint will generate your first lesson plan in seconds.
         </p>
       </div>
 
-      <a href="https://waypointeducation.world/auth"
+      <a href="https://waypointeducation.world/pricing"
         style="display:block;text-align:center;background:#9B8EC4;color:white;font-size:15px;font-weight:800;padding:16px 28px;border-radius:100px;text-decoration:none;font-family:inherit">
-        Sign in to Waypoint →
+        Choose your plan →
       </a>
+
+      <p style="text-align:center;font-size:12px;color:#9E9188;margin:14px 0 0;font-weight:600">
+        10 days free · Card required · Cancel anytime
+      </p>
     </div>
 
     <div style="margin-top:28px;background:#FFFFFF;border-radius:20px;padding:24px;border:2px solid #E8E2D9">
-      <p style="font-size:14px;font-weight:700;color:#2D2D2D;margin:0 0 12px">What you can do right now:</p>
+      <p style="font-size:14px;font-weight:700;color:#2D2D2D;margin:0 0 12px">Once you're in, you can:</p>
       <div style="display:flex;flex-direction:column;gap:10px">
         ${[
           ['🗺️', 'Generate a location-based lesson plan in 30 seconds'],

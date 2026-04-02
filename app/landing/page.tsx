@@ -23,6 +23,7 @@ const PLANS = [
     price: '$12.99',
     sub: 'per month',
     billed: 'Billed monthly',
+    extraChild: '+$6/month per extra child',
     badge: null,
     highlight: false,
   },
@@ -32,6 +33,7 @@ const PLANS = [
     price: '$10.99',
     sub: 'per month',
     billed: 'Billed $32.97 every 3 months',
+    extraChild: '+$15/quarter per extra child',
     badge: 'Save 15%',
     highlight: true,
   },
@@ -41,6 +43,7 @@ const PLANS = [
     price: '$8.99',
     sub: 'per month',
     billed: 'Billed $107.88/year',
+    extraChild: '+$54/year per extra child',
     badge: 'Save 31%',
     highlight: false,
   },
@@ -233,7 +236,10 @@ export default function LandingPage() {
                   <span style={{ fontFamily: 'Georgia,serif', fontSize: 40, fontWeight: 700, color: TEXT }}>{plan.price}</span>
                   <span style={{ color: TEXT_MUTED, fontSize: 14 }}> {plan.sub}</span>
                 </div>
-                <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: 24 }}>{plan.billed}</div>
+                <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: 8 }}>{plan.billed}</div>
+                <div style={{ fontSize: 12, color: TEXT_MUTED, marginBottom: 20, padding: '7px 12px', background: BEIGE, borderRadius: 10, border: `1px solid ${BEIGE_BORDER}` }}>
+                  1 child included · {plan.extraChild}
+                </div>
 
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', flex: 1 }}>
                   {[
@@ -242,7 +248,6 @@ export default function LandingPage() {
                     'Travel journal',
                     'Ages 4–18 supported',
                     '6 teaching philosophies',
-                    '10 days free, then $12.99/month',
                   ].map(item => (
                     <li key={item} style={{ padding: '7px 0', fontSize: 13, color: TEXT, display: 'flex', gap: 8, alignItems: 'flex-start', borderBottom: `1px solid ${BEIGE_BORDER}` }}>
                       <span style={{ color: GREEN_DARK, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span> {item}
