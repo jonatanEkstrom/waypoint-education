@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
       },
       payment_method_collection: 'always',
       metadata: { user_id },
-      success_url: `${base}/dashboard`,
+      success_url: `${base}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/pricing`,
     })
 

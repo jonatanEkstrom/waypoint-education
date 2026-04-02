@@ -20,13 +20,12 @@ export async function POST(req: NextRequest) {
     process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 
-  // Card collected and checkout completed — user is now in trial with card on file.
-  // Do NOT set subscription_status = 'active' here; the subscription is still trialing.
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
     const userId = session.metadata?.user_id
     if (userId) {
       await supabase.from('profiles').update({
+        subscription_status: 'active',
         stripe_customer_id: session.customer as string,
         stripe_subscription_id: session.subscription as string,
       }).eq('id', userId)
