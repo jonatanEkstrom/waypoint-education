@@ -237,12 +237,12 @@ export default function LandingPage() {
                 </li>
               ))}
             </ul>
-            <button onClick={() => document.getElementById('beta')?.scrollIntoView({ behavior: 'smooth' })}
+            <button onClick={() => router.push('/pricing')}
               onMouseEnter={() => setHover('pricingbtn')} onMouseLeave={() => setHover(null)}
               style={btn('pricingbtn', { width: '100%', padding: '16px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 16, fontWeight: 800, fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(155,142,196,0.3)' }, { background: PRIMARY_DARK })}>
-              Join as a founding family →
+              Start free trial →
             </button>
-            <p style={{ fontSize: 12, color: TEXT_MUTED, marginTop: 12, fontWeight: 600 }}>30 days free · No credit card required · Cancel anytime</p>
+            <p style={{ fontSize: 12, color: TEXT_MUTED, marginTop: 12, fontWeight: 600 }}>10 days free · No charge until trial ends · Cancel anytime</p>
           </div>
         </div>
       </div>
