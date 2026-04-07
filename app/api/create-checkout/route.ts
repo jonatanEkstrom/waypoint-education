@@ -4,9 +4,9 @@ import Stripe from 'stripe'
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 const PRICE_IDS = {
-  monthly: 'price_1T95rNLyQuaV8LsEPSQvEQwu',
-  quarterly: 'price_1T95smLyQuaV8LsE1f0LketT',
-  yearly: 'price_1T95twLyQuaV8LsEI5kT4XM2',
+  monthly: 'price_1TJaFcF8H8N4qjrrCXM9tMaB',
+  quarterly: 'price_1TJaIjF8H8N4qjrrOzkaYY5y',
+  yearly: 'price_1TJaLFF8H8N4qjrrI8IUwbPE',
 }
 
 export async function POST(req: NextRequest) {

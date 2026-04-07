@@ -22,7 +22,7 @@ const PLANS = [
     label: 'Monthly',
     price: 12.99,
     billing: '/month',
-    priceId: 'price_1T95rNLyQuaV8LsEPSQvEQwu',
+    priceId: 'price_1TJaFcF8H8N4qjrrCXM9tMaB',
     badge: null,
     highlight: false,
   },
@@ -32,7 +32,7 @@ const PLANS = [
     price: 10.99,
     billing: '/month',
     sub: 'Billed $32.97 every 3 months',
-    priceId: 'price_1T95twLyQuaV8LsEI5kT4XM2',
+    priceId: 'price_1TJaIjF8H8N4qjrrOzkaYY5y',
     badge: 'Save 15%',
     highlight: true,
   },
@@ -42,7 +42,7 @@ const PLANS = [
     price: 8.99,
     billing: '/month',
     sub: 'Billed $107.88/year',
-    priceId: 'price_1T95smLyQuaV8LsE1f0LketT',
+    priceId: 'price_1TJaLFF8H8N4qjrrI8IUwbPE',
     badge: 'Save 31%',
     highlight: false,
   },
@@ -58,10 +58,17 @@ const FEATURES = [
   '10 days free, then $12.99/month',
 ]
 
+const EXTRA_CHILD_LABEL: Record<string, string> = {
+  monthly: '+$6/mo',
+  quarterly: '+$15/qtr',
+  yearly: '+$54/yr',
+}
+
 export default function PricingPage() {
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
+  const [children, setChildren] = useState(1)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640)
@@ -82,7 +89,7 @@ export default function PricingPage() {
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ price_id: priceId, user_id: user.id, email: user.email }),
+        body: JSON.stringify({ price_id: priceId, user_id: user.id, email: user.email, children, billing: planKey }),
       })
       const data = await res.json()
       if (data.url) {
@@ -124,6 +131,28 @@ export default function PricingPage() {
 
       {/* Plan cards */}
       <div style={{ maxWidth: 960, margin: '0 auto', padding: isMobile ? '32px 16px 64px' : '48px 24px 80px' }}>
+
+        {/* Children stepper */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, marginBottom: 36 }}>
+          <span style={{ fontSize: 15, fontWeight: 700, color: TEXT }}>How many children?</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 0, border: `2px solid ${BEIGE_BORDER}`, borderRadius: 100, background: BEIGE_CARD, overflow: 'hidden' }}>
+            <button
+              onClick={() => setChildren(c => Math.max(1, c - 1))}
+              style={{ width: 36, height: 36, border: 'none', background: 'transparent', fontSize: 18, fontWeight: 700, color: children === 1 ? TEXT_MUTED : TEXT, cursor: children === 1 ? 'default' : 'pointer', fontFamily: 'inherit' }}
+            >−</button>
+            <span style={{ minWidth: 28, textAlign: 'center', fontSize: 16, fontWeight: 800, color: TEXT }}>{children}</span>
+            <button
+              onClick={() => setChildren(c => Math.min(10, c + 1))}
+              style={{ width: 36, height: 36, border: 'none', background: 'transparent', fontSize: 18, fontWeight: 700, color: children === 10 ? TEXT_MUTED : TEXT, cursor: children === 10 ? 'default' : 'pointer', fontFamily: 'inherit' }}
+            >+</button>
+          </div>
+          {children > 1 && (
+            <span style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>
+              1 included · {children - 1} extra
+            </span>
+          )}
+        </div>
+
         <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 20 }}>
           {PLANS.map(plan => (
             <div key={plan.key} style={{
@@ -147,12 +176,17 @@ export default function PricingPage() {
                 </div>
               )}
               <div style={{ fontFamily: 'Georgia,serif', fontSize: 20, fontWeight: 700, color: TEXT, marginBottom: 4 }}>{plan.label}</div>
-              <div style={{ marginBottom: plan.sub ? 4 : 20 }}>
+              <div style={{ marginBottom: (plan.sub || children > 1) ? 4 : 20 }}>
                 <span style={{ fontFamily: 'Georgia,serif', fontSize: 40, fontWeight: 700, color: TEXT }}>${plan.price}</span>
                 <span style={{ color: TEXT_MUTED, fontSize: 15 }}>{plan.billing}</span>
               </div>
               {plan.sub && (
-                <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: 20 }}>{plan.sub}</div>
+                <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: children > 1 ? 4 : 20 }}>{plan.sub}</div>
+              )}
+              {children > 1 && (
+                <div style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, marginBottom: 20 }}>
+                  +{children - 1} child{children - 1 > 1 ? 'ren' : ''}: {EXTRA_CHILD_LABEL[plan.key]} each
+                </div>
               )}
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px 0', flex: 1 }}>
