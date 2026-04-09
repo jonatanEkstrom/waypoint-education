@@ -6,7 +6,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 const PRICE_IDS = {
   monthly: 'price_1TJaFcF8H8N4qjrrCXM9tMaB',
   quarterly: 'price_1TJaIjF8H8N4qjrrOzkaYY5y',
-  yearly: 'price_1TJaLFF8H8N4qjrrI8IUwbPE',
+  yearly: 'price_1TJaLFF8H8N4qjrrl8lUwbPE',
 }
 
 export async function POST(req: NextRequest) {

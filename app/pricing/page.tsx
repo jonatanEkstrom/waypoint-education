@@ -42,7 +42,7 @@ const PLANS = [
     price: 8.99,
     billing: '/month',
     sub: 'Billed $107.88/year',
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY ?? 'price_1TJaLFF8H8N4qjrrI8IUwbPE',
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY ?? 'price_1TJaLFF8H8N4qjrrl8lUwbPE',
     badge: 'Save 31%',
     highlight: false,
   },
