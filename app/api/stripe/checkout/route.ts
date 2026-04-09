@@ -6,7 +6,8 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
 
 export async function POST(req: NextRequest) {
   try {
-    const { price_id, user_id, email, children = 1, billing = 'monthly' } = await req.json()
+    const { price_id: raw_price_id, user_id, email, children = 1, billing = 'monthly' } = await req.json()
+    const price_id = raw_price_id?.trim()
 
     const secretKey = process.env.STRIPE_SECRET_KEY ?? ''
     console.log('[checkout] price_id:', JSON.stringify(price_id))
