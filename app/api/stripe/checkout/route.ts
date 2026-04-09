@@ -8,6 +8,10 @@ export async function POST(req: NextRequest) {
   try {
     const { price_id, user_id, email, children = 1, billing = 'monthly' } = await req.json()
 
+    const secretKey = process.env.STRIPE_SECRET_KEY ?? ''
+    console.log('[checkout] price_id:', price_id)
+    console.log('[checkout] STRIPE_SECRET_KEY prefix:', secretKey.slice(0, 20))
+
     if (!price_id || !user_id || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
