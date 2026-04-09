@@ -12,7 +12,15 @@ export async function POST(req: NextRequest) {
     console.log('[checkout] price_id:', JSON.stringify(price_id))
     console.log('[checkout] price_id length:', price_id?.length)
     console.log('[checkout] STRIPE_SECRET_KEY prefix (env):', secretKey.slice(0, 20))
-    console.log('[checkout] stripe instance key prefix:', (stripe as any)._api?.auth?.slice(0, 20) ?? 'unknown')
+    console.log('[checkout] stripe.VERSION:', Stripe.PACKAGE_VERSION)
+
+    // Verify the live key works by fetching the price directly
+    try {
+      const priceCheck = await stripe.prices.retrieve(price_id)
+      console.log('[checkout] price lookup OK:', priceCheck.id, '| active:', priceCheck.active)
+    } catch (priceErr: any) {
+      console.error('[checkout] price lookup FAILED:', priceErr.message, '| raw:', JSON.stringify(priceErr.raw ?? {}))
+    }
 
     if (!price_id || !user_id || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
