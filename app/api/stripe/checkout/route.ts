@@ -8,19 +8,6 @@ export async function POST(req: NextRequest) {
     const { price_id: raw_price_id, user_id, email, children = 1, billing = 'monthly' } = await req.json()
     const price_id = raw_price_id?.trim()
 
-    const secretKey = process.env.STRIPE_SECRET_KEY ?? ''
-    console.log('[checkout] price_id:', JSON.stringify(price_id))
-    console.log('[checkout] price_id length:', price_id?.length)
-    console.log('[checkout] STRIPE_SECRET_KEY prefix (env):', secretKey.slice(0, 20))
-
-    // Verify the live key works by fetching the price directly
-    try {
-      const priceCheck = await stripe.prices.retrieve(price_id)
-      console.log('[checkout] price lookup OK:', priceCheck.id, '| active:', priceCheck.active)
-    } catch (priceErr: any) {
-      console.error('[checkout] price lookup FAILED:', priceErr.message, '| raw:', JSON.stringify(priceErr.raw ?? {}))
-    }
-
     if (!price_id || !user_id || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
@@ -70,18 +57,16 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
-    const { error: profileError, count } = await adminSupabase.from('profiles').update({
+    await adminSupabase.from('profiles').update({
       subscription_status: 'trial',
       stripe_customer_id: customer.id,
       trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
       children_count: children,
-    }).eq('id', user_id).select()
-    console.log('[checkout] profile update error:', profileError)
+    }).eq('id', user_id)
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
-    console.error('[checkout] error:', err.message)
-    if (err.raw) console.error('[checkout] stripe raw error:', JSON.stringify(err.raw))
+    console.error('[checkout] error:', err.message, err.raw ?? '')
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
