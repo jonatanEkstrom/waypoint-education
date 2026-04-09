@@ -9,8 +9,10 @@ export async function POST(req: NextRequest) {
     const { price_id, user_id, email, children = 1, billing = 'monthly' } = await req.json()
 
     const secretKey = process.env.STRIPE_SECRET_KEY ?? ''
-    console.log('[checkout] price_id:', price_id)
-    console.log('[checkout] STRIPE_SECRET_KEY prefix:', secretKey.slice(0, 20))
+    console.log('[checkout] price_id:', JSON.stringify(price_id))
+    console.log('[checkout] price_id length:', price_id?.length)
+    console.log('[checkout] STRIPE_SECRET_KEY prefix (env):', secretKey.slice(0, 20))
+    console.log('[checkout] stripe instance key prefix:', (stripe as any)._api?.auth?.slice(0, 20) ?? 'unknown')
 
     if (!price_id || !user_id || !email) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
@@ -70,7 +72,8 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
-    console.error(err)
+    console.error('[checkout] error:', err.message)
+    if (err.raw) console.error('[checkout] stripe raw error:', JSON.stringify(err.raw))
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
