@@ -12,7 +12,6 @@ export async function POST(req: NextRequest) {
     console.log('[checkout] price_id:', JSON.stringify(price_id))
     console.log('[checkout] price_id length:', price_id?.length)
     console.log('[checkout] STRIPE_SECRET_KEY prefix (env):', secretKey.slice(0, 20))
-    console.log('[checkout] stripe.VERSION:', Stripe.PACKAGE_VERSION)
 
     // Verify the live key works by fetching the price directly
     try {
