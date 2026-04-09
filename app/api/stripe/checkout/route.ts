@@ -68,8 +68,8 @@ export async function POST(req: NextRequest) {
       stripe_customer_id: customer.id,
       trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
       children_count: children,
-    }).eq('id', user_id).select('id', { count: 'exact', head: true })
-    console.log('[checkout] profile update rows affected:', count, '| error:', profileError)
+    }).eq('id', user_id).select()
+    console.log('[checkout] profile update error:', profileError)
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
