@@ -64,12 +64,13 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
-    await adminSupabase.from('profiles').update({
+    const { error: profileError, count } = await adminSupabase.from('profiles').update({
       subscription_status: 'trial',
       stripe_customer_id: customer.id,
       trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
       children_count: children,
-    }).eq('id', user_id)
+    }).eq('id', user_id).select('id', { count: 'exact', head: true })
+    console.log('[checkout] profile update rows affected:', count, '| error:', profileError)
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {

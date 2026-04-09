@@ -46,6 +46,7 @@ export async function middleware(req: NextRequest) {
   }
 
   const { subscription_status, trial_end_date, stripe_customer_id } = profile
+  console.log('[middleware] profile check:', { subscription_status, trial_end_date, has_customer: !!stripe_customer_id, pathname })
 
   // Paid and active
   if (subscription_status === 'active') return res
