@@ -38,8 +38,10 @@ const LANGUAGES = ['None', 'Spanish', 'French', 'German', 'Mandarin', 'Japanese'
 
 export default function ChildrenPage() {
   const [children, setChildren] = useState<Child[]>([])
+  const [childrenLimit, setChildrenLimit] = useState<number>(1)
   const [selected, setSelected] = useState<Child | null>(null)
   const [adding, setAdding] = useState(false)
+  const [limitError, setLimitError] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     age_group: '7–9 years', city: '', country: '',
@@ -76,6 +78,12 @@ export default function ChildrenPage() {
   async function loadChildren() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('children_count')
+      .eq('id', user.id)
+      .single()
+    if (profile?.children_count) setChildrenLimit(profile.children_count)
     const { data } = await supabase.from('children').select('*').eq('user_id', user.id)
     if (data) {
       const mapped = data.map((c: any) => ({
@@ -105,6 +113,7 @@ export default function ChildrenPage() {
 
   async function saveChild() {
     if (!form.name || !form.city) return
+    if (children.length >= childrenLimit) { setLimitError(true); setAdding(false); return }
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
     const colorIndex = children.length % AVATAR_COLORS.length
@@ -262,11 +271,19 @@ export default function ChildrenPage() {
                 </button>
               ))}
 
-              <button onClick={() => { setAdding(true); setSelected(null) }}
+              <button onClick={() => {
+                  if (children.length >= childrenLimit) { setLimitError(true); return }
+                  setLimitError(false); setAdding(true); setSelected(null)
+                }}
                 onMouseEnter={() => setHover('add')} onMouseLeave={() => setHover(null)}
-                style={btn('add', { padding: '14px 16px', borderRadius: 16, border: `2px dashed ${BEIGE_BORDER}`, background: 'transparent', fontSize: 14, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit', width: '100%' }, { borderColor: PRIMARY, color: PRIMARY })}>
+                style={btn('add', { padding: '14px 16px', borderRadius: 16, border: `2px dashed ${children.length >= childrenLimit ? '#F4A7A7' : BEIGE_BORDER}`, background: 'transparent', fontSize: 14, fontWeight: 700, color: children.length >= childrenLimit ? '#E07575' : TEXT_MUTED, fontFamily: 'inherit', width: '100%' }, { borderColor: PRIMARY, color: PRIMARY })}>
                 + Add child
               </button>
+              {limitError && (
+                <div style={{ background: '#FFF1F2', border: '1.5px solid #F4A7A7', borderRadius: 12, padding: '10px 14px', fontSize: 13, color: '#E07575', fontWeight: 600 }}>
+                  Your plan includes {childrenLimit} {childrenLimit === 1 ? 'child' : 'children'}. To add more, update your subscription via Manage subscription.
+                </div>
+              )}
             </div>
           </div>
         )}
