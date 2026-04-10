@@ -16,25 +16,39 @@ export async function POST(req: NextRequest) {
       process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
 
+    // Try profile first
     const { data: profile } = await adminSupabase
       .from('profiles')
       .select('stripe_customer_id')
       .eq('id', user_id)
       .single()
 
-    if (!profile?.stripe_customer_id) {
-      return NextResponse.json({ error: 'No Stripe customer found' }, { status: 404 })
+    let customerId = profile?.stripe_customer_id
+
+    // Fall back to searching Stripe by user_id metadata
+    if (!customerId) {
+      const results = await stripe.customers.search({
+        query: `metadata["user_id"]:"${user_id}"`,
+        limit: 10,
+      })
+      // Pick the customer that has an active subscription, or just the most recent one
+      const withSub = results.data.find(c => !c.deleted)
+      customerId = withSub?.id ?? null
+    }
+
+    if (!customerId) {
+      return NextResponse.json({ error: 'No Stripe customer found for this user' }, { status: 404 })
     }
 
     const base = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://waypoint-education.vercel.app'
     const session = await stripe.billingPortal.sessions.create({
-      customer: profile.stripe_customer_id,
+      customer: customerId,
       return_url: `${base}/dashboard`,
     })
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {
-    console.error(err)
+    console.error('[portal] error:', err.message, err.raw ?? '')
     return NextResponse.json({ error: err.message }, { status: 500 })
   }
 }
