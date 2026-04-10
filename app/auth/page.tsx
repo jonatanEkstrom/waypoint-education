@@ -51,8 +51,12 @@ function AuthForm() {
         // Do NOT clear localStorage here — it wipes the Supabase session token and
         // triggers the client's storage listener, nullifying the session before the
         // redirect lands. Cross-user cleanup is handled by /dashboard/children.
-        const returnTo = params.get('returnTo') || '/dashboard/children'
-        router.push(decodeURIComponent(returnTo))
+        const returnTo = decodeURIComponent(params.get('returnTo') || '/dashboard/children')
+        // Always go through child selection first — strip bare /dashboard to /dashboard/children
+        const destination = returnTo === '/dashboard' || returnTo.startsWith('/dashboard?')
+          ? '/dashboard/children'
+          : returnTo
+        router.push(destination)
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
