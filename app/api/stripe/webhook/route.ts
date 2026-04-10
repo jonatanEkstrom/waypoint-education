@@ -24,13 +24,14 @@ export async function POST(req: NextRequest) {
     const userId = session.metadata?.user_id
     if (userId) {
       const children = parseInt(session.metadata?.children || '1')
-      await supabase.from('profiles').update({
+      await supabase.from('profiles').upsert({
+        id: userId,
         subscription_status: 'trial',
         stripe_customer_id: session.customer as string,
         stripe_subscription_id: session.subscription as string,
         trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
         children_count: children,
-      }).eq('id', userId)
+      }, { onConflict: 'id' })
     }
   }
 
