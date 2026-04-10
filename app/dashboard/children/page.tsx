@@ -209,6 +209,18 @@ export default function ChildrenPage() {
     router.push('/dashboard')
   }
 
+  async function handleManageSubscription() {
+    const { data: { user } } = await supabase.auth.getUser()
+    if (!user) return
+    const res = await fetch('/api/stripe/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ user_id: user.id }),
+    })
+    const data = await res.json()
+    if (data.url) window.location.href = data.url
+  }
+
   const btn = (id: string, base: React.CSSProperties, hoverStyle: React.CSSProperties): React.CSSProperties => ({
     ...base, ...(hover === id ? hoverStyle : {}), transition: 'all 0.15s ease', cursor: 'pointer'
   })
@@ -239,11 +251,18 @@ export default function ChildrenPage() {
           <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: TEXT }}>Waypoint <span style={{ color: PRIMARY }}>Education</span></span>
         </div>
         {!isMobile && (
-          <button onClick={() => router.push('/dashboard')}
-            onMouseEnter={() => setHover('back')} onMouseLeave={() => setHover(null)}
-            style={btn('back', { padding: '8px 18px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
-            ← Dashboard
-          </button>
+          <div style={{ display: 'flex', gap: 8 }}>
+            <button onClick={handleManageSubscription}
+              onMouseEnter={() => setHover('portal')} onMouseLeave={() => setHover(null)}
+              style={btn('portal', { padding: '8px 18px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
+              Manage subscription
+            </button>
+            <button onClick={() => router.push('/dashboard')}
+              onMouseEnter={() => setHover('back')} onMouseLeave={() => setHover(null)}
+              style={btn('back', { padding: '8px 18px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
+              ← Dashboard
+            </button>
+          </div>
         )}
       </div>
 
