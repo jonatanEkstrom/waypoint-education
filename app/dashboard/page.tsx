@@ -417,18 +417,6 @@ export default function DashboardPage() {
   function toggleComplete(id: string) {
     setCompleted(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id])
   }
-  async function handleManageSubscription() {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const res = await fetch('/api/stripe/portal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id }),
-    })
-    const data = await res.json()
-    if (data.url) window.location.href = data.url
-  }
-
   async function handleLogout() {
     await supabase.auth.signOut()
     localStorage.clear()
@@ -659,12 +647,7 @@ export default function DashboardPage() {
                 style={btn('newplan', { padding: '8px 14px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
                 + New plan
               </button>
-              <button onClick={handleManageSubscription}
-                onMouseEnter={() => setHover('portal')} onMouseLeave={() => setHover(null)}
-                style={btn('portal', { padding: '8px 14px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
-                Manage subscription
-              </button>
-              <button onClick={handleLogout}
+<button onClick={handleLogout}
                 onMouseEnter={() => setHover('logout')} onMouseLeave={() => setHover(null)}
                 style={btn('logout', { padding: '8px 14px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: '#E07575', fontFamily: 'inherit' }, { background: '#FFF1F2' })}>
                 Logout
@@ -685,11 +668,7 @@ export default function DashboardPage() {
               style={{ padding: '7px 12px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', flexShrink: 0, cursor: 'pointer' }}>
               + New
             </button>
-            <button onClick={handleManageSubscription}
-              style={{ padding: '7px 12px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 12, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit', flexShrink: 0, cursor: 'pointer' }}>
-              Billing
-            </button>
-            <button onClick={handleLogout}
+<button onClick={handleLogout}
               style={{ padding: '7px 12px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 12, fontWeight: 700, color: '#E07575', fontFamily: 'inherit', flexShrink: 0, cursor: 'pointer' }}>
               Logout
             </button>

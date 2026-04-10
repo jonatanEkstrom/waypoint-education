@@ -212,13 +212,21 @@ export default function ChildrenPage() {
   async function handleManageSubscription() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) return
-    const res = await fetch('/api/stripe/portal', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ user_id: user.id }),
-    })
-    const data = await res.json()
-    if (data.url) window.location.href = data.url
+    try {
+      const res = await fetch('/api/stripe/portal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id: user.id }),
+      })
+      const data = await res.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert(data.error || 'Could not open subscription portal. Please try again.')
+      }
+    } catch {
+      alert('Could not open subscription portal. Please try again.')
+    }
   }
 
   const btn = (id: string, base: React.CSSProperties, hoverStyle: React.CSSProperties): React.CSSProperties => ({
