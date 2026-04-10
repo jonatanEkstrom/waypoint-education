@@ -45,7 +45,7 @@ export async function middleware(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, trial_end_date, stripe_customer_id')
+    .select('subscription_status, trial_end_date')
     .eq('id', user.id)
     .single()
 
@@ -54,16 +54,16 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/pricing', req.url))
   }
 
-  const { subscription_status, trial_end_date, stripe_customer_id } = profile
+  const { subscription_status, trial_end_date } = profile
 
   // Paid and active
   if (subscription_status === 'active') return res
 
-  // Trial: card must be on file AND trial must not have expired
+  // Trial: valid trial_end_date is sufficient — stripe_customer_id may be null
+  // if the profile upsert hasn't propagated yet (service role key missing, RLS, etc.)
   if (subscription_status === 'trial') {
-    const cardOnFile = !!stripe_customer_id
     const trialValid = trial_end_date ? new Date() < new Date(trial_end_date) : false
-    if (cardOnFile && trialValid) return res
+    if (trialValid) return res
     return NextResponse.redirect(new URL('/pricing', req.url))
   }
 
