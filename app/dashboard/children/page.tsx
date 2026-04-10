@@ -41,6 +41,7 @@ export default function ChildrenPage() {
   const [childrenLimit, setChildrenLimit] = useState<number>(1)
   const [selected, setSelected] = useState<Child | null>(null)
   const [adding, setAdding] = useState(false)
+  const [saving, setSaving] = useState(false)
   const [limitError, setLimitError] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({
@@ -114,18 +115,23 @@ export default function ChildrenPage() {
   async function saveChild() {
     if (!form.name || !form.city) return
     if (children.length >= childrenLimit) { setLimitError(true); setAdding(false); return }
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const colorIndex = children.length % AVATAR_COLORS.length
-    const { data } = await supabase.from('children').insert({
-      name: form.name, age_group: form.age_group, city: form.city, country: form.country,
-      curriculum: form.curriculum, learn_style: form.learn_style, subjects: form.subjects,
-      notes: form.notes, language_learning: form.language_learning, color_index: colorIndex, user_id: user.id
-    }).select()
-    if (data) {
-      await loadChildren()
-      setAdding(false)
-      setForm({ name: '', age_group: '7–9 years', city: '', country: '', curriculum: 'Eclectic', learn_style: 'Visual', subjects: [], notes: '', language_learning: 'None' })
+    setSaving(true)
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const colorIndex = children.length % AVATAR_COLORS.length
+      const { data } = await supabase.from('children').insert({
+        name: form.name, age_group: form.age_group, city: form.city, country: form.country,
+        curriculum: form.curriculum, learn_style: form.learn_style, subjects: form.subjects,
+        notes: form.notes, language_learning: form.language_learning, color_index: colorIndex, user_id: user.id
+      }).select()
+      if (data) {
+        await loadChildren()
+        setAdding(false)
+        setForm({ name: '', age_group: '7–9 years', city: '', country: '', curriculum: 'Eclectic', learn_style: 'Visual', subjects: [], notes: '', language_learning: 'None' })
+      }
+    } finally {
+      setSaving(false)
     }
   }
 
@@ -516,10 +522,10 @@ export default function ChildrenPage() {
                   </div>
 
                   <div style={{ display: 'flex', gap: 10 }}>
-                    <button onClick={saveChild}
+                    <button onClick={saveChild} disabled={saving}
                       onMouseEnter={() => setHover('save')} onMouseLeave={() => setHover(null)}
-                      style={btn('save', { flex: 1, padding: '14px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
-                      Save traveler
+                      style={btn('save', { flex: 1, padding: '14px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', opacity: saving ? 0.6 : 1, cursor: saving ? 'not-allowed' : 'pointer' }, { background: PRIMARY_DARK })}>
+                      {saving ? 'Saving...' : 'Save traveler'}
                     </button>
                     <button onClick={() => { setAdding(false); setSelected(null) }}
                       onMouseEnter={() => setHover('cancel')} onMouseLeave={() => setHover(null)}
