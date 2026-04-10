@@ -36,6 +36,13 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
+  // Just completed Stripe checkout — profile write may not have propagated yet.
+  // Allow access so the dashboard can handle post-checkout state.
+  const sessionId = req.nextUrl.searchParams.get('session_id')
+  if (sessionId && (sessionId.startsWith('cs_live_') || sessionId.startsWith('cs_test_'))) {
+    return res
+  }
+
   const { data: profile } = await supabase
     .from('profiles')
     .select('subscription_status, trial_end_date, stripe_customer_id')
@@ -48,7 +55,6 @@ export async function middleware(req: NextRequest) {
   }
 
   const { subscription_status, trial_end_date, stripe_customer_id } = profile
-  console.log('[middleware] profile check:', { subscription_status, trial_end_date, has_customer: !!stripe_customer_id, pathname })
 
   // Paid and active
   if (subscription_status === 'active') return res
