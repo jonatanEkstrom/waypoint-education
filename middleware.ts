@@ -31,7 +31,9 @@ export async function middleware(req: NextRequest) {
 
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) {
-    return NextResponse.redirect(new URL('/auth', req.url))
+    const loginUrl = new URL('/auth', req.url)
+    loginUrl.searchParams.set('returnTo', req.nextUrl.pathname + req.nextUrl.search)
+    return NextResponse.redirect(loginUrl)
   }
 
   const { data: profile } = await supabase

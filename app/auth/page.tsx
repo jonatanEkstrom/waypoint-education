@@ -52,7 +52,7 @@ function AuthForm() {
         // triggers the client's storage listener, nullifying the session before the
         // redirect lands. Cross-user cleanup is handled by /dashboard/children.
         const returnTo = params.get('returnTo') || '/dashboard/children'
-        router.push(returnTo)
+        router.push(decodeURIComponent(returnTo))
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
