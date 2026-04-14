@@ -20,31 +20,28 @@ const PLANS = [
   {
     key: 'monthly',
     label: 'Monthly',
-    price: '$12.99',
+    price: '€11',
     sub: 'per month',
     billed: 'Billed monthly',
-    extraChild: '+$6/month per extra child',
     badge: null,
     highlight: false,
   },
   {
     key: 'quarterly',
     label: 'Quarterly',
-    price: '$10.99',
-    sub: 'per month',
-    billed: 'Billed $32.97 every 3 months',
-    extraChild: '+$15/quarter per extra child',
-    badge: 'Save 15%',
+    price: '€29',
+    sub: 'per quarter',
+    billed: 'Billed €29 every 3 months',
+    badge: 'Save 12%',
     highlight: true,
   },
   {
     key: 'yearly',
     label: 'Yearly',
-    price: '$8.99',
-    sub: 'per month',
-    billed: 'Billed $107.88/year',
-    extraChild: '+$54/year per extra child',
-    badge: 'Save 31%',
+    price: '€99',
+    sub: 'per year',
+    billed: 'Billed €99/year',
+    badge: 'Save 25%',
     highlight: false,
   },
 ]
@@ -63,7 +60,7 @@ const FAQS = [
   { q: 'What ages does it work for?', a: 'Waypoint supports children from 4 to 18. Lessons are automatically adapted to your child\'s age group and learning style.' },
   { q: 'Can I use it if we\'re not traveling?', a: 'Absolutely. Waypoint works great for any homeschooling family — traveling the world or settled at home.' },
   { q: 'What happens after the 10-day trial?', a: 'After your trial ends, you\'ll be charged for the plan you chose. Cancel anytime before the trial ends — no charge at all.' },
-  { q: 'Can I add more children later?', a: 'Yes. You can add children at any time. Each additional child costs $6/month on top of your base plan.' },
+  { q: 'How many children can I add?', a: 'All plans include up to 4 children at no extra cost. There are no per-child add-ons.' },
   { q: 'Which teaching philosophies are supported?', a: 'Charlotte Mason, Classical (Trivium), Unschooling, Montessori and Eclectic. You choose when you set up your child\'s profile.' },
 ]
 
@@ -238,7 +235,7 @@ export default function LandingPage() {
                 </div>
                 <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: 8 }}>{plan.billed}</div>
                 <div style={{ fontSize: 12, color: TEXT_MUTED, marginBottom: 20, padding: '7px 12px', background: BEIGE, borderRadius: 10, border: `1px solid ${BEIGE_BORDER}` }}>
-                  1 child included · {plan.extraChild}
+                  Up to 4 children included
                 </div>
 
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', flex: 1 }}>

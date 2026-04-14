@@ -28,14 +28,14 @@ export async function POST(req: NextRequest) {
       payment_method_types: ['card'],
       line_items: [
         { price: price_id, quantity: 1 },
-        ...(children > 1 ? [{
+        ...(children > 4 ? [{
           price_data: {
-            currency: 'usd',
-            product_data: { name: `Extra children (${children - 1})` },
+            currency: 'eur',
+            product_data: { name: `Extra children (${children - 4})` },
             unit_amount: extraChild.unit_amount,
             recurring: { interval: extraChild.interval, interval_count: extraChild.interval_count },
           },
-          quantity: children - 1,
+          quantity: children - 4,
         }] : []),
       ],
       subscription_data: {

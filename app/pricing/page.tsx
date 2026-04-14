@@ -20,7 +20,7 @@ const PLANS = [
   {
     key: 'monthly',
     label: 'Monthly',
-    price: 12.99,
+    price: 11,
     billing: '/month',
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY ?? 'price_1TJaFcF8H8N4qjrrCXM9tMaB',
     badge: null,
@@ -29,21 +29,21 @@ const PLANS = [
   {
     key: 'quarterly',
     label: 'Quarterly',
-    price: 10.99,
-    billing: '/month',
-    sub: 'Billed $32.97 every 3 months',
+    price: 29,
+    billing: '/quarter',
+    sub: 'Billed €29 every 3 months',
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_QUARTERLY ?? 'price_1TJaIjF8H8N4qjrrOzkaYY5y',
-    badge: 'Save 15%',
+    badge: 'Save 12%',
     highlight: true,
   },
   {
     key: 'yearly',
     label: 'Yearly',
-    price: 8.99,
-    billing: '/month',
-    sub: 'Billed $107.88/year',
+    price: 99,
+    billing: '/year',
+    sub: 'Billed €99/year',
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY ?? 'price_1TJaLFF8H8N4qjrrl8lUwbPE',
-    badge: 'Save 31%',
+    badge: 'Save 25%',
     highlight: false,
   },
 ]
@@ -55,13 +55,13 @@ const FEATURES = [
   'Works in every country & city',
   'Ages 4–18 supported',
   '6 teaching philosophies',
-  '10 days free, then $12.99/month',
+  '10 days free, then €11/month',
 ]
 
 const EXTRA_CHILD_LABEL: Record<string, string> = {
-  monthly: '+$6/mo',
-  quarterly: '+$15/qtr',
-  yearly: '+$54/yr',
+  monthly: '+€6/mo',
+  quarterly: '+€15/qtr',
+  yearly: '+€54/yr',
 }
 
 export default function PricingPage() {
@@ -146,9 +146,9 @@ export default function PricingPage() {
               style={{ width: 36, height: 36, border: 'none', background: 'transparent', fontSize: 18, fontWeight: 700, color: children === 10 ? TEXT_MUTED : TEXT, cursor: children === 10 ? 'default' : 'pointer', fontFamily: 'inherit' }}
             >+</button>
           </div>
-          {children > 1 && (
+          {children > 4 && (
             <span style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>
-              1 included · {children - 1} extra
+              4 included · {children - 4} extra
             </span>
           )}
         </div>
@@ -176,16 +176,16 @@ export default function PricingPage() {
                 </div>
               )}
               <div style={{ fontFamily: 'Georgia,serif', fontSize: 20, fontWeight: 700, color: TEXT, marginBottom: 4 }}>{plan.label}</div>
-              <div style={{ marginBottom: (plan.sub || children > 1) ? 4 : 20 }}>
-                <span style={{ fontFamily: 'Georgia,serif', fontSize: 40, fontWeight: 700, color: TEXT }}>${plan.price}</span>
+              <div style={{ marginBottom: (plan.sub || children > 4) ? 4 : 20 }}>
+                <span style={{ fontFamily: 'Georgia,serif', fontSize: 40, fontWeight: 700, color: TEXT }}>€{plan.price}</span>
                 <span style={{ color: TEXT_MUTED, fontSize: 15 }}>{plan.billing}</span>
               </div>
               {plan.sub && (
-                <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: children > 1 ? 4 : 20 }}>{plan.sub}</div>
+                <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: children > 4 ? 4 : 20 }}>{plan.sub}</div>
               )}
-              {children > 1 && (
+              {children > 4 && (
                 <div style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, marginBottom: 20 }}>
-                  +{children - 1} child{children - 1 > 1 ? 'ren' : ''}: {EXTRA_CHILD_LABEL[plan.key]} each
+                  +{children - 4} child{children - 4 > 1 ? 'ren' : ''}: {EXTRA_CHILD_LABEL[plan.key]} each
                 </div>
               )}
 

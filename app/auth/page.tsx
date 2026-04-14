@@ -132,7 +132,7 @@ function AuthForm() {
           {!isLogin && (
             <div style={{ background: BEIGE, borderRadius: 12, padding: '12px 16px', marginBottom: 20, border: `1px solid ${BEIGE_BORDER}` }}>
               <p style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, margin: 0 }}>
-                ✨ 10 days free · Card required · Then $12.99/month
+                ✨ 10 days free · Card required · Then €11/month
               </p>
             </div>
           )}

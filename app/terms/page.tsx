@@ -48,7 +48,7 @@ export default function TermsPage() {
           <Section title="5. Free trial and subscription">
             <p>Your subscription includes a 10-day free trial. A card is required at signup but you will not be charged until after the trial ends.</p>
             <p>After the free trial, continued use of the service requires a paid subscription. Subscription fees are billed in advance on a monthly, quarterly, or annual basis depending on the plan you select.</p>
-            <p>Prices are displayed in USD. You are responsible for any applicable taxes in your jurisdiction.</p>
+            <p>Prices are displayed in EUR. You are responsible for any applicable taxes in your jurisdiction.</p>
             <p>You may cancel your subscription at any time. Cancellation takes effect at the end of the current billing period. We do not offer prorated refunds for partial billing periods unless required by applicable law.</p>
           </Section>
 
