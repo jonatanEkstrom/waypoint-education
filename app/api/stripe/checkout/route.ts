@@ -57,11 +57,20 @@ export async function POST(req: NextRequest) {
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
     )
+
+    const { data: existingProfile } = await adminSupabase
+      .from('profiles')
+      .select('trial_end_date, stripe_customer_id')
+      .eq('id', user_id)
+      .single()
+
+    const hadPriorTrial = !!(existingProfile?.trial_end_date || existingProfile?.stripe_customer_id)
+
     const { error: profileError } = await adminSupabase.from('profiles').upsert({
       id: user_id,
-      subscription_status: 'trial',
+      subscription_status: hadPriorTrial ? 'active' : 'trial',
       stripe_customer_id: customer.id,
-      trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+      ...(hadPriorTrial ? {} : { trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() }),
       children_count: children,
     }, { onConflict: 'id' })
     if (profileError) console.error('[checkout] profile upsert error:', profileError)

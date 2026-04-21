@@ -34,9 +34,9 @@ export async function POST(req: NextRequest) {
       ],
       subscription_data: {
         trial_period_days: 10,
-        metadata: { userId, children: String(children), billing },
+        metadata: { user_id: userId, children: String(children), billing },
       },
-      metadata: { userId, children: String(children), billing },
+      metadata: { user_id: userId, children: String(children), billing },
       success_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://waypoint-education.vercel.app'}/onboarding?payment=success`,
       cancel_url: `${process.env.NEXT_PUBLIC_APP_URL || 'https://waypoint-education.vercel.app'}/landing`,
     })

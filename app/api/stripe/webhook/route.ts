@@ -31,12 +31,21 @@ export async function POST(req: NextRequest) {
     const userId = session.metadata?.user_id
     if (userId) {
       const children = parseInt(session.metadata?.children || '1')
+
+      const { data: existingProfile } = await supabase
+        .from('profiles')
+        .select('trial_end_date, stripe_customer_id')
+        .eq('id', userId)
+        .single()
+
+      const hadPriorTrial = !!(existingProfile?.trial_end_date || existingProfile?.stripe_customer_id)
+
       await supabase.from('profiles').upsert({
         id: userId,
-        subscription_status: 'trial',
+        subscription_status: hadPriorTrial ? 'active' : 'trial',
         stripe_customer_id: session.customer as string,
         stripe_subscription_id: session.subscription as string,
-        trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+        ...(hadPriorTrial ? {} : { trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() }),
         children_count: children,
       }, { onConflict: 'id' })
     }
