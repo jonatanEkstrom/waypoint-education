@@ -55,7 +55,7 @@ const FEATURES = [
   'Works in every country & city',
   'Ages 4–18 supported',
   '6 teaching philosophies',
-  '10 days free, then €11/month',
+  'Cancel anytime',
 ]
 
 const EXTRA_CHILD_LABEL: Record<string, string> = {
@@ -119,13 +119,13 @@ export default function PricingPage() {
       {/* Header */}
       <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG} 0%, #EDF7F2 50%, #FFF8EC 100%)`, padding: isMobile ? '48px 16px 40px' : '80px 24px 64px', textAlign: 'center' }}>
         <div style={{ display: 'inline-block', background: '#EDF7F2', color: GREEN_DARK, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 16, border: `1px solid ${GREEN}` }}>
-          🎁 10 days free · Card required · Charged after trial
+          🎁 Your free trial has ended
         </div>
         <h1 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 30 : 48, lineHeight: 1.15, marginBottom: 16, color: TEXT }}>
           Simple, transparent pricing
         </h1>
         <p style={{ fontSize: isMobile ? 15 : 18, color: TEXT_MUTED, maxWidth: 480, margin: '0 auto' }}>
-          Enter your card now — you won't be charged for 10 days. Cancel anytime before the trial ends.
+          Choose a plan to keep learning. Cancel anytime.
         </p>
       </div>
 
@@ -222,7 +222,7 @@ export default function PricingPage() {
         </div>
 
         <p style={{ textAlign: 'center', fontSize: 13, color: TEXT_MUTED, marginTop: 28, fontWeight: 600 }}>
-          10 days free · Card required · Cancel anytime
+          Cancel anytime · Secure payment via Stripe
         </p>
       </div>
 

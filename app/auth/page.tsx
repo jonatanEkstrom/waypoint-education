@@ -81,9 +81,13 @@ function AuthForm() {
         console.log('[signup] welcome-email fetch complete')
 
         if (data.user) {
-          await supabase.from('profiles').upsert({ id: data.user.id, email: data.user.email })
+          await fetch('/api/start-trial', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: data.user.id, email: data.user.email }),
+          })
         }
-        router.push('/pricing')
+        router.push('/onboarding')
       }
     } catch (e: any) {
       setError(e.message)
@@ -132,7 +136,7 @@ function AuthForm() {
           {!isLogin && (
             <div style={{ background: BEIGE, borderRadius: 12, padding: '12px 16px', marginBottom: 20, border: `1px solid ${BEIGE_BORDER}` }}>
               <p style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, margin: 0 }}>
-                ✨ 10 days free · Card required · Then €11/month
+                ✨ 10 days free · No card required
               </p>
             </div>
           )}
@@ -182,7 +186,7 @@ function AuthForm() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>
-          10 days free · Card required · Cancel anytime
+          10 days free · No card required
         </p>
         <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 12 }}>
           <Link href="/privacy" style={{ fontSize: 12, color: TEXT_MUTED, textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</Link>

@@ -62,7 +62,7 @@ const FAQS = [
   { q: 'Do I need teaching experience?', a: 'Not at all. Every lesson includes a parent tip explaining exactly how to deliver it. Waypoint is designed for parents, not teachers.' },
   { q: 'What ages does it work for?', a: 'Waypoint supports children from 4 to 18. Lessons are automatically adapted to your child\'s age group and learning style.' },
   { q: 'Can I use it if we\'re not traveling?', a: 'Absolutely. Waypoint works great for any homeschooling family — traveling the world or settled at home.' },
-  { q: 'What happens after the 10-day trial?', a: 'After your trial ends, you\'ll be charged for the plan you chose. Cancel anytime before the trial ends — no charge at all.' },
+  { q: 'What happens after the 10-day trial?', a: 'After your 10 days, you\'ll be asked to choose a plan to continue. No card is needed to start — you only enter payment details when you\'re ready to subscribe.' },
   { q: 'How many children can I add?', a: 'All plans include up to 4 children at no extra cost. There are no per-child add-ons.' },
   { q: 'Which teaching philosophies are supported?', a: 'Charlotte Mason, Classical (Trivium), Unschooling, Montessori and Eclectic. You choose when you set up your child\'s profile.' },
 ]
@@ -111,7 +111,7 @@ export default function LandingPage() {
       <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG} 0%, #EDF7F2 50%, #FFF8EC 100%)`, padding: isMobile ? '64px 16px 52px' : '108px 24px 96px' }}>
         <div style={{ maxWidth: 740, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ display: 'inline-block', background: '#FFF8EC', color: ORANGE, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 28, border: '1px solid #FBDFA3' }}>
-            ✈️ 10 days free · Card required · Charged after trial
+            ✈️ 10 days free · No card required
           </div>
           <h1 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 34 : 56, lineHeight: isMobile ? 1.2 : 1.1, marginBottom: 22, color: TEXT }}>
             Every destination<br />
@@ -132,7 +132,7 @@ export default function LandingPage() {
               See how it works
             </button>
           </div>
-          <p style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>10 days free · Card required · Cancel anytime</p>
+          <p style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>10 days free · No card required · Cancel anytime</p>
         </div>
       </div>
 
@@ -212,7 +212,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 52 }}>
             <div style={{ display: 'inline-block', background: '#EDF7F2', color: GREEN_DARK, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 16, border: `1px solid ${GREEN}` }}>
-              🎁 10 days free · Card required · Cancel anytime
+              🎁 10 days free · No card required
             </div>
             <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 38, marginBottom: 12, color: TEXT }}>
               Simple, transparent pricing
@@ -282,7 +282,7 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: 'center', fontSize: 13, color: TEXT_MUTED, marginTop: 24, fontWeight: 600 }}>
-            10 days free · Card required · Cancel anytime
+            10 days free · No card required · Cancel anytime
           </p>
         </div>
       </div>
@@ -302,7 +302,7 @@ export default function LandingPage() {
             style={btn('midcta', { padding: '16px 40px', borderRadius: 100, border: 'none', background: 'white', color: PRIMARY, fontSize: 16, fontWeight: 800, fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }, { background: '#f5f0ff' })}>
             Create your free account →
           </button>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 14, fontWeight: 600 }}>Card required · No charge for 10 days</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 14, fontWeight: 600 }}>No card required · 10 days free</p>
         </div>
       </div>
 
