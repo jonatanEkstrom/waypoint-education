@@ -156,7 +156,7 @@ export default function LittleReadersPage() {
 
     if (userId) {
       await supabase.from('little_readers_progress').upsert(
-        { user_id: userId, child_id: child.id, known_words: [...newKnown], updated_at: new Date().toISOString() },
+        { user_id: userId, child_id: child.id, known_words: Array.from(newKnown), updated_at: new Date().toISOString() },
         { onConflict: 'user_id,child_id' }
       )
     }
