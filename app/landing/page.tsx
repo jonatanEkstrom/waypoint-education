@@ -53,6 +53,9 @@ const FEATURES = [
   { icon: '📖', title: 'Travel journal', desc: 'Capture memories, reflections and discoveries from every destination you visit together.' },
   { icon: '👩‍👧', title: 'Parent tips included', desc: 'Every lesson comes with a practical guide on how to teach it — no teaching background needed.' },
   { icon: '🧠', title: 'Built-in progress tracking', desc: 'Mini quizzes after each lesson keep learning on track and show you what\'s sticking.' },
+  { icon: '📖', title: 'Little Readers', desc: 'Playful flashcards, phonics games and rhyme activities that teach reading — in your family\'s language. Progress saves automatically for each child.' },
+  { icon: '📁', title: 'Living Portfolio', desc: 'Every journal entry becomes part of your child\'s portfolio automatically. Tag by subject and export a beautiful PDF report — perfect for UK Local Authority inquiries.' },
+  { icon: '🌍', title: 'Learn in Your Language', desc: 'Set your family\'s language once. Stories, lessons and activities are generated in that language — whether Swedish, French, Spanish or English.' },
 ]
 
 const FAQS = [
@@ -188,6 +191,19 @@ export default function LandingPage() {
               </div>
             ))}
           </div>
+        </div>
+      </div>
+
+      {/* UK Homeschooling */}
+      <div style={{ background: PRIMARY_BG, padding: sectionPad, borderTop: `2px solid ${PRIMARY_BORDER}`, borderBottom: `2px solid ${PRIMARY_BORDER}` }}>
+        <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' as const }}>
+          <div style={{ fontSize: isMobile ? 36 : 48, marginBottom: 16 }}>🇬🇧</div>
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 24 : 34, marginBottom: 16, color: TEXT }}>
+            New to homeschooling in the UK?
+          </h2>
+          <p style={{ color: TEXT_MUTED, fontSize: isMobile ? 15 : 17, lineHeight: 1.75, maxWidth: 580, margin: '0 auto' }}>
+            175,000+ families in England now home educate. You don't need permission or a strict curriculum — Waypoint helps you track progress and export reports if your Local Authority ever asks.
+          </p>
         </div>
       </div>
 
