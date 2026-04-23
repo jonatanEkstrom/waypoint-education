@@ -39,41 +39,12 @@ export async function POST(req: NextRequest) {
         }] : []),
       ],
       subscription_data: {
-        trial_period_days: 10,
-        trial_settings: {
-          end_behavior: {
-            missing_payment_method: 'cancel',
-          },
-        },
         metadata: { user_id, children: String(children), billing },
       },
-      payment_method_collection: 'always',
       metadata: { user_id, children: String(children), billing },
       success_url: `${base}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${base}/pricing`,
+      cancel_url: `${base}/subscribe`,
     })
-
-    const adminSupabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
-
-    const { data: existingProfile } = await adminSupabase
-      .from('profiles')
-      .select('trial_end_date, stripe_customer_id')
-      .eq('id', user_id)
-      .single()
-
-    const hadPriorTrial = !!(existingProfile?.trial_end_date || existingProfile?.stripe_customer_id)
-
-    const { error: profileError } = await adminSupabase.from('profiles').upsert({
-      id: user_id,
-      subscription_status: hadPriorTrial ? 'active' : 'trial',
-      stripe_customer_id: customer.id,
-      ...(hadPriorTrial ? {} : { trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString() }),
-      children_count: children,
-    }, { onConflict: 'id' })
-    if (profileError) console.error('[checkout] profile upsert error:', profileError)
 
     return NextResponse.json({ url: session.url })
   } catch (err: any) {

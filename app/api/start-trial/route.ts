@@ -13,17 +13,17 @@ export async function POST(req: NextRequest) {
 
     const { data: existing } = await supabase
       .from('profiles')
-      .select('trial_end_date, subscription_status')
+      .select('trial_started_at')
       .eq('id', user_id)
       .single()
 
     // Only grant a trial if they've never had one
-    if (!existing?.trial_end_date) {
+    if (!existing?.trial_started_at) {
       const { error } = await supabase.from('profiles').upsert({
         id: user_id,
         email,
         subscription_status: 'trial',
-        trial_end_date: new Date(Date.now() + 10 * 24 * 60 * 60 * 1000).toISOString(),
+        trial_started_at: new Date().toISOString(),
       }, { onConflict: 'id' })
       if (error) console.error('[start-trial] upsert error:', error)
     }

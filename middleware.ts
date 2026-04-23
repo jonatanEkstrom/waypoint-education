@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community']
+const TRIAL_DAYS = 10
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -36,8 +37,8 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(loginUrl)
   }
 
-  // Just completed Stripe checkout — profile write may not have propagated yet.
-  // Allow access so the dashboard can handle post-checkout state.
+  // Allow through immediately after a Stripe checkout redirect so the
+  // dashboard can handle the session before the webhook has propagated.
   const sessionId = req.nextUrl.searchParams.get('session_id')
   if (sessionId && (sessionId.startsWith('cs_live_') || sessionId.startsWith('cs_test_'))) {
     return res
@@ -45,30 +46,27 @@ export async function middleware(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, trial_end_date')
+    .select('subscription_status, trial_started_at')
     .eq('id', user.id)
     .single()
 
-  // No profile row → send to pricing
   if (!profile) {
-    return NextResponse.redirect(new URL('/pricing', req.url))
+    return NextResponse.redirect(new URL('/subscribe', req.url))
   }
 
-  const { subscription_status, trial_end_date } = profile
+  const { subscription_status, trial_started_at } = profile
 
-  // Paid and active
+  // Paid subscriber — always allow
   if (subscription_status === 'active') return res
 
-  // Trial: valid trial_end_date is sufficient — stripe_customer_id may be null
-  // if the profile upsert hasn't propagated yet (service role key missing, RLS, etc.)
-  if (subscription_status === 'trial') {
-    const trialValid = trial_end_date ? new Date() < new Date(trial_end_date) : false
-    if (trialValid) return res
-    return NextResponse.redirect(new URL('/pricing', req.url))
+  // Trial — allow if started less than TRIAL_DAYS ago
+  if (trial_started_at) {
+    const trialStart = new Date(trial_started_at)
+    const trialEnd = new Date(trialStart.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
+    if (new Date() < trialEnd) return res
   }
 
-  // Expired or any other status
-  return NextResponse.redirect(new URL('/pricing', req.url))
+  return NextResponse.redirect(new URL('/subscribe', req.url))
 }
 
 export const config = {
