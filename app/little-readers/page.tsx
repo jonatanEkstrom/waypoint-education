@@ -77,6 +77,7 @@ export default function LittleReadersPage() {
   const [isMobile, setIsMobile] = useState(false)
   const [saving, setSaving] = useState(false)
   const [starPop, setStarPop] = useState(false)
+  const [userId, setUserId] = useState<string | null>(null)
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640)
@@ -91,13 +92,15 @@ export default function LittleReadersPage() {
     const { data: { user } } = await supabase.auth.getUser()
 
     if (user) {
+      setUserId(user.id)
+
       const stored = localStorage.getItem('activeChild')
       if (stored) {
         try {
           const active = JSON.parse(stored)
           if (active.user_id === user.id && active.id) {
             setChild(active)
-            await loadProgress(active.id)
+            await loadProgress(user.id, active.id)
             setLoading(false)
             return
           }
@@ -107,7 +110,7 @@ export default function LittleReadersPage() {
       const { data } = await supabase.from('children').select('id, name, age_group').eq('user_id', user.id)
       if (data?.length === 1) {
         setChild(data[0])
-        await loadProgress(data[0].id)
+        await loadProgress(user.id, data[0].id)
       } else if (data) {
         setChildren(data)
       }
@@ -116,10 +119,11 @@ export default function LittleReadersPage() {
     setLoading(false)
   }
 
-  async function loadProgress(childId: string) {
+  async function loadProgress(uid: string, childId: string) {
     const { data } = await supabase
       .from('little_readers_progress')
       .select('known_words')
+      .eq('user_id', uid)
       .eq('child_id', childId)
       .maybeSingle()
     const known = new Set<string>(data?.known_words ?? [])
@@ -150,10 +154,12 @@ export default function LittleReadersPage() {
     setFlipped(false)
     if (newDeck.length === 0) setDone(true)
 
-    await supabase.from('little_readers_progress').upsert(
-      { child_id: child.id, known_words: [...newKnown], updated_at: new Date().toISOString() },
-      { onConflict: 'child_id' }
-    )
+    if (userId) {
+      await supabase.from('little_readers_progress').upsert(
+        { user_id: userId, child_id: child.id, known_words: [...newKnown], updated_at: new Date().toISOString() },
+        { onConflict: 'user_id,child_id' }
+      )
+    }
     setSaving(false)
   }
 
@@ -174,7 +180,8 @@ export default function LittleReadersPage() {
   async function selectChild(c: Child) {
     setChild(c)
     setLoading(true)
-    await loadProgress(c.id)
+    if (userId) await loadProgress(userId, c.id)
+    else buildDeck(new Set())
     setLoading(false)
   }
 
