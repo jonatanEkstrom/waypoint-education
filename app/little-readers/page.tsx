@@ -208,13 +208,25 @@ export default function LittleReadersPage() {
     )
   }
 
+  function speakCard(entry: typeof LETTER_ANIMALS[0]) {
+    if (typeof window === 'undefined' || !window.speechSynthesis) return
+    speechSynthesis.cancel()
+    for (const text of [entry.letter, entry.animal, entry.sound]) {
+      const u = new SpeechSynthesisUtterance(text)
+      u.rate = 0.8
+      u.pitch = 1.2
+      speechSynthesis.speak(u)
+    }
+  }
+
   function handleLetterTap() {
     setLetterBouncing(true)
     setTimeout(() => setLetterBouncing(false), 650)
-    const letter = LETTER_ANIMALS[letterIndex].letter
-    if (!exploredLetters.has(letter)) {
+    const entry = LETTER_ANIMALS[letterIndex]
+    speakCard(entry)
+    if (!exploredLetters.has(entry.letter)) {
       const newExplored = new Set(exploredLetters)
-      newExplored.add(letter)
+      newExplored.add(entry.letter)
       setExploredLetters(newExplored)
       saveProgress(knownWords, newExplored)
     }
