@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 
@@ -120,6 +120,7 @@ export default function LittleReadersPage() {
   const [wordsDone, setWordsDone] = useState(false)
   const [saving, setSaving] = useState(false)
   const [starPop, setStarPop] = useState(false)
+  const speakTimers = useRef<ReturnType<typeof setTimeout>[]>([])
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640)
@@ -211,12 +212,22 @@ export default function LittleReadersPage() {
   function speakCard(entry: typeof LETTER_ANIMALS[0]) {
     if (typeof window === 'undefined' || !window.speechSynthesis) return
     speechSynthesis.cancel()
-    for (const text of [entry.letter, entry.animal]) {
-      const u = new SpeechSynthesisUtterance(text)
-      u.rate = 0.8
-      u.pitch = 1.2
-      speechSynthesis.speak(u)
-    }
+    speakTimers.current.forEach(t => clearTimeout(t))
+    speakTimers.current = []
+
+    const letters = entry.animal.split('').filter(c => c.trim())
+    const texts = [entry.letter, entry.animal, ...letters]
+    let delay = 0
+    texts.forEach((text, i) => {
+      const t = setTimeout(() => {
+        const u = new SpeechSynthesisUtterance(text)
+        u.rate = 0.7
+        u.pitch = 1.2
+        speechSynthesis.speak(u)
+      }, delay)
+      speakTimers.current.push(t)
+      delay += i === 0 ? 800 : i === 1 ? 1000 : 400
+    })
   }
 
   function handleLetterTap() {
