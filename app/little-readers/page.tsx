@@ -22,6 +22,11 @@ interface Child {
   age_group: string
 }
 
+// '4–6 years' → Letter Animals; all other groups → Sight Words
+function isYoungChild(age_group: string) {
+  return age_group === '4–6 years'
+}
+
 const LETTER_ANIMALS = [
   { letter: 'A', animal: 'Alligator',    emoji: '🐊', sound: 'Snap!' },
   { letter: 'B', animal: 'Bear',         emoji: '🐻', sound: 'Roar!' },
@@ -131,34 +136,40 @@ export default function LittleReadersPage() {
     if (user) {
       setUserId(user.id)
 
+      // Always load the full children list so the inline selector works
+      const { data: allChildren } = await supabase
+        .from('children')
+        .select('id, name, age_group')
+        .eq('user_id', user.id)
+
+      if (allChildren) setChildren(allChildren)
+
+      // Try to use the stored active child first
       const stored = localStorage.getItem('activeChild')
       if (stored) {
         try {
           const active = JSON.parse(stored)
           if (active.user_id === user.id && active.id) {
-            setChild(active)
-            await loadProgress(user.id, active.id)
+            const match = allChildren?.find(c => c.id === active.id)
+            const resolved = match ?? active
+            setChild(resolved)
+            await loadProgress(user.id, resolved.id)
             setLoading(false)
             return
           }
         } catch {}
       }
 
-      const { data } = await supabase.from('children').select('id, name, age_group').eq('user_id', user.id)
-      if (data?.length === 1) {
-        setChild(data[0])
-        await loadProgress(user.id, data[0].id)
-      } else if (data) {
-        setChildren(data)
+      // Fall back: auto-select if there's exactly one child
+      if (allChildren?.length === 1) {
+        setChild(allChildren[0])
+        await loadProgress(user.id, allChildren[0].id)
       }
     }
 
     setLoading(false)
   }
 
-  // Progress is stored in one known_words array.
-  // Sight words are plain strings (e.g. "THE").
-  // Letter Animals are prefixed "LETTER_A", "LETTER_B", etc.
   async function loadProgress(uid: string, childId: string) {
     const { data } = await supabase
       .from('little_readers_progress')
@@ -198,10 +209,9 @@ export default function LittleReadersPage() {
   }
 
   function handleLetterTap() {
-    const letter = LETTER_ANIMALS[letterIndex].letter
     setLetterBouncing(true)
     setTimeout(() => setLetterBouncing(false), 650)
-
+    const letter = LETTER_ANIMALS[letterIndex].letter
     if (!exploredLetters.has(letter)) {
       const newExplored = new Set(exploredLetters)
       newExplored.add(letter)
@@ -212,20 +222,16 @@ export default function LittleReadersPage() {
 
   async function handleKnowIt() {
     if (!deck.length || saving) return
-    const word = deck[0].word
     setSaving(true)
     setStarPop(true)
     setTimeout(() => setStarPop(false), 500)
-
     const newKnown = new Set(knownWords)
-    newKnown.add(word)
+    newKnown.add(deck[0].word)
     setKnownWords(newKnown)
-
     const newDeck = deck.slice(1)
     setDeck(newDeck)
     setFlipped(false)
     if (newDeck.length === 0) setWordsDone(true)
-
     await saveProgress(newKnown, exploredLetters)
     setSaving(false)
   }
@@ -247,60 +253,26 @@ export default function LittleReadersPage() {
 
   async function selectChild(c: Child) {
     setChild(c)
-    setLoading(true)
+    setLetterIndex(0)
+    setFlipped(false)
     if (userId) await loadProgress(userId, c.id)
     else { buildDeck(new Set()); setExploredLetters(new Set()) }
-    setLoading(false)
   }
 
   const btn = (id: string, base: React.CSSProperties, hov: React.CSSProperties): React.CSSProperties => ({
     ...base, ...(hover === id ? hov : {}), transition: 'all 0.15s ease', cursor: 'pointer',
   })
 
-  const totalWords = SIGHT_WORDS.length
   const knownCount = knownWords.size
-  const wordProgress = (knownCount / totalWords) * 100
+  const wordProgress = (knownCount / SIGHT_WORDS.length) * 100
   const letterProgress = (exploredLetters.size / 26) * 100
   const currentLetter = LETTER_ANIMALS[letterIndex]
+  const young = child ? isYoungChild(child.age_group) : false
 
   if (loading) {
     return (
       <div style={{ minHeight: '100vh', background: BEIGE, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'system-ui, sans-serif' }}>
         <span style={{ color: TEXT_MUTED, fontSize: 16 }}>Loading...</span>
-      </div>
-    )
-  }
-
-  // Child picker
-  if (!child) {
-    return (
-      <div style={{ minHeight: '100vh', background: BEIGE, fontFamily: 'system-ui, sans-serif', color: TEXT }}>
-        <div style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
-          <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: TEXT_MUTED, fontSize: 20, lineHeight: 1, padding: 0 }}>←</button>
-          <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: TEXT }}>📖 Little Readers</span>
-        </div>
-        <div style={{ maxWidth: 480, margin: '64px auto', padding: '0 20px', textAlign: 'center' }}>
-          <div style={{ fontSize: 56, marginBottom: 16 }}>📖</div>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 26, color: TEXT, marginBottom: 8 }}>Who is reading today?</h2>
-          <p style={{ color: TEXT_MUTED, fontSize: 15, marginBottom: 32 }}>Choose a child to load their progress.</p>
-          {children.length === 0 ? (
-            <div style={{ color: TEXT_MUTED, fontSize: 15 }}>
-              No children found.{' '}
-              <button onClick={() => router.push('/dashboard/children')} style={{ background: 'none', border: 'none', color: PRIMARY, fontWeight: 700, cursor: 'pointer', fontSize: 15, padding: 0 }}>Add a child →</button>
-            </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              {children.map(c => (
-                <button key={c.id} onClick={() => selectChild(c)}
-                  onMouseEnter={() => setHover(`child-${c.id}`)} onMouseLeave={() => setHover(null)}
-                  style={btn(`child-${c.id}`, { padding: '16px 20px', borderRadius: 16, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 16, fontWeight: 700, color: TEXT, fontFamily: 'inherit', textAlign: 'left' as const, width: '100%' }, { borderColor: PRIMARY, background: PRIMARY_BG, color: PRIMARY })}>
-                  {c.name}
-                  <span style={{ fontWeight: 400, color: TEXT_MUTED, fontSize: 14, marginLeft: 8 }}>· {c.age_group}</span>
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     )
   }
@@ -326,19 +298,70 @@ export default function LittleReadersPage() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: TEXT_MUTED, fontSize: 20, lineHeight: 1, padding: 0 }}>←</button>
           <span style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 15 : 17, fontWeight: 700, color: TEXT }}>📖 Little Readers</span>
-          <span style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>· {child.name}</span>
+          {child && <span style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>· {child.name}</span>}
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FFF8EC', border: '1.5px solid #FBDFA3', borderRadius: 100, padding: '6px 14px', animation: starPop ? 'starPulse 0.45s ease' : 'none' }}>
-          <span style={{ fontSize: 15 }}>⭐</span>
-          <span style={{ fontWeight: 800, fontSize: 15, color: '#C17A00' }}>{knownCount}</span>
-        </div>
+        {child && (
+          young ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FFF8EC', border: '1.5px solid #FBDFA3', borderRadius: 100, padding: '6px 14px' }}>
+              <span style={{ fontSize: 15 }}>🐾</span>
+              <span style={{ fontWeight: 800, fontSize: 15, color: '#C17A00' }}>{exploredLetters.size}/26</span>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: '#FFF8EC', border: '1.5px solid #FBDFA3', borderRadius: 100, padding: '6px 14px', animation: starPop ? 'starPulse 0.45s ease' : 'none' }}>
+              <span style={{ fontSize: 15 }}>⭐</span>
+              <span style={{ fontWeight: 800, fontSize: 15, color: '#C17A00' }}>{knownCount}</span>
+            </div>
+          )
+        )}
       </div>
 
-      {/* ─── Letter Animals Section ─── */}
-      <div style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}` }}>
-        <div style={{ maxWidth: 520, margin: '0 auto', padding: isMobile ? '28px 16px 32px' : '40px 24px 44px' }}>
+      {/* Inline child selector — shown when there are multiple children */}
+      {children.length > 1 && (
+        <div style={{ background: BEIGE_CARD, borderBottom: `1px solid ${BEIGE_BORDER}`, padding: '10px 20px', overflowX: 'auto' as const }}>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center', minWidth: 'max-content' }}>
+            <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', flexShrink: 0 }}>Reading:</span>
+            {children.map(c => (
+              <button
+                key={c.id}
+                onClick={() => selectChild(c)}
+                onMouseEnter={() => setHover(`sel-${c.id}`)} onMouseLeave={() => setHover(null)}
+                style={btn(`sel-${c.id}`, {
+                  padding: '6px 14px', borderRadius: 100, fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
+                  border: `2px solid ${child?.id === c.id ? PRIMARY : BEIGE_BORDER}`,
+                  background: child?.id === c.id ? PRIMARY_BG : BEIGE_CARD,
+                  color: child?.id === c.id ? PRIMARY : TEXT_MUTED,
+                  whiteSpace: 'nowrap' as const,
+                }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
+                {c.name}
+                <span style={{ fontWeight: 400, marginLeft: 6, opacity: 0.7 }}>{c.age_group.split('–')[0]}–{c.age_group.split('–')[1]}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
-          {/* Section header */}
+      {/* No child selected yet */}
+      {!child && (
+        <div style={{ maxWidth: 480, margin: '80px auto', padding: '0 20px', textAlign: 'center' }}>
+          <div style={{ fontSize: 56, marginBottom: 16 }}>📖</div>
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 24, color: TEXT, marginBottom: 8 }}>Who is reading today?</h2>
+          {children.length === 0 ? (
+            <p style={{ color: TEXT_MUTED, fontSize: 15 }}>
+              No children found.{' '}
+              <button onClick={() => router.push('/dashboard/children')} style={{ background: 'none', border: 'none', color: PRIMARY, fontWeight: 700, cursor: 'pointer', fontSize: 15, padding: 0 }}>
+                Add a child →
+              </button>
+            </p>
+          ) : (
+            <p style={{ color: TEXT_MUTED, fontSize: 15 }}>Select a child above to begin.</p>
+          )}
+        </div>
+      )}
+
+      {/* ─── Letter Animals (ages 4–6) ─── */}
+      {child && young && (
+        <div style={{ maxWidth: 520, margin: '0 auto', padding: isMobile ? '28px 16px 48px' : '40px 24px 64px' }}>
+
           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
             <div style={{ background: '#FFF8EC', color: ORANGE, padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700, border: '1.5px solid #FBDFA3', whiteSpace: 'nowrap' as const }}>
               Ages 3–5
@@ -358,13 +381,11 @@ export default function LittleReadersPage() {
                 width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: '50%',
                 border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD,
                 fontSize: 18, fontWeight: 700, color: letterIndex === 0 ? BEIGE_BORDER : TEXT_MUTED,
-                fontFamily: 'inherit', flexShrink: 0,
-                cursor: letterIndex === 0 ? 'default' : 'pointer',
+                fontFamily: 'inherit', flexShrink: 0, cursor: letterIndex === 0 ? 'default' : 'pointer',
               }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
               ‹
             </button>
 
-            {/* Tappable animal card */}
             <div
               onClick={handleLetterTap}
               style={{
@@ -384,14 +405,7 @@ export default function LittleReadersPage() {
                 transition: 'border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease',
               }}
             >
-              <div style={{
-                fontFamily: 'Georgia,serif',
-                fontSize: isMobile ? 72 : 96,
-                fontWeight: 700,
-                color: PRIMARY,
-                lineHeight: 1,
-                marginBottom: 8,
-              }}>
+              <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 72 : 96, fontWeight: 700, color: PRIMARY, lineHeight: 1, marginBottom: 8 }}>
                 {currentLetter.letter}
               </div>
               <div style={{ fontSize: isMobile ? 52 : 68, lineHeight: 1, marginBottom: 12 }}>
@@ -400,7 +414,7 @@ export default function LittleReadersPage() {
               <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 18 : 22, fontWeight: 700, color: TEXT, marginBottom: 8, letterSpacing: '0.04em' }}>
                 {currentLetter.animal.toUpperCase()}
               </div>
-              <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: ORANGE, letterSpacing: '0.02em' }}>
+              <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: ORANGE }}>
                 {currentLetter.sound}
               </div>
               {!exploredLetters.has(currentLetter.letter) && (
@@ -418,14 +432,13 @@ export default function LittleReadersPage() {
                 width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: '50%',
                 border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD,
                 fontSize: 18, fontWeight: 700, color: letterIndex === 25 ? BEIGE_BORDER : TEXT_MUTED,
-                fontFamily: 'inherit', flexShrink: 0,
-                cursor: letterIndex === 25 ? 'default' : 'pointer',
+                fontFamily: 'inherit', flexShrink: 0, cursor: letterIndex === 25 ? 'default' : 'pointer',
               }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
               ›
             </button>
           </div>
 
-          {/* Alphabet dots */}
+          {/* Alphabet dot grid */}
           <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginTop: 24, justifyContent: 'center' }}>
             {LETTER_ANIMALS.map((la, i) => (
               <button
@@ -448,133 +461,130 @@ export default function LittleReadersPage() {
           <div style={{ marginTop: 20 }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Letters explored</span>
-              <span style={{ fontSize: 12, fontWeight: 700, color: PRIMARY }}>{exploredLetters.size} / 26</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: ORANGE }}>{exploredLetters.size} / 26</span>
             </div>
             <div style={{ background: BEIGE_BORDER, borderRadius: 100, height: 8, overflow: 'hidden' }}>
               <div style={{ height: '100%', background: `linear-gradient(90deg, ${ORANGE}, #F5C842)`, borderRadius: 100, width: `${letterProgress}%`, transition: 'width 0.5s ease' }} />
             </div>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* ─── Sight Words Section ─── */}
-      <div style={{ maxWidth: 520, margin: '0 auto', padding: isMobile ? '28px 16px 48px' : '40px 24px 64px' }}>
+      {/* ─── Sight Words (ages 7+) ─── */}
+      {child && !young && (
+        <div style={{ maxWidth: 520, margin: '0 auto', padding: isMobile ? '28px 16px 48px' : '40px 24px 64px' }}>
 
-        {/* Section header */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
-          <div style={{ background: PRIMARY_BG, color: PRIMARY, padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700, border: `1.5px solid ${PRIMARY_BORDER}`, whiteSpace: 'nowrap' as const }}>
-            Ages 5–7
-          </div>
-          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 20 : 24, color: TEXT, margin: 0 }}>
-            ✨ Sight Words
-          </h2>
-        </div>
-
-        {/* Sight word progress bar */}
-        <div style={{ marginBottom: 24 }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
-            <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Progress</span>
-            <span style={{ fontSize: 12, fontWeight: 700, color: PRIMARY }}>{knownCount} / {totalWords} words learned</span>
-          </div>
-          <div style={{ background: BEIGE_BORDER, borderRadius: 100, height: 10, overflow: 'hidden' }}>
-            <div style={{ height: '100%', background: `linear-gradient(90deg, ${PRIMARY}, ${GREEN})`, borderRadius: 100, width: `${wordProgress}%`, transition: 'width 0.5s ease' }} />
-          </div>
-        </div>
-
-        {wordsDone ? (
-          /* Inline celebration */
-          <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG}, #EDF7F2)`, borderRadius: 28, border: `2px solid ${PRIMARY_BORDER}`, padding: isMobile ? '32px 20px' : '44px 40px', textAlign: 'center' as const }}>
-            <div style={{ fontSize: 64, marginBottom: 12, animation: 'celebrate 1.2s ease infinite', display: 'inline-block' }}>🎉</div>
-            <h3 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 24 : 32, color: TEXT, marginBottom: 8 }}>Amazing work!</h3>
-            <p style={{ color: TEXT_MUTED, fontSize: 15, marginBottom: 24 }}>
-              {child.name} has learned all {totalWords} sight words!
-            </p>
-            <div style={{ fontSize: 28, letterSpacing: 2, marginBottom: 28 }}>
-              {'⭐'.repeat(Math.min(totalWords, 20))}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+            <div style={{ background: PRIMARY_BG, color: PRIMARY, padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700, border: `1.5px solid ${PRIMARY_BORDER}`, whiteSpace: 'nowrap' as const }}>
+              Ages 5–7
             </div>
-            <button onClick={handlePracticeAgain}
-              onMouseEnter={() => setHover('again')} onMouseLeave={() => setHover(null)}
-              style={btn('again', { padding: '13px 28px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
-              🔄 Practice again
-            </button>
+            <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 20 : 24, color: TEXT, margin: 0 }}>
+              ✨ Sight Words
+            </h2>
           </div>
-        ) : (
-          <>
-            <p style={{ textAlign: 'center', color: TEXT_MUTED, fontSize: 13, fontWeight: 600, marginBottom: 16, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
-              {deck.length} {deck.length === 1 ? 'word' : 'words'} left to practice
-            </p>
 
-            {/* Flashcard */}
-            <div
-              onClick={() => { if (!flipped) setFlipped(true) }}
-              style={{
-                background: BEIGE_CARD,
-                borderRadius: 28,
-                border: `2px solid ${flipped ? PRIMARY_BORDER : BEIGE_BORDER}`,
-                boxShadow: flipped ? '0 12px 40px rgba(155,142,196,0.2)' : '0 4px 18px rgba(0,0,0,0.07)',
-                padding: isMobile ? '40px 24px' : '52px 48px',
-                textAlign: 'center' as const,
-                cursor: flipped ? 'default' : 'pointer',
-                transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
-                minHeight: isMobile ? 240 : 300,
-                display: 'flex',
-                flexDirection: 'column' as const,
-                alignItems: 'center',
-                justifyContent: 'center',
-                gap: 16,
-                userSelect: 'none' as const,
-                WebkitUserSelect: 'none' as const,
-              }}
-            >
+          {/* Progress bar */}
+          <div style={{ marginBottom: 24 }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 6 }}>
+              <span style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Progress</span>
+              <span style={{ fontSize: 12, fontWeight: 700, color: PRIMARY }}>{knownCount} / {SIGHT_WORDS.length} words learned</span>
+            </div>
+            <div style={{ background: BEIGE_BORDER, borderRadius: 100, height: 10, overflow: 'hidden' }}>
+              <div style={{ height: '100%', background: `linear-gradient(90deg, ${PRIMARY}, ${GREEN})`, borderRadius: 100, width: `${wordProgress}%`, transition: 'width 0.5s ease' }} />
+            </div>
+          </div>
+
+          {wordsDone ? (
+            <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG}, #EDF7F2)`, borderRadius: 28, border: `2px solid ${PRIMARY_BORDER}`, padding: isMobile ? '32px 20px' : '44px 40px', textAlign: 'center' as const }}>
+              <div style={{ fontSize: 64, marginBottom: 12, animation: 'celebrate 1.2s ease infinite', display: 'inline-block' }}>🎉</div>
+              <h3 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 24 : 32, color: TEXT, marginBottom: 8 }}>Amazing work!</h3>
+              <p style={{ color: TEXT_MUTED, fontSize: 15, marginBottom: 24 }}>
+                {child.name} has learned all {SIGHT_WORDS.length} sight words!
+              </p>
+              <div style={{ fontSize: 28, letterSpacing: 2, marginBottom: 28 }}>{'⭐'.repeat(Math.min(SIGHT_WORDS.length, 20))}</div>
+              <button onClick={handlePracticeAgain}
+                onMouseEnter={() => setHover('again')} onMouseLeave={() => setHover(null)}
+                style={btn('again', { padding: '13px 28px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
+                🔄 Practice again
+              </button>
+            </div>
+          ) : (
+            <>
+              <p style={{ textAlign: 'center', color: TEXT_MUTED, fontSize: 13, fontWeight: 600, marginBottom: 16, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
+                {deck.length} {deck.length === 1 ? 'word' : 'words'} left to practice
+              </p>
+
+              {/* Flashcard */}
+              <div
+                onClick={() => { if (!flipped) setFlipped(true) }}
+                style={{
+                  background: BEIGE_CARD,
+                  borderRadius: 28,
+                  border: `2px solid ${flipped ? PRIMARY_BORDER : BEIGE_BORDER}`,
+                  boxShadow: flipped ? '0 12px 40px rgba(155,142,196,0.2)' : '0 4px 18px rgba(0,0,0,0.07)',
+                  padding: isMobile ? '40px 24px' : '52px 48px',
+                  textAlign: 'center' as const,
+                  cursor: flipped ? 'default' : 'pointer',
+                  transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+                  minHeight: isMobile ? 240 : 300,
+                  display: 'flex',
+                  flexDirection: 'column' as const,
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 16,
+                  userSelect: 'none' as const,
+                  WebkitUserSelect: 'none' as const,
+                }}
+              >
+                {flipped && (
+                  <div style={{ fontSize: isMobile ? 52 : 64, lineHeight: 1, animation: 'fadeSlideUp 0.2s ease' }}>
+                    {deck[0].emoji}
+                  </div>
+                )}
+                <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 72 : 96, fontWeight: 700, color: flipped ? PRIMARY : TEXT, lineHeight: 1, letterSpacing: '0.02em', transition: 'color 0.2s ease' }}>
+                  {deck[0].word}
+                </div>
+                {flipped ? (
+                  <p style={{ color: TEXT_MUTED, fontSize: isMobile ? 16 : 18, fontWeight: 600, lineHeight: 1.55, margin: 0, animation: 'fadeSlideUp 0.25s ease', maxWidth: 300 }}>
+                    {deck[0].sentence}
+                  </p>
+                ) : (
+                  <p style={{ color: TEXT_MUTED, fontSize: 13, margin: 0, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
+                    TAP TO REVEAL
+                  </p>
+                )}
+              </div>
+
               {flipped && (
-                <div style={{ fontSize: isMobile ? 52 : 64, lineHeight: 1, animation: 'fadeSlideUp 0.2s ease' }}>
-                  {deck[0].emoji}
+                <div style={{ display: 'flex', gap: 12, marginTop: 16, animation: 'fadeSlideUp 0.2s ease' }}>
+                  <button
+                    onClick={handlePracticeMore}
+                    onMouseEnter={() => setHover('practice')} onMouseLeave={() => setHover(null)}
+                    style={btn('practice', {
+                      flex: 1, padding: isMobile ? '14px 8px' : '16px 8px', borderRadius: 16,
+                      border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD,
+                      color: TEXT, fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3,
+                    }, { borderColor: PRIMARY_BORDER, background: PRIMARY_BG, color: PRIMARY })}>
+                    🔄 Practice more
+                  </button>
+                  <button
+                    onClick={handleKnowIt}
+                    disabled={saving}
+                    onMouseEnter={() => setHover('know')} onMouseLeave={() => setHover(null)}
+                    style={btn('know', {
+                      flex: 1, padding: isMobile ? '14px 8px' : '16px 8px', borderRadius: 16,
+                      border: 'none', background: GREEN_DARK, color: 'white',
+                      fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3,
+                      opacity: saving ? 0.7 : 1, cursor: saving ? 'not-allowed' as const : 'pointer',
+                    }, { background: '#5A9E7A' })}>
+                    ⭐ I know it!
+                  </button>
                 </div>
               )}
-              <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 72 : 96, fontWeight: 700, color: flipped ? PRIMARY : TEXT, lineHeight: 1, letterSpacing: '0.02em', transition: 'color 0.2s ease' }}>
-                {deck[0].word}
-              </div>
-              {flipped ? (
-                <p style={{ color: TEXT_MUTED, fontSize: isMobile ? 16 : 18, fontWeight: 600, lineHeight: 1.55, margin: 0, animation: 'fadeSlideUp 0.25s ease', maxWidth: 300 }}>
-                  {deck[0].sentence}
-                </p>
-              ) : (
-                <p style={{ color: TEXT_MUTED, fontSize: 13, margin: 0, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>
-                  TAP TO REVEAL
-                </p>
-              )}
-            </div>
-
-            {/* Action buttons */}
-            {flipped && (
-              <div style={{ display: 'flex', gap: 12, marginTop: 16, animation: 'fadeSlideUp 0.2s ease' }}>
-                <button
-                  onClick={handlePracticeMore}
-                  onMouseEnter={() => setHover('practice')} onMouseLeave={() => setHover(null)}
-                  style={btn('practice', {
-                    flex: 1, padding: isMobile ? '14px 8px' : '16px 8px', borderRadius: 16,
-                    border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD,
-                    color: TEXT, fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3,
-                  }, { borderColor: PRIMARY_BORDER, background: PRIMARY_BG, color: PRIMARY })}>
-                  🔄 Practice more
-                </button>
-                <button
-                  onClick={handleKnowIt}
-                  disabled={saving}
-                  onMouseEnter={() => setHover('know')} onMouseLeave={() => setHover(null)}
-                  style={btn('know', {
-                    flex: 1, padding: isMobile ? '14px 8px' : '16px 8px', borderRadius: 16,
-                    border: 'none', background: GREEN_DARK, color: 'white',
-                    fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3,
-                    opacity: saving ? 0.7 : 1, cursor: saving ? 'not-allowed' as const : 'pointer',
-                  }, { background: '#5A9E7A' })}>
-                  ⭐ I know it!
-                </button>
-              </div>
-            )}
-          </>
-        )}
-      </div>
+            </>
+          )}
+        </div>
+      )}
     </div>
   )
 }
