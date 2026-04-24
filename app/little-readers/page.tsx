@@ -36,7 +36,7 @@ const LETTER_ANIMALS = [
   { letter: 'F', animal: 'Fish',         emoji: '🐟', sound: 'Blub!' },
   { letter: 'G', animal: 'Giraffe',      emoji: '🦒', sound: 'Munch!' },
   { letter: 'H', animal: 'Horse',        emoji: '🐴', sound: 'Neigh!' },
-  { letter: 'I', animal: 'Iguana',       emoji: '🦎', sound: 'Hiss!' },
+  { letter: 'I', animal: 'Inchworm',      emoji: '🐛', sound: 'Wiggle!' },
   { letter: 'J', animal: 'Jellyfish',    emoji: '🪼', sound: 'Splash!' },
   { letter: 'K', animal: 'Kangaroo',     emoji: '🦘', sound: 'Boing!' },
   { letter: 'L', animal: 'Lion',         emoji: '🦁', sound: 'Roar!' },
@@ -44,14 +44,14 @@ const LETTER_ANIMALS = [
   { letter: 'N', animal: 'Narwhal',      emoji: '🐋', sound: 'Splash!' },
   { letter: 'O', animal: 'Owl',          emoji: '🦉', sound: 'Hoot!' },
   { letter: 'P', animal: 'Penguin',      emoji: '🐧', sound: 'Squawk!' },
-  { letter: 'Q', animal: 'Quail',        emoji: '🐦', sound: 'Chirp!' },
+  { letter: 'Q', animal: 'Queen',         emoji: '👸', sound: 'Hooray!' },
   { letter: 'R', animal: 'Rabbit',       emoji: '🐰', sound: 'Squeak!' },
   { letter: 'S', animal: 'Snake',        emoji: '🐍', sound: 'Hiss!' },
   { letter: 'T', animal: 'Tiger',        emoji: '🐯', sound: 'Growl!' },
-  { letter: 'U', animal: 'Umbrella Bird',emoji: '🦚', sound: 'Tweet!' },
+  { letter: 'U', animal: 'Unicorn',       emoji: '🦄', sound: 'Neigh!' },
   { letter: 'V', animal: 'Vulture',      emoji: '🦅', sound: 'Screech!' },
   { letter: 'W', animal: 'Wolf',         emoji: '🐺', sound: 'Howl!' },
-  { letter: 'X', animal: 'X-ray Fish',   emoji: '🐠', sound: 'Blub!' },
+  { letter: 'X', animal: 'Fox ends with X', emoji: '🦊', sound: 'Woof!' },
   { letter: 'Y', animal: 'Yak',          emoji: '🐃', sound: 'Grunt!' },
   { letter: 'Z', animal: 'Zebra',        emoji: '🦓', sound: 'Whinny!' },
 ]
@@ -423,7 +423,7 @@ export default function LittleReadersPage() {
               <div style={{ fontSize: isMobile ? 52 : 68, lineHeight: 1, marginBottom: 12 }}>
                 {currentLetter.emoji}
               </div>
-              <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 18 : 22, fontWeight: 700, color: TEXT, marginBottom: 8, letterSpacing: '0.04em' }}>
+              <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 15 : 18, fontWeight: 700, color: TEXT, marginBottom: 8, letterSpacing: '0.04em' }}>
                 {currentLetter.animal.toUpperCase()}
               </div>
               <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: ORANGE }}>
