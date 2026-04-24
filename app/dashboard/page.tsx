@@ -630,7 +630,7 @@ export default function DashboardPage() {
           </div>
           {!isMobile && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-              {[['children', '👨‍👧 Children', '/dashboard/children'], ['journal', '📖 Journal', '/journal'], ['community', '🌍 Community', '/community'], ['worksheets', '📄 Worksheets', '/worksheets']].map(([key, label, path]) => (
+              {[['children', '👨‍👧 Children', '/dashboard/children'], ['little-readers', '📚 Little Readers', '/little-readers'], ['journal', '📖 Journal', '/journal'], ['community', '🌍 Community', '/community'], ['worksheets', '📄 Worksheets', '/worksheets']].map(([key, label, path]) => (
                 <button key={key} onClick={() => router.push(path)}
                   onMouseEnter={() => setHover(`nav-${key}`)} onMouseLeave={() => setHover(null)}
                   style={btn(`nav-${key}`, { padding: '8px 14px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
