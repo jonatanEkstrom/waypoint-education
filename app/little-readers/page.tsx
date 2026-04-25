@@ -361,12 +361,12 @@ export default function LittleReadersPage() {
       const t = setTimeout(() => {
         const u = new SpeechSynthesisUtterance(text)
         u.lang = LANG_BCP47[lang]
-        u.rate = 0.7
+        u.rate = 0.9
         u.pitch = 1.2
         speechSynthesis.speak(u)
       }, delay)
       speakTimers.current.push(t)
-      delay += i === 0 ? 800 : i === 1 ? 1000 : 400
+      delay += i === 0 ? 800 : i === 1 ? 1000 : 250
     })
   }
 
