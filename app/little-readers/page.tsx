@@ -16,10 +16,14 @@ const ORANGE = '#F5A623'
 const TEXT = '#2D2D2D'
 const TEXT_MUTED = '#9E9188'
 
+type LangKey = 'EN' | 'SV' | 'ES' | 'FR' | 'DE'
+interface AnimalEntry { letter: string; animal: string; emoji: string; sound: string }
+
 interface Child {
   id: string
   name: string
   age_group: string
+  language_learning?: string
 }
 
 // '4–6 years' → Letter Animals; all other groups → Sight Words
@@ -27,34 +31,164 @@ function isYoungChild(age_group: string) {
   return age_group === '4–6 years'
 }
 
-const LETTER_ANIMALS = [
-  { letter: 'A', animal: 'Alligator',    emoji: '🐊', sound: 'Snap!' },
-  { letter: 'B', animal: 'Bear',         emoji: '🐻', sound: 'Roar!' },
-  { letter: 'C', animal: 'Cat',          emoji: '🐱', sound: 'Meow!' },
-  { letter: 'D', animal: 'Dog',          emoji: '🐶', sound: 'Woof!' },
-  { letter: 'E', animal: 'Elephant',     emoji: '🐘', sound: 'Trumpet!' },
-  { letter: 'F', animal: 'Fish',         emoji: '🐟', sound: 'Blub!' },
-  { letter: 'G', animal: 'Giraffe',      emoji: '🦒', sound: 'Munch!' },
-  { letter: 'H', animal: 'Horse',        emoji: '🐴', sound: 'Neigh!' },
-  { letter: 'I', animal: 'Inchworm',      emoji: '🐛', sound: 'Wiggle!' },
-  { letter: 'J', animal: 'Jellyfish',    emoji: '🪼', sound: 'Splash!' },
-  { letter: 'K', animal: 'Kangaroo',     emoji: '🦘', sound: 'Boing!' },
-  { letter: 'L', animal: 'Lion',         emoji: '🦁', sound: 'Roar!' },
-  { letter: 'M', animal: 'Monkey',       emoji: '🐒', sound: 'Ooh ooh!' },
-  { letter: 'N', animal: 'Narwhal',      emoji: '🐋', sound: 'Splash!' },
-  { letter: 'O', animal: 'Owl',          emoji: '🦉', sound: 'Hoot!' },
-  { letter: 'P', animal: 'Penguin',      emoji: '🐧', sound: 'Squawk!' },
-  { letter: 'Q', animal: 'Queen',         emoji: '👸', sound: 'Hooray!' },
-  { letter: 'R', animal: 'Rabbit',       emoji: '🐰', sound: 'Squeak!' },
-  { letter: 'S', animal: 'Snake',        emoji: '🐍', sound: 'Hiss!' },
-  { letter: 'T', animal: 'Tiger',        emoji: '🐯', sound: 'Growl!' },
-  { letter: 'U', animal: 'Unicorn',       emoji: '🦄', sound: 'Neigh!' },
-  { letter: 'V', animal: 'Vulture',      emoji: '🦅', sound: 'Screech!' },
-  { letter: 'W', animal: 'Wolf',         emoji: '🐺', sound: 'Howl!' },
-  { letter: 'X', animal: 'Fox ends with X', emoji: '🦊', sound: 'Woof!' },
-  { letter: 'Y', animal: 'Yak',          emoji: '🐃', sound: 'Grunt!' },
-  { letter: 'Z', animal: 'Zebra',        emoji: '🦓', sound: 'Whinny!' },
-]
+const LETTER_ANIMALS_ALL: Record<LangKey, AnimalEntry[]> = {
+  EN: [
+    { letter: 'A', animal: 'Alligator',       emoji: '🐊', sound: 'Snap!' },
+    { letter: 'B', animal: 'Bear',             emoji: '🐻', sound: 'Roar!' },
+    { letter: 'C', animal: 'Cat',              emoji: '🐱', sound: 'Meow!' },
+    { letter: 'D', animal: 'Dog',              emoji: '🐶', sound: 'Woof!' },
+    { letter: 'E', animal: 'Elephant',         emoji: '🐘', sound: 'Trumpet!' },
+    { letter: 'F', animal: 'Fish',             emoji: '🐟', sound: 'Blub!' },
+    { letter: 'G', animal: 'Giraffe',          emoji: '🦒', sound: 'Munch!' },
+    { letter: 'H', animal: 'Horse',            emoji: '🐴', sound: 'Neigh!' },
+    { letter: 'I', animal: 'Inchworm',         emoji: '🐛', sound: 'Wiggle!' },
+    { letter: 'J', animal: 'Jellyfish',        emoji: '🪼', sound: 'Splash!' },
+    { letter: 'K', animal: 'Kangaroo',         emoji: '🦘', sound: 'Boing!' },
+    { letter: 'L', animal: 'Lion',             emoji: '🦁', sound: 'Roar!' },
+    { letter: 'M', animal: 'Monkey',           emoji: '🐒', sound: 'Ooh ooh!' },
+    { letter: 'N', animal: 'Narwhal',          emoji: '🐋', sound: 'Splash!' },
+    { letter: 'O', animal: 'Owl',              emoji: '🦉', sound: 'Hoot!' },
+    { letter: 'P', animal: 'Penguin',          emoji: '🐧', sound: 'Squawk!' },
+    { letter: 'Q', animal: 'Queen',            emoji: '👸', sound: 'Hooray!' },
+    { letter: 'R', animal: 'Rabbit',           emoji: '🐰', sound: 'Squeak!' },
+    { letter: 'S', animal: 'Snake',            emoji: '🐍', sound: 'Hiss!' },
+    { letter: 'T', animal: 'Tiger',            emoji: '🐯', sound: 'Growl!' },
+    { letter: 'U', animal: 'Unicorn',          emoji: '🦄', sound: 'Neigh!' },
+    { letter: 'V', animal: 'Vulture',          emoji: '🦅', sound: 'Screech!' },
+    { letter: 'W', animal: 'Wolf',             emoji: '🐺', sound: 'Howl!' },
+    { letter: 'X', animal: 'Fox ends with X',  emoji: '🦊', sound: 'Woof!' },
+    { letter: 'Y', animal: 'Yak',             emoji: '🐃', sound: 'Grunt!' },
+    { letter: 'Z', animal: 'Zebra',           emoji: '🦓', sound: 'Whinny!' },
+  ],
+  SV: [
+    { letter: 'A', animal: 'Apa',             emoji: '🐒', sound: 'Ooh ooh!' },
+    { letter: 'B', animal: 'Björn',           emoji: '🐻', sound: 'Roar!' },
+    { letter: 'C', animal: 'Chamäleon',       emoji: '🦎', sound: 'Hiss!' },
+    { letter: 'D', animal: 'Delfin',          emoji: '🐬', sound: 'Splash!' },
+    { letter: 'E', animal: 'Elefant',         emoji: '🐘', sound: 'Trumpet!' },
+    { letter: 'F', animal: 'Fisk',            emoji: '🐟', sound: 'Blub!' },
+    { letter: 'G', animal: 'Giraff',          emoji: '🦒', sound: 'Munch!' },
+    { letter: 'H', animal: 'Häst',            emoji: '🐴', sound: 'Neigh!' },
+    { letter: 'I', animal: 'Igelkott',        emoji: '🦔', sound: 'Sniff!' },
+    { letter: 'J', animal: 'Jaguar',          emoji: '🐆', sound: 'Growl!' },
+    { letter: 'K', animal: 'Katt',            emoji: '🐱', sound: 'Meow!' },
+    { letter: 'L', animal: 'Lejon',           emoji: '🦁', sound: 'Roar!' },
+    { letter: 'M', animal: 'Myra',            emoji: '🐜', sound: 'March!' },
+    { letter: 'N', animal: 'Noshörning',      emoji: '🦏', sound: 'Stomp!' },
+    { letter: 'O', animal: 'Orm',             emoji: '🐍', sound: 'Hiss!' },
+    { letter: 'P', animal: 'Pingvin',         emoji: '🐧', sound: 'Squawk!' },
+    { letter: 'Q', animal: 'Quetzal',         emoji: '🦜', sound: 'Squawk!' },
+    { letter: 'R', animal: 'Räv',             emoji: '🦊', sound: 'Woof!' },
+    { letter: 'S', animal: 'Svan',            emoji: '🦢', sound: 'Honk!' },
+    { letter: 'T', animal: 'Tiger',           emoji: '🐯', sound: 'Growl!' },
+    { letter: 'U', animal: 'Uggla',           emoji: '🦉', sound: 'Hoot!' },
+    { letter: 'V', animal: 'Varg',            emoji: '🐺', sound: 'Howl!' },
+    { letter: 'W', animal: 'Walross',         emoji: '🦭', sound: 'Splash!' },
+    { letter: 'X', animal: 'Xerus',           emoji: '🐿️', sound: 'Squeak!' },
+    { letter: 'Y', animal: 'Yak',             emoji: '🐃', sound: 'Grunt!' },
+    { letter: 'Z', animal: 'Zebra',           emoji: '🦓', sound: 'Whinny!' },
+  ],
+  ES: [
+    { letter: 'A', animal: 'Ardilla',         emoji: '🐿️', sound: 'Squeak!' },
+    { letter: 'B', animal: 'Ballena',         emoji: '🐳', sound: 'Splash!' },
+    { letter: 'C', animal: 'Caballo',         emoji: '🐴', sound: 'Neigh!' },
+    { letter: 'D', animal: 'Delfín',          emoji: '🐬', sound: 'Splash!' },
+    { letter: 'E', animal: 'Elefante',        emoji: '🐘', sound: 'Trumpet!' },
+    { letter: 'F', animal: 'Flamenco',        emoji: '🦩', sound: 'Squawk!' },
+    { letter: 'G', animal: 'Gato',            emoji: '🐱', sound: 'Meow!' },
+    { letter: 'H', animal: 'Hipopótamo',      emoji: '🦛', sound: 'Splash!' },
+    { letter: 'I', animal: 'Iguana',          emoji: '🦎', sound: 'Hiss!' },
+    { letter: 'J', animal: 'Jaguar',          emoji: '🐆', sound: 'Growl!' },
+    { letter: 'K', animal: 'Koala',           emoji: '🐨', sound: 'Squeak!' },
+    { letter: 'L', animal: 'León',            emoji: '🦁', sound: 'Roar!' },
+    { letter: 'M', animal: 'Mono',            emoji: '🐒', sound: 'Ooh ooh!' },
+    { letter: 'N', animal: 'Nutria',          emoji: '🦦', sound: 'Splash!' },
+    { letter: 'O', animal: 'Oso',             emoji: '🐻', sound: 'Roar!' },
+    { letter: 'P', animal: 'Pato',            emoji: '🦆', sound: 'Quack!' },
+    { letter: 'Q', animal: 'Quetzal',         emoji: '🦜', sound: 'Squawk!' },
+    { letter: 'R', animal: 'Rana',            emoji: '🐸', sound: 'Ribbit!' },
+    { letter: 'S', animal: 'Serpiente',       emoji: '🐍', sound: 'Hiss!' },
+    { letter: 'T', animal: 'Tigre',           emoji: '🐯', sound: 'Growl!' },
+    { letter: 'U', animal: 'Unicornio',       emoji: '🦄', sound: 'Neigh!' },
+    { letter: 'V', animal: 'Vaca',            emoji: '🐄', sound: 'Moo!' },
+    { letter: 'W', animal: 'Wombat',          emoji: '🐨', sound: 'Grunt!' },
+    { letter: 'X', animal: 'Xenops',          emoji: '🐦', sound: 'Tweet!' },
+    { letter: 'Y', animal: 'Yak',             emoji: '🐃', sound: 'Grunt!' },
+    { letter: 'Z', animal: 'Zorro',           emoji: '🦊', sound: 'Woof!' },
+  ],
+  FR: [
+    { letter: 'A', animal: 'Âne',             emoji: '🫏', sound: 'Hee-haw!' },
+    { letter: 'B', animal: 'Baleine',         emoji: '🐳', sound: 'Splash!' },
+    { letter: 'C', animal: 'Chat',            emoji: '🐱', sound: 'Meow!' },
+    { letter: 'D', animal: 'Dauphin',         emoji: '🐬', sound: 'Splash!' },
+    { letter: 'E', animal: 'Éléphant',        emoji: '🐘', sound: 'Trumpet!' },
+    { letter: 'F', animal: 'Flamant',         emoji: '🦩', sound: 'Squawk!' },
+    { letter: 'G', animal: 'Grenouille',      emoji: '🐸', sound: 'Ribbit!' },
+    { letter: 'H', animal: 'Hérisson',        emoji: '🦔', sound: 'Sniff!' },
+    { letter: 'I', animal: 'Ibis',            emoji: '🐦', sound: 'Tweet!' },
+    { letter: 'J', animal: 'Jaguar',          emoji: '🐆', sound: 'Growl!' },
+    { letter: 'K', animal: 'Koala',           emoji: '🐨', sound: 'Squeak!' },
+    { letter: 'L', animal: 'Lion',            emoji: '🦁', sound: 'Roar!' },
+    { letter: 'M', animal: 'Mouton',          emoji: '🐑', sound: 'Baa!' },
+    { letter: 'N', animal: 'Narval',          emoji: '🐋', sound: 'Splash!' },
+    { letter: 'O', animal: 'Ours',            emoji: '🐻', sound: 'Roar!' },
+    { letter: 'P', animal: 'Pingouin',        emoji: '🐧', sound: 'Squawk!' },
+    { letter: 'Q', animal: 'Quetzal',         emoji: '🦜', sound: 'Squawk!' },
+    { letter: 'R', animal: 'Renard',          emoji: '🦊', sound: 'Woof!' },
+    { letter: 'S', animal: 'Singe',           emoji: '🐒', sound: 'Ooh ooh!' },
+    { letter: 'T', animal: 'Tigre',           emoji: '🐯', sound: 'Growl!' },
+    { letter: 'U', animal: 'Urubu',           emoji: '🦅', sound: 'Screech!' },
+    { letter: 'V', animal: 'Vache',           emoji: '🐄', sound: 'Moo!' },
+    { letter: 'W', animal: 'Wombat',          emoji: '🐨', sound: 'Grunt!' },
+    { letter: 'X', animal: 'Xérus',           emoji: '🐿️', sound: 'Squeak!' },
+    { letter: 'Y', animal: 'Yak',             emoji: '🐃', sound: 'Grunt!' },
+    { letter: 'Z', animal: 'Zèbre',           emoji: '🦓', sound: 'Whinny!' },
+  ],
+  DE: [
+    { letter: 'A', animal: 'Affe',            emoji: '🐒', sound: 'Ooh ooh!' },
+    { letter: 'B', animal: 'Bär',             emoji: '🐻', sound: 'Roar!' },
+    { letter: 'C', animal: 'Chamäleon',       emoji: '🦎', sound: 'Hiss!' },
+    { letter: 'D', animal: 'Delphin',         emoji: '🐬', sound: 'Splash!' },
+    { letter: 'E', animal: 'Elefant',         emoji: '🐘', sound: 'Trumpet!' },
+    { letter: 'F', animal: 'Frosch',          emoji: '🐸', sound: 'Ribbit!' },
+    { letter: 'G', animal: 'Giraffe',         emoji: '🦒', sound: 'Munch!' },
+    { letter: 'H', animal: 'Hase',            emoji: '🐰', sound: 'Squeak!' },
+    { letter: 'I', animal: 'Igel',            emoji: '🦔', sound: 'Sniff!' },
+    { letter: 'J', animal: 'Jaguar',          emoji: '🐆', sound: 'Growl!' },
+    { letter: 'K', animal: 'Katze',           emoji: '🐱', sound: 'Meow!' },
+    { letter: 'L', animal: 'Löwe',            emoji: '🦁', sound: 'Roar!' },
+    { letter: 'M', animal: 'Maus',            emoji: '🐭', sound: 'Squeak!' },
+    { letter: 'N', animal: 'Nashorn',         emoji: '🦏', sound: 'Stomp!' },
+    { letter: 'O', animal: 'Otter',           emoji: '🦦', sound: 'Splash!' },
+    { letter: 'P', animal: 'Pinguin',         emoji: '🐧', sound: 'Squawk!' },
+    { letter: 'Q', animal: 'Quetzal',         emoji: '🦜', sound: 'Squawk!' },
+    { letter: 'R', animal: 'Robbe',           emoji: '🦭', sound: 'Splash!' },
+    { letter: 'S', animal: 'Schlange',        emoji: '🐍', sound: 'Hiss!' },
+    { letter: 'T', animal: 'Tiger',           emoji: '🐯', sound: 'Growl!' },
+    { letter: 'U', animal: 'Uhu',             emoji: '🦉', sound: 'Hoot!' },
+    { letter: 'V', animal: 'Vogel',           emoji: '🐦', sound: 'Tweet!' },
+    { letter: 'W', animal: 'Wolf',            emoji: '🐺', sound: 'Howl!' },
+    { letter: 'X', animal: 'Xerus',           emoji: '🐿️', sound: 'Squeak!' },
+    { letter: 'Y', animal: 'Yak',             emoji: '🐃', sound: 'Grunt!' },
+    { letter: 'Z', animal: 'Zebra',           emoji: '🦓', sound: 'Whinny!' },
+  ],
+}
+
+const LANG_LEARNING_MAP: Partial<Record<string, LangKey>> = {
+  Swedish: 'SV', Spanish: 'ES', French: 'FR', German: 'DE',
+}
+
+const LANG_BCP47: Record<LangKey, string> = {
+  EN: 'en-GB', SV: 'sv-SE', ES: 'es-ES', FR: 'fr-FR', DE: 'de-DE',
+}
+
+const LANG_FLAGS: Record<LangKey, string> = {
+  EN: '🇬🇧', SV: '🇸🇪', ES: '🇪🇸', FR: '🇫🇷', DE: '🇩🇪',
+}
+
+function toLangKey(languageLearning?: string): LangKey {
+  return LANG_LEARNING_MAP[languageLearning ?? ''] ?? 'EN'
+}
 
 const SIGHT_WORDS = [
   { word: 'THE', emoji: '👆', sentence: 'THE CAT SAT ON THE MAT.' },
@@ -112,6 +246,7 @@ export default function LittleReadersPage() {
   const [letterIndex, setLetterIndex] = useState(0)
   const [exploredLetters, setExploredLetters] = useState<Set<string>>(new Set())
   const [letterBouncing, setLetterBouncing] = useState(false)
+  const [selectedLang, setSelectedLang] = useState<LangKey>('EN')
 
   // Sight Words state
   const [knownWords, setKnownWords] = useState<Set<string>>(new Set())
@@ -140,7 +275,7 @@ export default function LittleReadersPage() {
       // Always load the full children list so the inline selector works
       const { data: allChildren } = await supabase
         .from('children')
-        .select('id, name, age_group')
+        .select('id, name, age_group, language_learning')
         .eq('user_id', user.id)
 
       if (allChildren) setChildren(allChildren)
@@ -154,7 +289,7 @@ export default function LittleReadersPage() {
             const match = allChildren?.find(c => c.id === active.id)
             const resolved = match ?? active
             setChild(resolved)
-            await loadProgress(user.id, resolved.id)
+            await loadProgress(user.id, resolved.id, resolved.language_learning)
             setLoading(false)
             return
           }
@@ -164,17 +299,17 @@ export default function LittleReadersPage() {
       // Fall back: auto-select if there's exactly one child
       if (allChildren?.length === 1) {
         setChild(allChildren[0])
-        await loadProgress(user.id, allChildren[0].id)
+        await loadProgress(user.id, allChildren[0].id, allChildren[0].language_learning)
       }
     }
 
     setLoading(false)
   }
 
-  async function loadProgress(uid: string, childId: string) {
+  async function loadProgress(uid: string, childId: string, languageLearning?: string) {
     const { data } = await supabase
       .from('little_readers_progress')
-      .select('known_words')
+      .select('known_words, language')
       .eq('user_id', uid)
       .eq('child_id', childId)
       .maybeSingle()
@@ -188,6 +323,10 @@ export default function LittleReadersPage() {
     setKnownWords(words)
     setExploredLetters(letters)
     buildDeck(words)
+
+    const VALID: LangKey[] = ['EN', 'SV', 'ES', 'FR', 'DE']
+    const saved = data?.language as string | undefined
+    setSelectedLang(saved && VALID.includes(saved as LangKey) ? saved as LangKey : toLangKey(languageLearning))
   }
 
   function buildDeck(known: Set<string>) {
@@ -197,19 +336,19 @@ export default function LittleReadersPage() {
     setFlipped(false)
   }
 
-  async function saveProgress(newWords: Set<string>, newLetters: Set<string>) {
+  async function saveProgress(newWords: Set<string>, newLetters: Set<string>, langOverride?: LangKey) {
     if (!userId || !child) return
     const combined = [
       ...Array.from(newWords),
       ...Array.from(newLetters).map(l => `LETTER_${l}`),
     ]
     await supabase.from('little_readers_progress').upsert(
-      { user_id: userId, child_id: child.id, known_words: combined, updated_at: new Date().toISOString() },
+      { user_id: userId, child_id: child.id, known_words: combined, language: langOverride ?? selectedLang, updated_at: new Date().toISOString() },
       { onConflict: 'user_id,child_id' }
     )
   }
 
-  function speakCard(entry: typeof LETTER_ANIMALS[0]) {
+  function speakCard(entry: AnimalEntry, lang: LangKey) {
     if (typeof window === 'undefined' || !window.speechSynthesis) return
     speechSynthesis.cancel()
     speakTimers.current.forEach(t => clearTimeout(t))
@@ -221,6 +360,7 @@ export default function LittleReadersPage() {
     texts.forEach((text, i) => {
       const t = setTimeout(() => {
         const u = new SpeechSynthesisUtterance(text)
+        u.lang = LANG_BCP47[lang]
         u.rate = 0.7
         u.pitch = 1.2
         speechSynthesis.speak(u)
@@ -233,8 +373,8 @@ export default function LittleReadersPage() {
   function handleLetterTap() {
     setLetterBouncing(true)
     setTimeout(() => setLetterBouncing(false), 650)
-    const entry = LETTER_ANIMALS[letterIndex]
-    speakCard(entry)
+    const entry = animalData[letterIndex]
+    speakCard(entry, selectedLang)
     if (!exploredLetters.has(entry.letter)) {
       const newExplored = new Set(exploredLetters)
       newExplored.add(entry.letter)
@@ -278,7 +418,7 @@ export default function LittleReadersPage() {
     setChild(c)
     setLetterIndex(0)
     setFlipped(false)
-    if (userId) await loadProgress(userId, c.id)
+    if (userId) await loadProgress(userId, c.id, c.language_learning)
     else { buildDeck(new Set()); setExploredLetters(new Set()) }
   }
 
@@ -289,7 +429,8 @@ export default function LittleReadersPage() {
   const knownCount = knownWords.size
   const wordProgress = (knownCount / SIGHT_WORDS.length) * 100
   const letterProgress = (exploredLetters.size / 26) * 100
-  const currentLetter = LETTER_ANIMALS[letterIndex]
+  const animalData = LETTER_ANIMALS_ALL[selectedLang]
+  const currentLetter = animalData[letterIndex]
   const young = child ? isYoungChild(child.age_group) : false
 
   if (loading) {
@@ -385,13 +526,37 @@ export default function LittleReadersPage() {
       {child && young && (
         <div style={{ maxWidth: 520, margin: '0 auto', padding: isMobile ? '28px 16px 48px' : '40px 24px 64px' }}>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 28 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
             <div style={{ background: '#FFF8EC', color: ORANGE, padding: '4px 12px', borderRadius: 100, fontSize: 12, fontWeight: 700, border: '1.5px solid #FBDFA3', whiteSpace: 'nowrap' as const }}>
               Ages 3–5
             </div>
             <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 20 : 24, color: TEXT, margin: 0 }}>
               🐾 Letter Animals
             </h2>
+          </div>
+
+          {/* Language picker */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' as const }}>
+            <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Language:</span>
+            {(['EN', 'SV', 'ES', 'FR', 'DE'] as LangKey[]).map(lang => (
+              <button
+                key={lang}
+                onClick={() => {
+                  setSelectedLang(lang)
+                  saveProgress(knownWords, exploredLetters, lang)
+                }}
+                onMouseEnter={() => setHover(`lang-${lang}`)}
+                onMouseLeave={() => setHover(null)}
+                style={btn(`lang-${lang}`, {
+                  padding: '5px 11px', borderRadius: 100, fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
+                  border: `2px solid ${selectedLang === lang ? PRIMARY : BEIGE_BORDER}`,
+                  background: selectedLang === lang ? PRIMARY_BG : BEIGE_CARD,
+                  color: selectedLang === lang ? PRIMARY : TEXT_MUTED,
+                }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}
+              >
+                {LANG_FLAGS[lang]} {lang}
+              </button>
+            ))}
           </div>
 
           {/* Card + arrows */}
@@ -463,7 +628,7 @@ export default function LittleReadersPage() {
 
           {/* Alphabet dot grid */}
           <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginTop: 24, justifyContent: 'center' }}>
-            {LETTER_ANIMALS.map((la, i) => (
+            {animalData.map((la, i) => (
               <button
                 key={la.letter}
                 onClick={() => setLetterIndex(i)}
