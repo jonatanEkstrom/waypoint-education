@@ -39,7 +39,8 @@ const SUBJECT_OPTIONS = ['Math', 'Science', 'Language Arts', 'History', 'Geograp
 
 export default function ChildrenPage() {
   const [children, setChildren] = useState<Child[]>([])
-  const [childrenLimit, setChildrenLimit] = useState<number>(1)
+  const [childrenLimit, setChildrenLimit] = useState<number>(4)
+  const [subscriptionStatus, setSubscriptionStatus] = useState<string>('trial')
   const [selected, setSelected] = useState<Child | null>(null)
   const [adding, setAdding] = useState(false)
   const [saving, setSaving] = useState(false)
@@ -82,10 +83,14 @@ export default function ChildrenPage() {
     if (!user) { router.push('/auth'); return }
     const { data: profile } = await supabase
       .from('profiles')
-      .select('children_count')
+      .select('children_count, subscription_status')
       .eq('id', user.id)
       .single()
-    if (profile?.children_count) setChildrenLimit(profile.children_count)
+    const status = profile?.subscription_status || 'trial'
+    setSubscriptionStatus(status)
+    // Trial users get up to 4 children; paid subscribers use their plan's limit
+    const limit = status === 'active' ? (profile?.children_count || 1) : 4
+    setChildrenLimit(limit)
     const { data } = await supabase.from('children').select('*').eq('user_id', user.id)
     if (data) {
       const mapped = data.map((c: any) => ({
@@ -335,7 +340,9 @@ export default function ChildrenPage() {
               </button>
               {limitError && (
                 <div style={{ background: '#FFF1F2', border: '1.5px solid #F4A7A7', borderRadius: 12, padding: '10px 14px', fontSize: 13, color: '#E07575', fontWeight: 600 }}>
-                  Your plan includes {childrenLimit} {childrenLimit === 1 ? 'child' : 'children'}. To add more, update your subscription via Manage subscription.
+                  {subscriptionStatus === 'active'
+                    ? `Your plan includes ${childrenLimit} ${childrenLimit === 1 ? 'child' : 'children'}. To add more, update your subscription via Manage subscription.`
+                    : 'Your trial supports up to 4 children.'}
                 </div>
               )}
             </div>
