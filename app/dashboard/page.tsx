@@ -207,7 +207,7 @@ export default function DashboardPage() {
         const res = await fetch('/api/generate-lesson', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subject: lesson.subject, title: lesson.title, age_group: childData.age_group, city: childData.city, curriculum: childData.curriculum, language_learning: childData.language_learning })
+          body: JSON.stringify({ subject: lesson.subject, title: lesson.title, age_group: childData.age_group, city: childData.city, country: childData.country, curriculum: childData.curriculum, learn_style: childData.learn_style, language_learning: childData.language_learning, interests: childData.subjects, recent_topics: [] })
         })
         const data = await res.json()
         if (data.material) {
@@ -435,15 +435,60 @@ export default function DashboardPage() {
     }
   }
 
+  async function fetchRecentTopics(): Promise<string[]> {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !child) return []
+      const { data } = await supabase
+        .from('lesson_history')
+        .select('subject, topic')
+        .eq('user_id', user.id)
+        .eq('child_name', child.name)
+        .order('created_at', { ascending: false })
+        .limit(3)
+      return data?.map((r: any) => `${r.subject}: ${r.topic}`) || []
+    } catch { return [] }
+  }
+
+  async function saveLessonHistory(lesson: any) {
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user || !child) return
+      await supabase.from('lesson_history').insert({
+        user_id: user.id,
+        child_name: child.name,
+        subject: lesson.subject,
+        topic: lesson.title,
+      })
+    } catch { /* non-critical */ }
+  }
+
   async function loadReading(id: string, lesson: any) {
-    if (lessonCache[id]) { setReadingLesson(lessonCache[id]); setReadingId(id); return }
+    if (lessonCache[id]) {
+      setReadingLesson(lessonCache[id])
+      setReadingId(id)
+      saveLessonHistory(lesson)
+      return
+    }
     if (loadingReading) return
     setLoadingReading(id)
     try {
+      const recentTopics = await fetchRecentTopics()
       const res = await fetch('/api/generate-lesson', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject: lesson.subject, title: lesson.title, age_group: child?.age_group, city: child?.city, curriculum: child?.curriculum, language_learning: child?.language_learning })
+        body: JSON.stringify({
+          subject: lesson.subject,
+          title: lesson.title,
+          age_group: child?.age_group,
+          city: child?.city,
+          country: child?.country,
+          curriculum: child?.curriculum,
+          learn_style: child?.learn_style,
+          language_learning: child?.language_learning,
+          interests: child?.subjects,
+          recent_topics: recentTopics,
+        })
       })
       const data = await res.json()
       if (data.material) {
@@ -454,6 +499,7 @@ export default function DashboardPage() {
         })
         setReadingLesson(data.material)
         setReadingId(id)
+        saveLessonHistory(lesson)
       }
     } catch (e) { console.error(e) }
     finally { setLoadingReading(null) }
@@ -563,37 +609,106 @@ export default function DashboardPage() {
 
       {readingLesson && readingId && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.35)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16, overflowY: 'auto' }}>
-          <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: 32, maxWidth: 720, width: '100%', maxHeight: '90vh', overflowY: 'auto', position: 'relative', animation: 'fadeIn 0.2s ease', border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 8px 40px rgba(0,0,0,0.12)' }}>
+          <div style={{ background: BEIGE_CARD, borderRadius: 24, padding: isMobile ? 20 : 32, maxWidth: 720, width: '100%', maxHeight: '90vh', overflowY: 'auto', position: 'relative', animation: 'fadeIn 0.2s ease', border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 8px 40px rgba(0,0,0,0.12)' }}>
             <button onClick={() => { setReadingLesson(null); setReadingId(null); setQuizAnswers({}); setQuizSubmitted([]) }}
               onMouseEnter={() => setHover('close')} onMouseLeave={() => setHover(null)}
               style={btn('close', { position: 'absolute', top: 16, right: 16, background: BEIGE, border: `2px solid ${BEIGE_BORDER}`, borderRadius: '50%', width: 36, height: 36, fontSize: 16, color: TEXT_MUTED }, { background: BEIGE_BORDER })}>✕</button>
 
             <div style={{ fontSize: 12, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 8 }}>📖 Read & Learn</div>
-            <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 24, color: TEXT, marginBottom: 24 }}>{readingLesson.reading_title}</h2>
+            <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 20 : 24, color: TEXT, marginBottom: 24, paddingRight: 40 }}>{readingLesson.reading_title}</h2>
 
-            <div style={{ background: BEIGE, borderRadius: 16, padding: 24, marginBottom: 20, border: `2px solid ${BEIGE_BORDER}` }}>
-              {readingLesson.reading_text?.split('\n\n').map((para: string, i: number) => (
-                <p key={i} style={{ fontSize: 16, color: TEXT, lineHeight: 1.8, margin: '0 0 12px 0' }}>{para}</p>
-              ))}
-            </div>
+            {/* ── NEW FORMAT ── */}
 
-            {readingLesson.did_you_know && (
-              <div style={{ background: '#FFFBEB', borderRadius: 14, padding: 16, marginBottom: 20, border: '2px solid #FDE68A' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>⚡ Did you know?</div>
+            {/* Introduction */}
+            {readingLesson.introduction && (
+              <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${PRIMARY_BORDER}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 8 }}>🎯 Introduction</div>
+                <p style={{ fontSize: 15, color: TEXT, margin: 0, lineHeight: 1.75 }}>{readingLesson.introduction}</p>
+              </div>
+            )}
+
+            {/* Story / Context */}
+            {readingLesson.story && (
+              <div style={{ background: GREEN_BG, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${GREEN_BORDER}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 8 }}>📍 Story &amp; Context</div>
+                <p style={{ fontSize: 15, color: TEXT, margin: 0, lineHeight: 1.75, fontStyle: 'italic' }}>{readingLesson.story}</p>
+              </div>
+            )}
+
+            {/* Main Content */}
+            {readingLesson.main_content && (
+              <div style={{ background: BEIGE, borderRadius: 14, padding: 20, marginBottom: 16, border: `2px solid ${BEIGE_BORDER}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 12 }}>📚 The Lesson</div>
+                {readingLesson.main_content.split('\n\n').map((para: string, i: number) => (
+                  <p key={i} style={{ fontSize: 15, color: TEXT, lineHeight: 1.8, margin: '0 0 10px 0' }}>{para}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Activity — new format (object) */}
+            {readingLesson.activity && typeof readingLesson.activity === 'object' && (
+              <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${PRIMARY_BORDER}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>🏃 Activity — {readingLesson.activity.title}</div>
+                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, marginBottom: 12 }}>
+                  {readingLesson.activity.time && (
+                    <span style={{ padding: '3px 10px', borderRadius: 100, background: PRIMARY, color: 'white', fontSize: 11, fontWeight: 700 }}>⏱ {readingLesson.activity.time}</span>
+                  )}
+                  {readingLesson.activity.materials && (
+                    <span style={{ padding: '3px 10px', borderRadius: 100, background: GREEN_BG, color: GREEN_DARK, fontSize: 11, fontWeight: 700, border: `1px solid ${GREEN_BORDER}` }}>🧰 {readingLesson.activity.materials}</span>
+                  )}
+                </div>
+                <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.7 }}>{readingLesson.activity.description}</p>
+              </div>
+            )}
+
+            {/* Discussion Questions */}
+            {readingLesson.discussion_questions?.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>💬 Discuss Together</div>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                  {readingLesson.discussion_questions.map((q: string, i: number) => (
+                    <div key={i} style={{ background: BEIGE_CARD, borderRadius: 12, padding: '12px 16px', border: `2px solid ${BEIGE_BORDER}`, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ background: PRIMARY_BG, color: PRIMARY, borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{i + 1}</span>
+                      <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.6 }}>{q}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Fun Fact — new field */}
+            {readingLesson.fun_fact && (
+              <div style={{ background: '#FFFBEB', borderRadius: 14, padding: 16, marginBottom: 16, border: '2px solid #FDE68A' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 }}>⚡ Fun Fact</div>
+                <p style={{ fontSize: 15, color: '#92400E', margin: 0, lineHeight: 1.7, fontStyle: 'italic' }}>{readingLesson.fun_fact}</p>
+              </div>
+            )}
+
+            {/* ── OLD FORMAT fallbacks ── */}
+
+            {/* Old reading_text */}
+            {!readingLesson.main_content && readingLesson.reading_text && (
+              <div style={{ background: BEIGE, borderRadius: 14, padding: 20, marginBottom: 16, border: `2px solid ${BEIGE_BORDER}` }}>
+                {readingLesson.reading_text.split('\n\n').map((para: string, i: number) => (
+                  <p key={i} style={{ fontSize: 15, color: TEXT, lineHeight: 1.8, margin: '0 0 10px 0' }}>{para}</p>
+                ))}
+              </div>
+            )}
+            {!readingLesson.fun_fact && readingLesson.did_you_know && (
+              <div style={{ background: '#FFFBEB', borderRadius: 14, padding: 16, marginBottom: 16, border: '2px solid #FDE68A' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 }}>⚡ Did you know?</div>
                 <p style={{ fontSize: 15, color: '#92400E', margin: 0, lineHeight: 1.7, fontStyle: 'italic' }}>{readingLesson.did_you_know}</p>
               </div>
             )}
-
             {readingLesson.concept_explanation && (
-              <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 16, marginBottom: 20, border: `2px solid ${PRIMARY_BORDER}` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 6 }}>🧠 Why does this work?</div>
+              <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 16, marginBottom: 16, border: `2px solid ${PRIMARY_BORDER}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 }}>🧠 Why does this work?</div>
                 <p style={{ fontSize: 15, color: TEXT, margin: 0, lineHeight: 1.7 }}>{readingLesson.concept_explanation}</p>
               </div>
             )}
-
             {readingLesson.real_world_examples?.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>🌍 Real world examples</div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>🌍 Real world examples</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
                   {readingLesson.real_world_examples.map((ex: string, i: number) => (
                     <div key={i} style={{ background: GREEN_BG, borderRadius: 12, padding: '10px 14px', display: 'flex', gap: 10, alignItems: 'flex-start', border: `1px solid ${GREEN_BORDER}` }}>
@@ -604,10 +719,9 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
-
             {readingLesson.step_by_step?.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>📋 Step by step</div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>📋 Step by step</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
                   {readingLesson.step_by_step.map((step: string, i: number) => (
                     <div key={i} style={{ background: PRIMARY_BG, borderRadius: 12, padding: '10px 14px', display: 'flex', gap: 12, alignItems: 'flex-start', border: `1px solid ${PRIMARY_BORDER}` }}>
@@ -618,16 +732,24 @@ export default function DashboardPage() {
                 </div>
               </div>
             )}
+            {/* Old string activity */}
+            {readingLesson.activity && typeof readingLesson.activity === 'string' && (
+              <div style={{ background: GREEN_BG, borderRadius: 14, padding: 16, marginBottom: 16, border: `2px solid ${GREEN_BORDER}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 8 }}>🏃 Try it yourself</div>
+                <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.7 }}>{readingLesson.activity}</p>
+              </div>
+            )}
 
+            {/* ── Quiz (works for both formats) ── */}
             {readingLesson.quiz?.length > 0 && (
-              <div style={{ marginBottom: 20 }}>
-                <div style={{ fontSize: 12, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 16 }}>🧠 Check your understanding</div>
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 16 }}>🧠 Check Your Understanding</div>
                 {readingLesson.quiz.map((q: any, qi: number) => {
                   const qid = `${readingId}-${qi}`
                   const isSubmitted = quizSubmitted.includes(readingId!)
                   const userAnswer = quizAnswers[qid]
                   return (
-                    <div key={qi} style={{ marginBottom: 20 }}>
+                    <div key={qi} style={{ marginBottom: 18 }}>
                       <p style={{ fontSize: 15, fontWeight: 700, color: TEXT, marginBottom: 10 }}>{qi + 1}. {q.question}</p>
                       <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
                         {q.options.map((opt: string, oi: number) => {
@@ -664,16 +786,11 @@ export default function DashboardPage() {
               </div>
             )}
 
-            {readingLesson.activity && (
-              <div style={{ background: GREEN_BG, borderRadius: 14, padding: 16, marginBottom: 16, border: `2px solid ${GREEN_BORDER}` }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 8 }}>🏃 Try it yourself</div>
-                <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.7 }}>{readingLesson.activity}</p>
-              </div>
-            )}
+            {/* Parent Tip */}
             {readingLesson.parent_tip && (
-              <div style={{ background: '#FFF8EC', borderLeft: `4px solid #F5DFA0`, borderRadius: '0 12px 12px 0', padding: '10px 14px' }}>
-                <div style={{ fontSize: 11, fontWeight: 700, color: '#C49040', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
-                <p style={{ fontSize: 13, color: '#6B5A3E', margin: 0 }}>{readingLesson.parent_tip}</p>
+              <div style={{ background: '#FFF8EC', borderLeft: `4px solid #F5DFA0`, borderRadius: '0 12px 12px 0', padding: '12px 16px' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#C49040', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
+                <p style={{ fontSize: 13, color: '#6B5A3E', margin: 0, lineHeight: 1.6 }}>{readingLesson.parent_tip}</p>
               </div>
             )}
           </div>
