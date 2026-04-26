@@ -289,7 +289,8 @@ export default function LittleReadersPage() {
             const match = allChildren?.find(c => c.id === active.id)
             const resolved = match ?? active
             setChild(resolved)
-            await loadProgress(user.id, resolved.id, resolved.language_learning)
+            // Always prefer language_learning from the freshly-fetched match
+            await loadProgress(user.id, resolved.id, match?.language_learning ?? active.language_learning)
             setLoading(false)
             return
           }
@@ -538,25 +539,33 @@ export default function LittleReadersPage() {
           {/* Language picker */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 20, flexWrap: 'wrap' as const }}>
             <span style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>Language:</span>
-            {(['EN', 'SV', 'ES', 'FR', 'DE'] as LangKey[]).map(lang => (
-              <button
-                key={lang}
-                onClick={() => {
-                  setSelectedLang(lang)
-                  saveProgress(knownWords, exploredLetters, lang)
-                }}
-                onMouseEnter={() => setHover(`lang-${lang}`)}
-                onMouseLeave={() => setHover(null)}
-                style={btn(`lang-${lang}`, {
-                  padding: '5px 11px', borderRadius: 100, fontFamily: 'inherit', fontSize: 13, fontWeight: 700,
-                  border: `2px solid ${selectedLang === lang ? PRIMARY : BEIGE_BORDER}`,
-                  background: selectedLang === lang ? PRIMARY_BG : BEIGE_CARD,
-                  color: selectedLang === lang ? PRIMARY : TEXT_MUTED,
-                }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}
-              >
-                {LANG_FLAGS[lang]} {lang}
-              </button>
-            ))}
+            {(['EN', 'SV', 'ES', 'FR', 'DE'] as LangKey[]).map(lang => {
+              const active = selectedLang === lang
+              return (
+                <button
+                  key={lang}
+                  onClick={() => {
+                    setSelectedLang(lang)
+                    saveProgress(knownWords, exploredLetters, lang)
+                  }}
+                  style={{
+                    padding: '5px 11px',
+                    borderRadius: 100,
+                    fontFamily: 'inherit',
+                    fontSize: 13,
+                    fontWeight: 700,
+                    border: `2px solid ${active ? PRIMARY : BEIGE_BORDER}`,
+                    background: active ? PRIMARY : BEIGE_CARD,
+                    color: active ? 'white' : TEXT_MUTED,
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease',
+                    boxShadow: active ? `0 2px 8px ${PRIMARY}55` : 'none',
+                  }}
+                >
+                  {LANG_FLAGS[lang]} {lang}
+                </button>
+              )
+            })}
           </div>
 
           {/* Card + arrows */}
@@ -575,6 +584,7 @@ export default function LittleReadersPage() {
             </button>
 
             <div
+              key={selectedLang}
               onClick={handleLetterTap}
               style={{
                 flex: 1,
