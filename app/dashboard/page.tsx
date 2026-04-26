@@ -32,6 +32,13 @@ function getWeekNumber() {
   return Math.floor(Date.now() / (7 * 24 * 60 * 60 * 1000))
 }
 
+function getWeekLabel(offset: number): string {
+  const d = new Date()
+  const dow = d.getDay() === 0 ? 7 : d.getDay() // Mon=1 … Sun=7
+  d.setDate(d.getDate() - dow + 1 + offset * 7)  // move to that week's Monday
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+}
+
 export default function DashboardPage() {
   const [child, setChild] = useState<any>(null)
   const [plan, setPlan] = useState<any>(null)
@@ -58,6 +65,7 @@ export default function DashboardPage() {
   const [feedbackRating, setFeedbackRating] = useState(0)
   const [feedbackMsg, setFeedbackMsg] = useState('')
   const [feedbackSent, setFeedbackSent] = useState(false)
+  const [viewingWeekOffset, setViewingWeekOffset] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
   const msgInterval = useRef<any>(null)
@@ -89,74 +97,100 @@ export default function DashboardPage() {
     loadPlan(childData, cachedLessons)
   }, [])
 
-  async function loadPlan(childData: any, cachedLessons: string | null) {
-    const weekNumber = getWeekNumber()
+  async function loadPlan(childData: any, cachedLessons: string | null, weekOffset: number = 0) {
+    const weekNumber = getWeekNumber() + weekOffset
+    const isCurrentWeek = weekOffset === 0
 
-    // Key includes subjects (sorted for order-independence) + language so any
-    // profile change busts both the localStorage and Supabase caches.
     const sortedSubjects = [...(childData.subjects || [])].sort().join(',')
     const localKey = `${childData.name}-${childData.city}-${childData.country}-${childData.language_learning || 'None'}-${sortedSubjects}-${weekNumber}`
 
-    const cachedPlan = localStorage.getItem('cachedPlan')
-    const cachedKey = localStorage.getItem('cachedPlanChild')
+    // For the current week, try localStorage first
+    if (isCurrentWeek) {
+      const cachedPlan = localStorage.getItem('cachedPlan')
+      const cachedKey = localStorage.getItem('cachedPlanChild')
 
-    // localStorage hit — serve immediately
-    if (cachedPlan && cachedKey === localKey) {
-      console.log('[Dashboard] Serving plan from localStorage cache')
-      setPlan(JSON.parse(cachedPlan))
-      setLoading(false)
-      prefetchLessons(JSON.parse(cachedPlan), childData, cachedLessons ? JSON.parse(cachedLessons) : {})
-      return
+      if (cachedPlan && cachedKey === localKey) {
+        console.log('[Dashboard] Serving plan from localStorage cache')
+        setPlan(JSON.parse(cachedPlan))
+        setLoading(false)
+        prefetchLessons(JSON.parse(cachedPlan), childData, cachedLessons ? JSON.parse(cachedLessons) : {})
+        return
+      }
+
+      // Profile changed — wipe stale Supabase record then regenerate
+      const profileChanged = !!cachedKey && cachedKey !== localKey
+      if (profileChanged) {
+        console.log('[Dashboard] Profile changed, busting Supabase cache')
+        try {
+          const { data: { user } } = await supabase.auth.getUser()
+          if (user) {
+            await supabase.from('weekly_plans').delete()
+              .eq('user_id', user.id).eq('child_name', childData.name).eq('week_number', weekNumber)
+          }
+        } catch (e) { console.error('Supabase cache error:', e) }
+        localStorage.removeItem('cachedLessons')
+        setLessonCache({})
+        generatePlan(childData, localKey, weekNumber)
+        return
+      }
     }
 
-    // Profile changed (cachedKey exists but differs) — delete stale Supabase
-    // record so we don't serve a plan built with old subjects/language.
-    const profileChanged = !!cachedKey && cachedKey !== localKey
-    console.log('[Dashboard] Cache miss. profileChanged:', profileChanged, '| localKey:', localKey)
-
+    // Check Supabase (always for non-current weeks; fallback for current week)
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (user) {
-        if (profileChanged) {
-          // Wipe the stale Supabase plan for this child+week
-          await supabase
-            .from('weekly_plans')
-            .delete()
-            .eq('user_id', user.id)
-            .eq('child_name', childData.name)
-            .eq('week_number', weekNumber)
-          console.log('[Dashboard] Deleted stale Supabase weekly_plan for', childData.name)
-        } else {
-          // No local cache at all — check Supabase (e.g. fresh device / cleared storage)
-          const { data } = await supabase
-            .from('weekly_plans')
-            .select('plan')
-            .eq('user_id', user.id)
-            .eq('child_name', childData.name)
-            .eq('city', childData.city)
-            .eq('country', childData.country)
-            .eq('week_number', weekNumber)
-            .single()
+        const { data } = await supabase
+          .from('weekly_plans')
+          .select('plan')
+          .eq('user_id', user.id)
+          .eq('child_name', childData.name)
+          .eq('city', childData.city)
+          .eq('country', childData.country)
+          .eq('week_number', weekNumber)
+          .single()
 
-          if (data?.plan) {
-            console.log('[Dashboard] Serving plan from Supabase cache')
-            setPlan(data.plan)
+        if (data?.plan) {
+          console.log('[Dashboard] Serving plan from Supabase cache (week offset', weekOffset, ')')
+          setPlan(data.plan)
+          if (isCurrentWeek) {
             localStorage.setItem('cachedPlan', JSON.stringify(data.plan))
             localStorage.setItem('cachedPlanChild', localKey)
-            setLoading(false)
             prefetchLessons(data.plan, childData, cachedLessons ? JSON.parse(cachedLessons) : {})
-            return
           }
+          setLoading(false)
+          return
         }
       }
     } catch (e) {
       console.error('Supabase cache error:', e)
     }
 
-    // Generate new plan
-    localStorage.removeItem('cachedLessons')
-    setLessonCache({})
+    // Generate a new plan for this week
+    if (isCurrentWeek) {
+      localStorage.removeItem('cachedLessons')
+      setLessonCache({})
+    }
     generatePlan(childData, localKey, weekNumber)
+  }
+
+  async function navigateWeek(newOffset: number) {
+    if (!child) return
+    setViewingWeekOffset(newOffset)
+    setPlan(null)
+    setLoading(true)
+    setCompleted([])
+    setExpanded([])
+    setReadingLesson(null)
+    setReadingId(null)
+    if (newOffset === 0) {
+      const cached = localStorage.getItem('cachedLessons')
+      const parsedCache = cached ? JSON.parse(cached) : {}
+      setLessonCache(parsedCache)
+      loadPlan(child, cached, 0)
+    } else {
+      setLessonCache({})
+      loadPlan(child, null, newOffset)
+    }
   }
 
   async function prefetchLessons(plan: any, childData: any, existingCache: any) {
@@ -240,12 +274,16 @@ export default function DashboardPage() {
       const p = JSON.parse(cleaned)
       setPlan(p)
 
-      // Save to localStorage
-      localStorage.setItem('cachedPlan', JSON.stringify(p))
-      localStorage.setItem('cachedPlanChild', freshKey)
-      localStorage.setItem('cachedPlanTimestamp', Date.now().toString())
+      const isCurrentWeek = weekNumber === getWeekNumber()
 
-      // Save to Supabase
+      // Save to localStorage only for the current week
+      if (isCurrentWeek) {
+        localStorage.setItem('cachedPlan', JSON.stringify(p))
+        localStorage.setItem('cachedPlanChild', freshKey)
+        localStorage.setItem('cachedPlanTimestamp', Date.now().toString())
+      }
+
+      // Save to Supabase (always — future weeks need to be cached there)
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
@@ -260,7 +298,8 @@ export default function DashboardPage() {
         }
       } catch (e) { console.error('Supabase save error:', e) }
 
-      prefetchLessons(p, freshData, {})
+      // Prefetch lessons only for the current week (don't overwrite current week's lesson cache)
+      if (isCurrentWeek) prefetchLessons(p, freshData, {})
     } catch (e) { console.error(e) }
     finally {
       clearInterval(msgInterval.current)
@@ -717,8 +756,36 @@ export default function DashboardPage() {
         {activeTab === 'plan' && <>
         {plan?.week_theme && (
           <div style={{ background: `linear-gradient(135deg, ${PRIMARY}, ${GREEN})`, borderRadius: 20, padding: '20px 24px', marginBottom: 24, color: 'white' }}>
-            <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.05em', opacity: 0.85 }}>This week's theme</div>
-            <div style={{ fontFamily: 'Georgia,serif', fontSize: 20, marginTop: 4 }}>{plan.week_theme}</div>
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.05em', opacity: 0.85 }}>
+                  {viewingWeekOffset === 0 ? 'This week' : `Week of ${getWeekLabel(viewingWeekOffset)}`}
+                </div>
+                <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 17 : 20, marginTop: 4 }}>{plan.week_theme}</div>
+              </div>
+              <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
+                <button
+                  onClick={() => navigateWeek(viewingWeekOffset - 1)}
+                  title="Previous week"
+                  style={{ padding: isMobile ? '6px 10px' : '7px 13px', borderRadius: 100, border: '2px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  ←
+                </button>
+                {viewingWeekOffset !== 0 && (
+                  <button
+                    onClick={() => navigateWeek(0)}
+                    title="Back to current week"
+                    style={{ padding: isMobile ? '6px 8px' : '7px 11px', borderRadius: 100, border: '2px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: isMobile ? 11 : 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' as const }}>
+                    Today
+                  </button>
+                )}
+                <button
+                  onClick={() => navigateWeek(viewingWeekOffset + 1)}
+                  title="Next week"
+                  style={{ padding: isMobile ? '6px 10px' : '7px 13px', borderRadius: 100, border: '2px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
+                  →
+                </button>
+              </div>
+            </div>
           </div>
         )}
 
