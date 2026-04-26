@@ -35,6 +35,7 @@ const CURRICULUMS = ['Unschooling', 'Classical', 'Charlotte Mason', 'Montessori'
 const LEARN_STYLES = ['Visual', 'Auditory', 'Kinesthetic', 'Reading/Writing']
 const AGE_GROUPS = ['4–6 years', '7–9 years', '10–12 years', '13–15 years', '16–18 years']
 const LANGUAGES = ['None', 'Spanish', 'French', 'German', 'Mandarin', 'Japanese', 'Arabic', 'Portuguese', 'Thai', 'Italian', 'Swedish']
+const SUBJECT_OPTIONS = ['Math', 'Science', 'Language Arts', 'History', 'Geography', 'Art', 'Music', 'Physical Education', 'Coding', 'Nature', 'Life Skills', 'Technology']
 
 export default function ChildrenPage() {
   const [children, setChildren] = useState<Child[]>([])
@@ -168,15 +169,17 @@ export default function ChildrenPage() {
     }
     setSelected(updatedChild)
     setChildren(prev => prev.map(c => c.id === selected.id ? updatedChild : c))
+
+    const langChanged = selected.language_learning !== updatedChild.language_learning
+    const subjectsChanged = JSON.stringify((selected.subjects || []).sort()) !== JSON.stringify((updatedChild.subjects || []).sort())
+
+    // Bust localStorage caches
     const stored = localStorage.getItem('activeChild')
     if (stored) {
       try {
         const active = JSON.parse(stored)
         if (active.id === selected.id) {
           localStorage.setItem('activeChild', JSON.stringify({ ...updatedChild, user_id: active.user_id }))
-          // If language or subjects changed, bust plan + lang plan caches so dashboard regenerates
-          const langChanged = active.language_learning !== updatedChild.language_learning
-          const subjectsChanged = JSON.stringify((active.subjects || []).sort()) !== JSON.stringify((updatedChild.subjects || []).sort())
           if (langChanged || subjectsChanged) {
             localStorage.removeItem('cachedPlan')
             localStorage.removeItem('cachedPlanChild')
@@ -189,6 +192,24 @@ export default function ChildrenPage() {
         }
       } catch { /* ignore */ }
     }
+
+    // Bust Supabase plan caches so a fresh device never gets the stale plan
+    if (langChanged || subjectsChanged) {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user) {
+          await supabase.from('weekly_plans').delete()
+            .eq('user_id', user.id)
+            .eq('child_name', selected.name)
+          if (langChanged) {
+            await supabase.from('language_plans').delete()
+              .eq('user_id', user.id)
+              .eq('child_name', selected.name)
+          }
+        }
+      } catch (e) { console.error('[saveEdit] cache invalidation error:', e) }
+    }
+
     setEditing(false)
   }
 
@@ -390,7 +411,7 @@ export default function ChildrenPage() {
                           <span style={{ fontSize: 12, color: editForm.subjects.length >= 8 ? '#E07575' : TEXT_MUTED, fontWeight: 600 }}>Max 8 subjects ({editForm.subjects.length}/8)</span>
                         </div>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-                          {['Math', 'Science', 'History', 'Art', 'Music', 'Coding', 'Nature', 'Sports', 'Language', 'Technology'].map(s => {
+                          {SUBJECT_OPTIONS.map(s => {
                             const on = editForm.subjects.includes(s)
                             const atMax = editForm.subjects.length >= 8
                             return (
@@ -529,7 +550,7 @@ export default function ChildrenPage() {
                       <span style={{ fontSize: 12, color: form.subjects.length >= 8 ? '#E07575' : TEXT_MUTED, fontWeight: 600 }}>Max 8 subjects ({form.subjects.length}/8)</span>
                     </div>
                     <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-                      {['Math', 'Science', 'History', 'Art', 'Music', 'Coding', 'Nature', 'Sports', 'Language', 'Technology'].map(s => {
+                      {SUBJECT_OPTIONS.map(s => {
                         const on = form.subjects.includes(s)
                         const atMax = form.subjects.length >= 8
                         return (

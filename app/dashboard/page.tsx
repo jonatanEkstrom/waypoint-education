@@ -194,15 +194,37 @@ export default function DashboardPage() {
       setLoadingMsg(prev => (prev + 1) % LOADING_MESSAGES.length)
     }, 2500)
     try {
+      // Always fetch fresh subjects and language from DB before generating
+      let freshData = childData
+      let freshKey = localKey
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (user && childData.id) {
+          const { data: fresh } = await supabase
+            .from('children')
+            .select('subjects, language_learning')
+            .eq('id', childData.id)
+            .single()
+          if (fresh) {
+            freshData = { ...childData, subjects: fresh.subjects || [], language_learning: fresh.language_learning || 'None' }
+            const freshSorted = [...(freshData.subjects as string[])].sort().join(',')
+            freshKey = `${freshData.name}-${freshData.city}-${freshData.country}-${freshData.language_learning}-${freshSorted}-${weekNumber}`
+            localStorage.setItem('activeChild', JSON.stringify({ ...freshData, user_id: user.id }))
+            setChild(freshData)
+            console.log('[Dashboard] Refreshed child data from DB:', { subjects: freshData.subjects, language_learning: freshData.language_learning })
+          }
+        }
+      } catch (e) { console.error('[generatePlan] Failed to refresh child data:', e) }
+
       console.log('[Dashboard] Sending to /api/generate-plan:', {
-        name: childData.name,
-        language_learning: childData.language_learning,
-        subjects: childData.subjects,
+        name: freshData.name,
+        language_learning: freshData.language_learning,
+        subjects: freshData.subjects,
       })
       const res = await fetch('/api/generate-plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(childData)
+        body: JSON.stringify(freshData)
       })
       if (!res.ok) throw new Error('Failed')
       if (!res.body) throw new Error('No body')
@@ -220,7 +242,7 @@ export default function DashboardPage() {
 
       // Save to localStorage
       localStorage.setItem('cachedPlan', JSON.stringify(p))
-      localStorage.setItem('cachedPlanChild', localKey)
+      localStorage.setItem('cachedPlanChild', freshKey)
       localStorage.setItem('cachedPlanTimestamp', Date.now().toString())
 
       // Save to Supabase
@@ -229,16 +251,16 @@ export default function DashboardPage() {
         if (user) {
           await supabase.from('weekly_plans').upsert({
             user_id: user.id,
-            child_name: childData.name,
-            city: childData.city,
-            country: childData.country,
+            child_name: freshData.name,
+            city: freshData.city,
+            country: freshData.country,
             week_number: weekNumber,
             plan: p
           }, { onConflict: 'user_id,child_name,city,country,week_number' })
         }
       } catch (e) { console.error('Supabase save error:', e) }
 
-      prefetchLessons(p, childData, {})
+      prefetchLessons(p, freshData, {})
     } catch (e) { console.error(e) }
     finally {
       clearInterval(msgInterval.current)
