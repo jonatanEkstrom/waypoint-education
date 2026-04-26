@@ -13,6 +13,21 @@ const BEIGE_BORDER = '#E8E2D9'
 const TEXT = '#2D2D2D'
 const TEXT_MUTED = '#9E9188'
 
+const SUBJECTS = [
+  { label: 'Math',               emoji: '🔢', color: '#4A90D9', bg: '#EAF3FC' },
+  { label: 'Science',            emoji: '🔬', color: '#5FAD78', bg: '#EBF7EF' },
+  { label: 'Language Arts',      emoji: '📝', color: '#9B8EC4', bg: '#F0EBF9' },
+  { label: 'History',            emoji: '🏛️', color: '#D4935A', bg: '#FDF0E5' },
+  { label: 'Geography',          emoji: '🌍', color: '#4AADA0', bg: '#E6F5F3' },
+  { label: 'Art',                emoji: '🎨', color: '#D4708A', bg: '#FCE8EF' },
+  { label: 'Music',              emoji: '🎵', color: '#C4A030', bg: '#FBF5E0' },
+  { label: 'Physical Education', emoji: '⚽', color: '#D46040', bg: '#FCE9E4' },
+  { label: 'Nature',             emoji: '🌿', color: '#74B844', bg: '#F0F9E8' },
+  { label: 'Life Skills',        emoji: '🏠', color: '#8A7060', bg: '#F4EEE9' },
+  { label: 'Travel',             emoji: '✈️', color: '#4A78C4', bg: '#EAF0FB' },
+  { label: 'Creative Writing',   emoji: '✍️', color: '#9B5AC4', bg: '#F5EBF9' },
+] as const
+
 export default function JournalPage() {
   const [child, setChild] = useState<any>(null)
   const [userId, setUserId] = useState<string>('guest')
@@ -20,6 +35,7 @@ export default function JournalPage() {
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [selectedTags, setSelectedTags] = useState<string[]>([])
   const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
 
@@ -65,7 +81,8 @@ export default function JournalPage() {
         country: child?.country,
         date: new Date().toLocaleDateString(),
         text: text.trim(),
-        story: null
+        story: null,
+        tags: selectedTags,
       }
       const { data, error } = await supabase
         .from('journal_entries')
@@ -75,6 +92,7 @@ export default function JournalPage() {
       if (error) throw error
       setEntries(prev => [data, ...prev])
       setText('')
+      setSelectedTags([])
     } catch (e) {
       console.error(e)
     } finally {
@@ -118,6 +136,33 @@ export default function JournalPage() {
             rows={4}
             style={{ width: '100%', padding: '13px 16px', borderRadius: 14, border: `2px solid ${BEIGE_BORDER}`, fontSize: 15, fontFamily: 'inherit', outline: 'none', resize: 'vertical' as const, boxSizing: 'border-box' as const, marginBottom: 12, background: BEIGE, color: TEXT }}
           />
+          <div style={{ marginBottom: 12 }}>
+            <p style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, marginBottom: 8, textTransform: 'uppercase' as const, letterSpacing: '0.05em', margin: '0 0 8px 0' }}>Subjects (optional)</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6 }}>
+              {SUBJECTS.map(s => {
+                const active = selectedTags.includes(s.label)
+                return (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={() => setSelectedTags(prev =>
+                      prev.includes(s.label) ? prev.filter(t => t !== s.label) : [...prev, s.label]
+                    )}
+                    style={{
+                      padding: '5px 11px', borderRadius: 100, fontFamily: 'inherit',
+                      fontSize: 12, fontWeight: 700, cursor: 'pointer',
+                      border: `2px solid ${active ? s.color : BEIGE_BORDER}`,
+                      background: active ? s.bg : BEIGE_CARD,
+                      color: active ? s.color : TEXT_MUTED,
+                      transition: 'all 0.12s',
+                    }}
+                  >
+                    {s.emoji} {s.label}
+                  </button>
+                )
+              })}
+            </div>
+          </div>
           <button onClick={saveEntry} disabled={saving || !text.trim()}
             style={{ width: '100%', padding: 14, borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 800, cursor: saving || !text.trim() ? 'not-allowed' : 'pointer', opacity: saving || !text.trim() ? 0.4 : 1, fontFamily: 'inherit', transition: 'all 0.15s' }}>
             {saving ? 'Saving...' : 'Save entry 💾'}
@@ -147,6 +192,21 @@ export default function JournalPage() {
                   style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: BEIGE_BORDER, padding: 4 }}>🗑</button>
               </div>
               <p style={{ fontSize: 15, color: TEXT, lineHeight: 1.7, margin: 0 }}>{entry.text}</p>
+              {entry.tags?.length > 0 && (
+                <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginTop: 12 }}>
+                  {(entry.tags as string[]).map(tag => {
+                    const s = SUBJECTS.find(x => x.label === tag)
+                    return s ? (
+                      <span key={tag} style={{
+                        padding: '3px 10px', borderRadius: 100, fontSize: 11, fontWeight: 700,
+                        background: s.bg, color: s.color, border: `1px solid ${s.color}40`,
+                      }}>
+                        {s.emoji} {s.label}
+                      </span>
+                    ) : null
+                  })}
+                </div>
+              )}
             </div>
           ))
         )}
