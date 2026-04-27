@@ -74,6 +74,8 @@ export default function DashboardPage() {
   const [feedbackSent, setFeedbackSent] = useState(false)
   const [viewingWeekOffset, setViewingWeekOffset] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
+  const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
+  const [bannerDismissed, setBannerDismissed] = useState(false)
   const router = useRouter()
   const msgInterval = useRef<any>(null)
 
@@ -82,6 +84,27 @@ export default function DashboardPage() {
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
+  }, [])
+
+  useEffect(() => {
+    async function fetchTrialStatus() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) return
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('subscription_status, trial_started_at')
+          .eq('id', user.id)
+          .single()
+        if (!profile || profile.subscription_status === 'active') return
+        if (!profile.trial_started_at) return
+        const daysSinceStart = Math.floor((Date.now() - new Date(profile.trial_started_at).getTime()) / (1000 * 60 * 60 * 24))
+        setTrialDaysLeft(Math.max(0, 10 - daysSinceStart))
+      } catch (e) {
+        console.error('[Dashboard] Failed to fetch trial status:', e)
+      }
+    }
+    fetchTrialStatus()
   }, [])
 
   useEffect(() => {
@@ -910,6 +933,39 @@ export default function DashboardPage() {
           </div>
         )}
       </div>
+
+      {trialDaysLeft !== null && !bannerDismissed && (() => {
+        const isExpired = trialDaysLeft === 0
+        const isUrgent = trialDaysLeft <= 3
+        const isWarning = trialDaysLeft <= 6
+        const bg = isExpired ? '#FEF2F2' : isUrgent ? '#FFF7ED' : isWarning ? '#FFFBEB' : '#EDF7F2'
+        const border = isExpired ? '#FECACA' : isUrgent ? '#FED7AA' : isWarning ? '#FDE68A' : '#A8D5BA'
+        const color = isExpired ? '#991B1B' : isUrgent ? '#C2410C' : isWarning ? '#92400E' : '#3D8B60'
+        const message = isExpired
+          ? '⛔ Your trial has ended. Subscribe to continue.'
+          : isUrgent
+          ? `🔔 Only ${trialDaysLeft} day${trialDaysLeft === 1 ? '' : 's'} left! Subscribe now to keep your children's progress.`
+          : isWarning
+          ? `⏳ ${trialDaysLeft} days left in your trial. Subscribe to keep access.`
+          : `🌟 Free trial — ${trialDaysLeft} days remaining. No card needed yet!`
+        return (
+          <div style={{ background: bg, borderBottom: `2px solid ${border}`, padding: isMobile ? '10px 14px' : '10px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, flexWrap: 'wrap' as const }}>
+              <span style={{ fontSize: 14, fontWeight: 700, color }}>{message}</span>
+              {isExpired && (
+                <button onClick={() => router.push('/subscribe')}
+                  style={{ padding: '6px 16px', borderRadius: 100, border: 'none', background: '#991B1B', color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
+                  Subscribe →
+                </button>
+              )}
+            </div>
+            <button onClick={() => setBannerDismissed(true)}
+              style={{ background: 'transparent', border: 'none', cursor: 'pointer', fontSize: 16, color, opacity: 0.6, padding: '4px 6px', flexShrink: 0, fontFamily: 'inherit', lineHeight: 1 }}>
+              ✕
+            </button>
+          </div>
+        )
+      })()}
 
       <div style={{ maxWidth: 800, margin: '0 auto', padding: isMobile ? '16px 12px' : 24 }}>
 
