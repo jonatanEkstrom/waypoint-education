@@ -606,16 +606,11 @@ export default function LittleReadersPage() {
       {/* Nav */}
       <div style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.05)', position: 'sticky', top: 0, zIndex: 10 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <button onClick={() => router.push('/dashboard')} style={{ background: 'none', border: 'none', cursor: 'pointer', color: TEXT_MUTED, fontSize: 20, lineHeight: 1, padding: 0 }}>←</button>
+          <button onClick={() => { if (!child || showLevelSelector) router.push('/dashboard'); else setShowLevelSelector(true) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: TEXT_MUTED, fontSize: 20, lineHeight: 1, padding: 0 }}>←</button>
           <span style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 15 : 17, fontWeight: 700, color: TEXT }}>📖 Little Readers</span>
           {child && <span style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>· {child.name}</span>}
         </div>
         <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          {child && !showLevelSelector && (
-            <button onClick={() => setShowLevelSelector(true)} style={{ background: 'none', border: `1.5px solid ${BEIGE_BORDER}`, borderRadius: 100, padding: '5px 12px', fontSize: 11, fontWeight: 700, color: TEXT_MUTED, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>
-              Change level
-            </button>
-          )}
           {child && (
             selectedLevel === 1 ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 6, background: ORANGE_BG, border: `1.5px solid ${ORANGE_BORDER}`, borderRadius: 100, padding: '6px 14px' }}>
