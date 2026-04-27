@@ -1,14 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
+const AUTH_ONLY_ROUTES = ['/little-readers']
 const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community']
 const TRIAL_DAYS = 10
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
 
+  const isAuthOnly = AUTH_ONLY_ROUTES.some(r => pathname.startsWith(r))
   const isProtected = PROTECTED_ROUTES.some(r => pathname.startsWith(r))
-  if (!isProtected) return NextResponse.next()
+  if (!isAuthOnly && !isProtected) return NextResponse.next()
 
   const res = NextResponse.next()
 
@@ -36,6 +38,9 @@ export async function middleware(req: NextRequest) {
     loginUrl.searchParams.set('returnTo', req.nextUrl.pathname + req.nextUrl.search)
     return NextResponse.redirect(loginUrl)
   }
+
+  // Auth-only routes — no subscription check needed
+  if (isAuthOnly) return res
 
   // Allow through immediately after a Stripe checkout redirect so the
   // dashboard can handle the session before the webhook has propagated.
@@ -76,5 +81,6 @@ export const config = {
     '/worksheets/:path*',
     '/journal/:path*',
     '/community/:path*',
+    '/little-readers/:path*',
   ],
 }
