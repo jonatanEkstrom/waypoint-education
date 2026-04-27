@@ -21,7 +21,10 @@ export async function POST(request: NextRequest) {
       '13–15 years': { prose: 'Complex sentences. Academic vocabulary. Historical or scientific context. Explore nuance and debate.', activityTime: '40–50 min', depth: 'Deep dive with multiple angles and open questions.', tone: 'Critical thinker building their own worldview.' },
       '16–18 years': { prose: 'University-prep level. Multiple perspectives, primary sources where natural, synthesis across subjects.', activityTime: '50–60 min', depth: 'Full topic with context, controversy, and one research suggestion.', tone: 'Emerging scholar.' },
     }
-    const lv = level[age_group] || level['10–12 years']
+    const normalizedAge = age_group === '3–4 years' || age_group === '5–6 years' ? '4–6 years'
+      : age_group === '13+ years' ? '13–15 years'
+      : age_group
+    const lv = level[normalizedAge] || level['10–12 years']
 
     // ── Learning-style hint ─────────────────────────────────────────────────
     const styleHints: Record<string, string> = {
