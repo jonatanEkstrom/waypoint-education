@@ -36,7 +36,14 @@ function getWeekLabel(offset: number): string {
   const d = new Date()
   const dow = d.getDay() === 0 ? 7 : d.getDay() // Mon=1 … Sun=7
   d.setDate(d.getDate() - dow + 1 + offset * 7)  // move to that week's Monday
-  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' })
+  return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+}
+
+function getWeekDisplayLabel(offset: number): string {
+  if (offset === 0) return 'This week'
+  if (offset === 1) return 'Next week'
+  if (offset === -1) return 'Last week'
+  return `Week of ${getWeekLabel(offset)}`
 }
 
 export default function DashboardPage() {
@@ -878,16 +885,17 @@ export default function DashboardPage() {
             <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 12 }}>
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.05em', opacity: 0.85 }}>
-                  {viewingWeekOffset === 0 ? 'This week' : `Week of ${getWeekLabel(viewingWeekOffset)}`}
+                  {getWeekDisplayLabel(viewingWeekOffset)}
                 </div>
                 <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 17 : 20, marginTop: 4 }}>{plan.week_theme}</div>
               </div>
               <div style={{ display: 'flex', gap: 6, alignItems: 'center', flexShrink: 0 }}>
                 <button
                   onClick={() => navigateWeek(viewingWeekOffset - 1)}
+                  disabled={viewingWeekOffset <= -4}
                   title="Previous week"
-                  style={{ padding: isMobile ? '6px 10px' : '7px 13px', borderRadius: 100, border: '2px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  ←
+                  style={{ padding: isMobile ? '6px 10px' : '7px 13px', borderRadius: 100, border: '2px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 14, fontWeight: 700, cursor: viewingWeekOffset <= -4 ? 'not-allowed' : 'pointer', fontFamily: 'inherit', opacity: viewingWeekOffset <= -4 ? 0.4 : 1 }}>
+                  {isMobile ? '←' : '← Previous week'}
                 </button>
                 {viewingWeekOffset !== 0 && (
                   <button
@@ -901,7 +909,7 @@ export default function DashboardPage() {
                   onClick={() => navigateWeek(viewingWeekOffset + 1)}
                   title="Next week"
                   style={{ padding: isMobile ? '6px 10px' : '7px 13px', borderRadius: 100, border: '2px solid rgba(255,255,255,0.4)', background: 'rgba(255,255,255,0.15)', color: 'white', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit' }}>
-                  →
+                  {isMobile ? '→' : 'Next week →'}
                 </button>
               </div>
             </div>
