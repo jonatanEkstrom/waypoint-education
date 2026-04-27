@@ -207,7 +207,7 @@ export default function DashboardPage() {
         const res = await fetch('/api/generate-lesson', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ subject: lesson.subject, title: lesson.title, age_group: childData.age_group, city: childData.city, country: childData.country, curriculum: childData.curriculum, learn_style: childData.learn_style, language_learning: childData.language_learning, interests: childData.subjects, recent_topics: [] })
+          body: JSON.stringify({ subject: lesson.subject, title: lesson.title, age_group: childData.age_group, city: childData.city, country: childData.country, curriculum: childData.curriculum, learn_style: childData.learn_style, language_learning: childData.language_learning, interests: childData.subjects, recent_topics: [], reading_level: childData.reading_level || '', focus_time: childData.focus_time || '' })
         })
         const data = await res.json()
         if (data.material) {
@@ -236,11 +236,11 @@ export default function DashboardPage() {
         if (user && childData.id) {
           const { data: fresh } = await supabase
             .from('children')
-            .select('subjects, language_learning')
+            .select('subjects, language_learning, reading_level, focus_time')
             .eq('id', childData.id)
             .single()
           if (fresh) {
-            freshData = { ...childData, subjects: fresh.subjects || [], language_learning: fresh.language_learning || 'None' }
+            freshData = { ...childData, subjects: fresh.subjects || [], language_learning: fresh.language_learning || 'None', reading_level: fresh.reading_level || '', focus_time: fresh.focus_time || '' }
             const freshSorted = [...(freshData.subjects as string[])].sort().join(',')
             freshKey = `${freshData.name}-${freshData.city}-${freshData.country}-${freshData.language_learning}-${freshSorted}-${weekNumber}`
             localStorage.setItem('activeChild', JSON.stringify({ ...freshData, user_id: user.id }))
@@ -488,6 +488,8 @@ export default function DashboardPage() {
           language_learning: child?.language_learning,
           interests: child?.subjects,
           recent_topics: recentTopics,
+          reading_level: child?.reading_level || '',
+          focus_time: child?.focus_time || '',
         })
       })
       const data = await res.json()

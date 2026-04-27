@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const {
       subject, title, age_group, city, country,
       curriculum, learn_style, language_learning,
-      interests, recent_topics,
+      interests, recent_topics, reading_level, focus_time,
     } = await request.json()
 
     // ── Level guidance ──────────────────────────────────────────────────────
@@ -50,6 +50,22 @@ export async function POST(request: NextRequest) {
     }
     const philHint = philHints[curriculum] || ''
 
+    // ── Reading level hint ──────────────────────────────────────────────────
+    const readingHints: Record<string, string> = {
+      'letters': 'Child is just learning to read. Use very simple words (1-2 syllables where possible). Every new word must be sounded out phonetically in the text ("c-a-t"). Short sentences of 5-8 words max. No complex vocabulary — describe pictures or scenes instead.',
+      'early':   'Child is an early reader. Use simple, clear sentences. When introducing a new word, immediately define it in brackets. Mix short text sections with hands-on activities to keep engagement.',
+      'fluent':  'Child reads confidently. Normal text length is fine. Introduce new vocabulary naturally and encourage them to look up anything unfamiliar. Can include a short independent reading suggestion.',
+    }
+    const readingHint = readingHints[reading_level] || ''
+
+    // ── Focus time hint ─────────────────────────────────────────────────────
+    const focusHints: Record<string, string> = {
+      '15min': 'STRICT: Activity must take 10-15 minutes maximum. Break content into tiny, digestible chunks. One simple activity only — no multi-step projects.',
+      '30min': 'Activity should take 20-30 minutes. One main focused task. Can have 2-3 steps but keep them clear and sequential.',
+      '60min': 'Activity can be 45-60 minutes. Multi-step projects, research tasks, or creative deep-dives are appropriate. Encourage thorough exploration.',
+    }
+    const focusHint = focusHints[focus_time] || ''
+
     const interestsStr = Array.isArray(interests) && interests.length
       ? `Child's interests/subjects: ${interests.join(', ')}.`
       : ''
@@ -69,6 +85,8 @@ LESSON: "${title}" (${subject})
 CHILD: ${age_group} in ${city}, ${country}
 PHILOSOPHY: ${philHint}
 LEARNING STYLE: ${styleHint}
+${readingHint ? `READING LEVEL: ${readingHint}` : ''}
+${focusHint ? `FOCUS TIME: ${focusHint}` : ''}
 ${interestsStr}
 LANGUAGE: ${langStr}
 ${recentStr}
