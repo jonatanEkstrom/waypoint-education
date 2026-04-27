@@ -121,6 +121,7 @@ export default function DashboardPage() {
         setPlan(JSON.parse(cachedPlan))
         setLoading(false)
         prefetchLessons(JSON.parse(cachedPlan), childData, cachedLessons ? JSON.parse(cachedLessons) : {})
+        void prefetchNextWeekPlan(childData)
         return
       }
 
@@ -163,6 +164,7 @@ export default function DashboardPage() {
             localStorage.setItem('cachedPlan', JSON.stringify(data.plan))
             localStorage.setItem('cachedPlanChild', localKey)
             prefetchLessons(data.plan, childData, cachedLessons ? JSON.parse(cachedLessons) : {})
+            void prefetchNextWeekPlan(childData)
           }
           setLoading(false)
           return
@@ -226,6 +228,51 @@ export default function DashboardPage() {
         }
       } catch (e) { console.error('Prefetch failed for', id, e) }
       await new Promise(r => setTimeout(r, 500))
+    }
+  }
+
+  async function prefetchNextWeekPlan(childData: any) {
+    const nextWeekNumber = getWeekNumber() + 1
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+      const { data: existing } = await supabase
+        .from('weekly_plans')
+        .select('plan')
+        .eq('user_id', user.id)
+        .eq('child_name', childData.name)
+        .eq('city', childData.city)
+        .eq('country', childData.country)
+        .eq('week_number', nextWeekNumber)
+        .single()
+      if (existing?.plan) return
+      const res = await fetch('/api/generate-plan', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(childData)
+      })
+      if (!res.ok || !res.body) return
+      const reader = res.body.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        fullText += decoder.decode(value, { stream: true })
+      }
+      const cleaned = fullText.replace(/```json|```/g, '').trim()
+      const p = JSON.parse(cleaned)
+      await supabase.from('weekly_plans').upsert({
+        user_id: user.id,
+        child_name: childData.name,
+        city: childData.city,
+        country: childData.country,
+        week_number: nextWeekNumber,
+        plan: p
+      }, { onConflict: 'user_id,child_name,city,country,week_number' })
+      console.log('[Dashboard] Next week plan pre-generated silently')
+    } catch (e) {
+      console.error('[Dashboard] Background next-week prefetch failed:', e)
     }
   }
 
@@ -307,6 +354,7 @@ export default function DashboardPage() {
 
       // Prefetch lessons only for the current week (don't overwrite current week's lesson cache)
       if (isCurrentWeek) prefetchLessons(p, freshData, {})
+      if (isCurrentWeek) void prefetchNextWeekPlan(freshData)
     } catch (e) { console.error(e) }
     finally {
       clearInterval(msgInterval.current)
