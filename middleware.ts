@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 
 const AUTH_ONLY_ROUTES = ['/little-readers']
-const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community']
+const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community', '/practice']
 const TRIAL_DAYS = 10
 
 export async function middleware(req: NextRequest) {
@@ -82,5 +82,6 @@ export const config = {
     '/journal/:path*',
     '/community/:path*',
     '/little-readers/:path*',
+    '/practice/:path*',
   ],
 }
