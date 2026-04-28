@@ -87,6 +87,13 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
+    console.log('[state] readingLesson:', readingLesson ? `SET — keys: ${Object.keys(readingLesson).join(', ')}` : 'null')
+    console.log('[state] readingId:', readingId)
+    console.log('[state] loading (early-return guard):', loading)
+    console.log('[state] modal should show:', !!(readingLesson && readingId && !loading))
+  }, [readingLesson, readingId, loading])
+
+  useEffect(() => {
     async function fetchTrialStatus() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
@@ -574,13 +581,14 @@ export default function DashboardPage() {
       })
       console.log('[loadReading] API status:', res.status)
       const data = await res.json()
-      console.log('[loadReading] API response keys:', Object.keys(data))
-      console.log('[loadReading] material present:', !!data.material)
+      console.log('[loadReading] Full API response:', JSON.stringify(data).slice(0, 600))
+      console.log('[loadReading] material present:', !!data.material, '| error:', data.error ?? 'none')
       if (!res.ok || !data.material) {
-        console.error('[loadReading] Failed — status:', res.status, 'error:', data.error)
+        console.error('[loadReading] Aborting — status:', res.status, 'error:', data.error)
         return
       }
-      console.log('[loadReading] Setting readingLesson and readingId for', id)
+      console.log('[loadReading] material keys:', Object.keys(data.material))
+      console.log('[loadReading] Calling setReadingLesson with value:', JSON.stringify(data.material).slice(0, 200))
       setReadingLesson(data.material)
       setReadingId(id)
       setLessonCache(prev => {
@@ -1183,7 +1191,7 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  <button onClick={() => loadReading(id, lesson)} disabled={loadingReading === id}
+                  <button onClick={() => { console.log('[Click] Read & Learn clicked, id:', id, 'cached:', !!lessonCache[id]); loadReading(id, lesson) }} disabled={loadingReading === id}
                     onMouseEnter={() => setHover(`read-${id}`)} onMouseLeave={() => setHover(null)}
                     style={btn(`read-${id}`, { width: '100%', padding: '11px', borderRadius: 12, border: `2px solid ${PRIMARY}`, background: PRIMARY_BG, color: PRIMARY_DARK, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY, color: 'white' })}>
                     {loadingReading === id ? (
