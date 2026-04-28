@@ -543,6 +543,7 @@ export default function DashboardPage() {
 
   async function loadReading(id: string, lesson: any) {
     if (lessonCache[id]) {
+      console.log('[loadReading] Cache hit for', id)
       setReadingLesson(lessonCache[id])
       setReadingId(id)
       saveLessonHistory(lesson)
@@ -552,6 +553,7 @@ export default function DashboardPage() {
     setLoadingReading(id)
     try {
       const recentTopics = await fetchRecentTopics()
+      console.log('[loadReading] Fetching lesson for', id, lesson.title)
       const res = await fetch('/api/generate-lesson', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -570,18 +572,24 @@ export default function DashboardPage() {
           focus_time: child?.focus_time || '',
         })
       })
+      console.log('[loadReading] API status:', res.status)
       const data = await res.json()
-      if (data.material) {
-        setLessonCache(prev => {
-          const updated = { ...prev, [id]: data.material }
-          localStorage.setItem('cachedLessons', JSON.stringify(updated))
-          return updated
-        })
-        setReadingLesson(data.material)
-        setReadingId(id)
-        saveLessonHistory(lesson)
+      console.log('[loadReading] API response keys:', Object.keys(data))
+      console.log('[loadReading] material present:', !!data.material)
+      if (!res.ok || !data.material) {
+        console.error('[loadReading] Failed — status:', res.status, 'error:', data.error)
+        return
       }
-    } catch (e) { console.error(e) }
+      console.log('[loadReading] Setting readingLesson and readingId for', id)
+      setReadingLesson(data.material)
+      setReadingId(id)
+      setLessonCache(prev => {
+        const updated = { ...prev, [id]: data.material }
+        localStorage.setItem('cachedLessons', JSON.stringify(updated))
+        return updated
+      })
+      saveLessonHistory(lesson)
+    } catch (e) { console.error('[loadReading] Exception:', e) }
     finally { setLoadingReading(null) }
   }
 
@@ -773,17 +781,17 @@ export default function DashboardPage() {
             )}
 
             {/* Perspectives — ages 10+ */}
-            {readingLesson.perspectives && (
+            {readingLesson.perspectives && typeof readingLesson.perspectives === 'string' && (
               <div style={{ background: '#F0F5FF', borderRadius: 14, padding: 18, marginBottom: 16, border: '2px solid #C6D5F5' }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: '#6080C4', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>⚖️ Different Perspectives</div>
-                {readingLesson.perspectives.split('\n').map((line: string, i: number) => (
+                {readingLesson.perspectives.split('\n').filter(Boolean).map((line: string, i: number) => (
                   <p key={i} style={{ fontSize: 14, color: TEXT, margin: '0 0 8px 0', lineHeight: 1.7 }}>{line}</p>
                 ))}
               </div>
             )}
 
             {/* Vocabulary — ages 10+ */}
-            {readingLesson.vocabulary?.length > 0 && (
+            {Array.isArray(readingLesson.vocabulary) && readingLesson.vocabulary.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>📖 Key Vocabulary</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
@@ -806,17 +814,17 @@ export default function DashboardPage() {
             )}
 
             {/* Essay prompt — ages 13+ */}
-            {readingLesson.essay_prompt && (
+            {readingLesson.essay_prompt && typeof readingLesson.essay_prompt === 'string' && (
               <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${PRIMARY_BORDER}` }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>✍️ Essay Task</div>
-                {readingLesson.essay_prompt.split('\n').map((line: string, i: number) => (
+                {readingLesson.essay_prompt.split('\n').filter(Boolean).map((line: string, i: number) => (
                   <p key={i} style={{ fontSize: 14, color: TEXT, margin: '0 0 8px 0', lineHeight: 1.7 }}>{line}</p>
                 ))}
               </div>
             )}
 
             {/* Socratic questions — ages 13+ */}
-            {readingLesson.socratic_questions?.length > 0 && (
+            {Array.isArray(readingLesson.socratic_questions) && readingLesson.socratic_questions.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>🤔 Questions Worth Sitting With</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
@@ -831,7 +839,7 @@ export default function DashboardPage() {
             )}
 
             {/* Further reading — ages 13+ */}
-            {readingLesson.further_reading?.length > 0 && (
+            {Array.isArray(readingLesson.further_reading) && readingLesson.further_reading.length > 0 && (
               <div style={{ marginBottom: 16 }}>
                 <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>📚 Explore Further</div>
                 <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
