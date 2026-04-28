@@ -580,16 +580,25 @@ export default function DashboardPage() {
         })
       })
       console.log('[loadReading] API status:', res.status)
-      const data = await res.json()
-      console.log('[loadReading] Full API response:', JSON.stringify(data).slice(0, 600))
-      console.log('[loadReading] material present:', !!data.material, '| error:', data.error ?? 'none')
-      if (!res.ok || !data.material) {
-        console.error('[loadReading] Aborting — status:', res.status, 'error:', data.error)
+      if (!res.ok) {
+        const errText = await res.text()
+        console.error('[loadReading] Error response:', errText)
         return
       }
-      console.log('[loadReading] material keys:', Object.keys(data.material))
-      console.log('[loadReading] Calling setReadingLesson with value:', JSON.stringify(data.material).slice(0, 200))
-      setReadingLesson(data.material)
+      const reader = res.body!.getReader()
+      const decoder = new TextDecoder()
+      let fullText = ''
+      while (true) {
+        const { done, value } = await reader.read()
+        if (done) break
+        fullText += decoder.decode(value, { stream: true })
+      }
+      fullText += decoder.decode()
+      console.log('[loadReading] Streamed text length:', fullText.length, '| preview:', fullText.slice(0, 200))
+      const cleaned = fullText.replace(/```json|```/g, '').trim()
+      const material = JSON.parse(cleaned)
+      console.log('[loadReading] material keys:', Object.keys(material))
+      setReadingLesson(material)
       setReadingId(id)
       setLessonCache(prev => {
         const updated = { ...prev, [id]: data.material }
