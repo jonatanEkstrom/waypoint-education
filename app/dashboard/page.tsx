@@ -764,6 +764,87 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Rhyme — ages 4-6 */}
+            {readingLesson.rhyme && (
+              <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG}, #E8F5F0)`, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${PRIMARY_BORDER}`, textAlign: 'center' as const }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>🎵 Remember It!</div>
+                <p style={{ fontSize: 16, color: TEXT, margin: 0, lineHeight: 2, fontStyle: 'italic', fontFamily: 'Georgia,serif' }}>{readingLesson.rhyme}</p>
+              </div>
+            )}
+
+            {/* Perspectives — ages 10+ */}
+            {readingLesson.perspectives && (
+              <div style={{ background: '#F0F5FF', borderRadius: 14, padding: 18, marginBottom: 16, border: '2px solid #C6D5F5' }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: '#6080C4', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>⚖️ Different Perspectives</div>
+                {readingLesson.perspectives.split('\n').map((line: string, i: number) => (
+                  <p key={i} style={{ fontSize: 14, color: TEXT, margin: '0 0 8px 0', lineHeight: 1.7 }}>{line}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Vocabulary — ages 10+ */}
+            {readingLesson.vocabulary?.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>📖 Key Vocabulary</div>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                  {readingLesson.vocabulary.map((v: any, i: number) => (
+                    <div key={i} style={{ background: BEIGE_CARD, borderRadius: 12, padding: '12px 16px', border: `2px solid ${BEIGE_BORDER}`, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ background: PRIMARY, color: 'white', borderRadius: 8, padding: '2px 10px', fontSize: 12, fontWeight: 800, flexShrink: 0, whiteSpace: 'nowrap' as const }}>{v.word}</span>
+                      <p style={{ fontSize: 14, color: TEXT_MUTED, margin: 0, lineHeight: 1.6 }}>{v.definition}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Research prompt — ages 10-12 */}
+            {readingLesson.research_prompt && (
+              <div style={{ background: GREEN_BG, borderRadius: 14, padding: 16, marginBottom: 16, border: `2px solid ${GREEN_BORDER}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 }}>🔍 Go Deeper — Research Challenge</div>
+                <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.7 }}>{readingLesson.research_prompt}</p>
+              </div>
+            )}
+
+            {/* Essay prompt — ages 13+ */}
+            {readingLesson.essay_prompt && (
+              <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${PRIMARY_BORDER}` }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>✍️ Essay Task</div>
+                {readingLesson.essay_prompt.split('\n').map((line: string, i: number) => (
+                  <p key={i} style={{ fontSize: 14, color: TEXT, margin: '0 0 8px 0', lineHeight: 1.7 }}>{line}</p>
+                ))}
+              </div>
+            )}
+
+            {/* Socratic questions — ages 13+ */}
+            {readingLesson.socratic_questions?.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>🤔 Questions Worth Sitting With</div>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                  {readingLesson.socratic_questions.map((q: string, i: number) => (
+                    <div key={i} style={{ background: '#F0F5FF', borderRadius: 12, padding: '12px 16px', border: '2px solid #C6D5F5', display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ background: '#6080C4', color: 'white', borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>?</span>
+                      <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.6, fontStyle: 'italic' }}>{q}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Further reading — ages 13+ */}
+            {readingLesson.further_reading?.length > 0 && (
+              <div style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>📚 Explore Further</div>
+                <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
+                  {readingLesson.further_reading.map((item: string, i: number) => (
+                    <div key={i} style={{ background: BEIGE, borderRadius: 12, padding: '10px 14px', border: `1px solid ${BEIGE_BORDER}`, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+                      <span style={{ fontSize: 14, flexShrink: 0 }}>{i === 0 ? '📗' : i === 1 ? '🎬' : '🌐'}</span>
+                      <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.6 }}>{item}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {/* ── OLD FORMAT fallbacks ── */}
 
             {/* Old reading_text */}
