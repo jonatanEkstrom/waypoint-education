@@ -75,6 +75,7 @@ OUTPUT this exact JSON:
   "title": "A specific, engaging title for this exercise",
   "context": "2-3 sentences of engaging background. Set the scene in ${city} or connect to ${interestsStr}. Make it feel relevant and real.",
   "instructions": "Clear, direct instructions telling the student exactly what to do and what a good response looks like.",
+  "question": "QUESTION: [The single, specific question or challenge the student must answer — 1-2 sentences, crystal-clear, always phrased as a direct question or challenge]",
   "type": "one of: multiple_choice | short_answer | essay | problem",
   "content": "The main question, problem, or essay prompt. Specific and intellectually interesting.",
   "options": [],

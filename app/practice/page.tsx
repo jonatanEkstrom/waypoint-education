@@ -417,9 +417,12 @@ export default function PracticePage() {
               <p style={{ fontSize: 14, color: TEXT_MUTED, fontWeight: 600, margin: '0 0 16px 0', lineHeight: 1.6 }}>📋 {exercise.instructions}</p>
             )}
 
-            {/* Main question */}
-            <div style={{ background: BEIGE_CARD, borderRadius: 16, padding: '20px 22px', marginBottom: 20, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 2px 8px rgba(0,0,0,0.04)' }}>
-              <p style={{ fontSize: isMobile ? 15 : 17, color: TEXT, margin: 0, lineHeight: 1.8, fontWeight: 500 }}>{exercise.content}</p>
+            {/* Your Challenge */}
+            <div style={{ background: tcBg, borderRadius: 16, padding: '20px 22px', marginBottom: 20, border: `3px solid ${tc}`, boxShadow: `0 0 0 4px ${tcBdr}40` }}>
+              <div style={{ fontSize: 12, fontWeight: 800, color: tc, textTransform: 'uppercase' as const, letterSpacing: '0.07em', marginBottom: 10 }}>❓ Your Challenge</div>
+              <p style={{ fontSize: isMobile ? 16 : 18, color: TEXT, margin: 0, lineHeight: 1.75, fontWeight: 700, fontFamily: 'Georgia,serif' }}>
+                {(exercise.question || exercise.content || '').replace(/^QUESTION:\s*/i, '')}
+              </p>
             </div>
 
             {/* Multiple choice options */}
@@ -532,7 +535,8 @@ export default function PracticePage() {
             <div style={{ background: BEIGE_BG, borderRadius: 12, padding: '10px 14px', marginBottom: 14, border: `1px solid ${BEIGE_BORDER}` }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 3 }}>Exercise</div>
               <p style={{ fontSize: 13, color: TEXT_MUTED, margin: 0, lineHeight: 1.5 }}>
-                {(exercise.content || '').slice(0, 130)}{(exercise.content || '').length > 130 ? '…' : ''}
+                {((exercise.question || exercise.content || '').replace(/^QUESTION:\s*/i, '')).slice(0, 130)}
+                {(exercise.question || exercise.content || '').length > 130 ? '…' : ''}
               </p>
             </div>
 
