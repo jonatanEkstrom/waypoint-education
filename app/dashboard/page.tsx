@@ -601,7 +601,7 @@ export default function DashboardPage() {
       setReadingLesson(material)
       setReadingId(id)
       setLessonCache(prev => {
-        const updated = { ...prev, [id]: data.material }
+        const updated = { ...prev, [id]: material }
         localStorage.setItem('cachedLessons', JSON.stringify(updated))
         return updated
       })
