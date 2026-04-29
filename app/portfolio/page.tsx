@@ -27,11 +27,29 @@ const SUBJECTS = [
   { label: 'Creative Writing',   emoji: '✍️', color: '#9B5AC4', bg: '#F5EBF9' },
 ] as const
 
+type DateRange = '1m' | '3m' | '6m' | 'all'
+
+const DATE_RANGE_LABELS: Record<DateRange, string> = {
+  '1m': 'Last month',
+  '3m': 'Last 3 months',
+  '6m': 'Last 6 months',
+  'all': 'All time',
+}
+
+function getDateCutoff(range: DateRange): Date | null {
+  if (range === 'all') return null
+  const months = range === '1m' ? 1 : range === '3m' ? 3 : 6
+  const d = new Date()
+  d.setMonth(d.getMonth() - months)
+  return d
+}
+
 export default function PortfolioPage() {
-  const [entries, setEntries] = useState<any[]>([])
-  const [child, setChild] = useState<any>(null)
-  const [loading, setLoading] = useState(true)
-  const [isMobile, setIsMobile] = useState(false)
+  const [entries,   setEntries]   = useState<any[]>([])
+  const [child,     setChild]     = useState<any>(null)
+  const [loading,   setLoading]   = useState(true)
+  const [isMobile,  setIsMobile]  = useState(false)
+  const [dateRange, setDateRange] = useState<DateRange>('3m')
   const router = useRouter()
 
   useEffect(() => {
@@ -66,9 +84,14 @@ export default function PortfolioPage() {
     }
   }
 
+  const cutoff = getDateCutoff(dateRange)
+  const filteredEntries = cutoff
+    ? entries.filter(e => new Date(e.date) >= cutoff)
+    : entries
+
   const grouped: Record<string, any[]> = {}
   const noTag: any[] = []
-  for (const entry of entries) {
+  for (const entry of filteredEntries) {
     if (!entry.tags?.length) { noTag.push(entry); continue }
     for (const tag of entry.tags as string[]) {
       if (!grouped[tag]) grouped[tag] = []
@@ -77,11 +100,12 @@ export default function PortfolioPage() {
   }
 
   const activeSections = SUBJECTS.filter(s => grouped[s.label]?.length)
-  const totalTagged = Object.values(grouped).reduce((sum, arr) => sum + arr.length, 0)
+
+  const generatedDate = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
 
   function EntryCard({ entry }: { entry: any }) {
     return (
-      <div style={{ background: BEIGE_CARD, borderRadius: 16, padding: isMobile ? 16 : 20, border: `1px solid ${BEIGE_BORDER}`, marginBottom: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+      <div className="entry-card" style={{ background: BEIGE_CARD, borderRadius: 16, padding: isMobile ? 16 : 20, border: `1px solid ${BEIGE_BORDER}`, marginBottom: 10, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const, marginBottom: 10 }}>
           <span style={{ padding: '3px 10px', borderRadius: 100, background: PRIMARY_BG, color: PRIMARY, fontSize: 11, fontWeight: 700, border: `1px solid ${PRIMARY_BORDER}` }}>📍 {entry.city}</span>
           <span style={{ padding: '3px 10px', borderRadius: 100, background: BEIGE, color: TEXT_MUTED, fontSize: 11, fontWeight: 700, border: `1px solid ${BEIGE_BORDER}` }}>📅 {entry.date}</span>
@@ -93,19 +117,75 @@ export default function PortfolioPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: BEIGE }}>
+      <style>{`
+        @media print {
+          .no-print { display: none !important; }
+          .print-only { display: block !important; }
+          body, html { background: white !important; }
+          @page {
+            size: A4;
+            margin: 20mm 18mm;
+            @bottom-center {
+              content: "Page " counter(page) "  ·  Waypoint Education";
+              font-size: 9pt;
+              color: #9E9188;
+            }
+          }
+          .portfolio-wrap { padding: 0 !important; max-width: 100% !important; }
+          .subject-section { page-break-inside: avoid; }
+          .section-break { page-break-before: always; }
+          .entry-card { page-break-inside: avoid; border: 1px solid #E8E2D9 !important; box-shadow: none !important; border-radius: 6px !important; }
+        }
+        @media screen {
+          .print-only { display: none; }
+        }
+      `}</style>
 
-      {/* Topbar */}
-      <div style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
+      {/* Topbar — screen only */}
+      <div className="no-print" style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' as const, boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <button onClick={() => router.push('/dashboard')}
             style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: TEXT_MUTED, padding: '0 8px 0 0' }}>←</button>
           <span style={{ fontSize: 20 }}>🎨</span>
           <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: TEXT }}>Portfolio</span>
         </div>
-        {!isMobile && <div style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {entries.length} entries</div>}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' as const }}>
+          {!isMobile && (
+            <span style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {filteredEntries.length} entries</span>
+          )}
+          <select
+            value={dateRange}
+            onChange={e => setDateRange(e.target.value as DateRange)}
+            style={{ padding: '7px 12px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 600, color: TEXT, fontFamily: 'inherit', cursor: 'pointer', outline: 'none' }}
+          >
+            <option value="1m">Last month</option>
+            <option value="3m">Last 3 months</option>
+            <option value="6m">Last 6 months</option>
+            <option value="all">All time</option>
+          </select>
+          <button
+            onClick={() => window.print()}
+            style={{ padding: '8px 18px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 800, fontFamily: 'inherit', cursor: 'pointer' }}
+          >
+            📄 Export PDF
+          </button>
+        </div>
       </div>
 
-      <div style={{ maxWidth: 720, margin: '0 auto', padding: isMobile ? '16px 12px' : 24 }}>
+      <div className="portfolio-wrap" style={{ maxWidth: 720, margin: '0 auto', padding: isMobile ? '16px 12px' : 24 }}>
+
+        {/* Print-only document header */}
+        <div className="print-only" style={{ marginBottom: 32, paddingBottom: 20, borderBottom: `2px solid ${BEIGE_BORDER}` }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.1em', marginBottom: 10 }}>
+            Learning Portfolio · Waypoint Education
+          </div>
+          <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 28, color: TEXT, margin: '0 0 8px 0', fontWeight: 700 }}>
+            {child?.name}
+          </h1>
+          <p style={{ fontSize: 13, color: TEXT_MUTED, margin: 0, lineHeight: 1.6 }}>
+            {DATE_RANGE_LABELS[dateRange]} · {filteredEntries.length} {filteredEntries.length === 1 ? 'entry' : 'entries'} across {activeSections.length} {activeSections.length === 1 ? 'subject' : 'subjects'} · Generated {generatedDate}
+          </p>
+        </div>
 
         {loading ? (
           <div style={{ textAlign: 'center', padding: 60 }}>
@@ -121,12 +201,18 @@ export default function PortfolioPage() {
               Write first entry →
             </button>
           </div>
+        ) : filteredEntries.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: 60, color: TEXT_MUTED }}>
+            <div style={{ fontSize: 48, marginBottom: 12 }}>📅</div>
+            <p style={{ fontSize: 15 }}>No entries in this period.</p>
+            <p style={{ fontSize: 13 }}>Try selecting a longer date range.</p>
+          </div>
         ) : (
           <>
-            {/* Summary strip */}
-            <div style={{ background: BEIGE_CARD, borderRadius: 16, padding: '16px 20px', border: `2px solid ${BEIGE_BORDER}`, marginBottom: 24, display: 'flex', gap: 24, flexWrap: 'wrap' as const, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
+            {/* Summary strip — screen only */}
+            <div className="no-print" style={{ background: BEIGE_CARD, borderRadius: 16, padding: '16px 20px', border: `2px solid ${BEIGE_BORDER}`, marginBottom: 24, display: 'flex', gap: 24, flexWrap: 'wrap' as const, boxShadow: '0 1px 4px rgba(0,0,0,0.04)' }}>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontFamily: 'Georgia,serif', fontSize: 26, fontWeight: 700, color: TEXT }}>{entries.length}</div>
+                <div style={{ fontFamily: 'Georgia,serif', fontSize: 26, fontWeight: 700, color: TEXT }}>{filteredEntries.length}</div>
                 <div style={{ fontSize: 11, color: TEXT_MUTED, fontWeight: 700, textTransform: 'uppercase' as const }}>Entries</div>
               </div>
               <div style={{ textAlign: 'center' }}>
@@ -140,8 +226,8 @@ export default function PortfolioPage() {
             </div>
 
             {/* Subject sections */}
-            {activeSections.map(s => (
-              <div key={s.label} style={{ marginBottom: 28 }}>
+            {activeSections.map((s, idx) => (
+              <div key={s.label} className={`subject-section${idx > 0 ? ' section-break' : ''}`} style={{ marginBottom: 28 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingLeft: 4, borderLeft: `4px solid ${s.color}` }}>
                   <span style={{ fontSize: 20 }}>{s.emoji}</span>
                   <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: TEXT }}>{s.label}</span>
@@ -155,7 +241,7 @@ export default function PortfolioPage() {
 
             {/* General / untagged section */}
             {noTag.length > 0 && (
-              <div style={{ marginBottom: 28 }}>
+              <div className={`subject-section${activeSections.length > 0 ? ' section-break' : ''}`} style={{ marginBottom: 28 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14, paddingLeft: 4, borderLeft: `4px solid ${BEIGE_BORDER}` }}>
                   <span style={{ fontSize: 20 }}>📖</span>
                   <span style={{ fontFamily: 'Georgia,serif', fontSize: 17, fontWeight: 700, color: TEXT }}>General</span>
