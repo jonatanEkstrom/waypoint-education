@@ -4,7 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 const AUTH_ONLY_ROUTES = ['/little-readers']
 const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community', '/practice']
 
-export async function middleware(req: NextRequest) {
+export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
 
   const isAuthOnly = AUTH_ONLY_ROUTES.some(r => pathname.startsWith(r))
