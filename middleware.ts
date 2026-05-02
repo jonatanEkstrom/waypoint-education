@@ -3,7 +3,6 @@ import { createServerClient } from '@supabase/ssr'
 
 const AUTH_ONLY_ROUTES = ['/little-readers']
 const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community', '/practice']
-const TRIAL_DAYS = 10
 
 export async function middleware(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -51,7 +50,7 @@ export async function middleware(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, trial_started_at')
+    .select('subscription_status, trial_ends_at')
     .eq('id', user.id)
     .single()
 
@@ -59,16 +58,14 @@ export async function middleware(req: NextRequest) {
     return NextResponse.redirect(new URL('/subscribe', req.url))
   }
 
-  const { subscription_status, trial_started_at } = profile
+  const { subscription_status, trial_ends_at } = profile
 
   // Paid subscriber — always allow
   if (subscription_status === 'active') return res
 
-  // Trial — allow if started less than TRIAL_DAYS ago
-  if (trial_started_at) {
-    const trialStart = new Date(trial_started_at)
-    const trialEnd = new Date(trialStart.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
-    if (new Date() < trialEnd) return res
+  // Trial — allow only if trial_ends_at is set and hasn't passed
+  if (subscription_status === 'trial' && trial_ends_at && new Date(trial_ends_at) > new Date()) {
+    return res
   }
 
   return NextResponse.redirect(new URL('/subscribe', req.url))
