@@ -6,6 +6,13 @@ export const runtime = 'edge'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
+// Returns true when every number in the age_group string falls within [4, 6]
+// e.g. "4-6", "Ages 4-6", "5" → true; "5-7", "7-9" → false
+function isEarlyChildhood(ageGroup: string): boolean {
+  const nums = ageGroup.match(/\d+/g)?.map(Number) ?? []
+  return nums.length > 0 && Math.min(...nums) >= 4 && Math.max(...nums) <= 6
+}
+
 export async function POST(request: NextRequest) {
   try {
     const {
@@ -14,7 +21,11 @@ export async function POST(request: NextRequest) {
 
     const interestsStr = Array.isArray(interests) && interests.length ? interests.join(', ') : 'general curiosity'
 
-    const prompt = `Create a short lesson. Return ONLY valid JSON, no markdown.
+    const earlyMathRestriction = subject.toLowerCase().includes('math') && isEarlyChildhood(age_group)
+      ? `\nIMPORTANT: For ages 4-6, NEVER use multiplication, division, algebra, or any abstract mathematical concepts. Only use counting, basic addition with visual aids, and shape recognition. Appropriate topics: counting objects (1-20), simple addition with physical objects (e.g. 2 + 1 = ?), comparing quantities (more/less/same), basic shape recognition, sorting by size or color.\n`
+      : ''
+
+    const prompt = `Create a short lesson. Return ONLY valid JSON, no markdown.${earlyMathRestriction}
 
 LESSON: "${title}" (${subject}) | ${age_group} | ${city}, ${country} | Interests: ${interestsStr}
 
