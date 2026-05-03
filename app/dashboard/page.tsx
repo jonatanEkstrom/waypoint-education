@@ -17,6 +17,9 @@ const GREEN_BORDER = '#D5F0E3'
 const TEXT = '#2D2D2D'
 const TEXT_MUTED = '#9E9188'
 
+// Bump this string whenever lesson prompt logic changes to bust cached lesson content.
+const LESSON_CACHE_VERSION = 'v2-math-restriction'
+
 const LOADING_MESSAGES = [
   'Crafting your lesson plan...', 'Adding local discoveries...',
   'Tailoring for your child...', 'Almost ready...',
@@ -128,7 +131,12 @@ export default function DashboardPage() {
     })
     setChild(childData)
 
-    const cachedLessons = localStorage.getItem('cachedLessons')
+    const storedCacheVersion = localStorage.getItem('lessonCacheVersion')
+    if (storedCacheVersion !== LESSON_CACHE_VERSION) {
+      localStorage.removeItem('cachedLessons')
+      localStorage.setItem('lessonCacheVersion', LESSON_CACHE_VERSION)
+    }
+    const cachedLessons = storedCacheVersion === LESSON_CACHE_VERSION ? localStorage.getItem('cachedLessons') : null
     if (cachedLessons) setLessonCache(JSON.parse(cachedLessons))
 
     loadPlan(childData, cachedLessons)

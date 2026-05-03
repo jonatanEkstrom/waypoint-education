@@ -22,7 +22,7 @@ export async function POST(request: NextRequest) {
     const interestsStr = Array.isArray(interests) && interests.length ? interests.join(', ') : 'general curiosity'
 
     const earlyMathRestriction = subject.toLowerCase().includes('math') && isEarlyChildhood(age_group)
-      ? `\nIMPORTANT: For ages 4-6, NEVER use multiplication, division, algebra, or any abstract mathematical concepts. Only use counting, basic addition with visual aids, and shape recognition. Appropriate topics: counting objects (1-20), simple addition with physical objects (e.g. 2 + 1 = ?), comparing quantities (more/less/same), basic shape recognition, sorting by size or color.\n`
+      ? `\nSTRICTLY FORBIDDEN FOR AGES 4-6: multiplication, division, fractions, percentages, algebra. ONLY allowed: counting 1-20, adding small numbers with objects (max sum of 10), basic shapes.\nIMPORTANT: For ages 4-6, NEVER use multiplication, division, algebra, or any abstract mathematical concepts. Only use counting, basic addition with visual aids, and shape recognition. Appropriate topics: counting objects (1-20), simple addition with physical objects (e.g. 2 + 1 = ?), comparing quantities (more/less/same), basic shape recognition, sorting by size or color.\n`
       : ''
 
     const prompt = `Create a short lesson. Return ONLY valid JSON, no markdown.${earlyMathRestriction}
