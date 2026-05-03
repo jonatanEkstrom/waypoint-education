@@ -676,6 +676,9 @@ export default function DashboardPage() {
         @keyframes spin { to { transform: rotate(360deg) } }
         .day-btn { transition: all 0.15s ease; cursor: pointer; }
         .day-btn:not(.active):hover { border-color: ${PRIMARY} !important; color: ${PRIMARY} !important; background: ${PRIMARY_BG} !important; }
+        .lesson-card { transition: box-shadow 0.15s ease, border-color 0.15s ease; }
+        .tap-btn { -webkit-tap-highlight-color: transparent; }
+        .tap-btn:active { opacity: 0.8 !important; transform: scale(0.98) !important; transition: all 0.08s !important; }
       `}</style>
 
       {showFeedback && (
@@ -1182,6 +1185,7 @@ export default function DashboardPage() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                       {isCached && <span style={{ fontSize: 11, color: GREEN_DARK, fontWeight: 700 }}>⚡ Ready</span>}
                       <span style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>⏱ {lesson.duration}</span>
+                      <span style={{ fontSize: 18, color: TEXT_MUTED, lineHeight: 1, fontWeight: 300 }}>›</span>
                     </div>
                   </div>
 
@@ -1200,20 +1204,25 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  <button onClick={() => { console.log('[Click] Read & Learn clicked, id:', id, 'cached:', !!lessonCache[id]); loadReading(id, lesson) }} disabled={loadingReading === id}
+                  <button className="tap-btn" onClick={() => { console.log('[Click] Read & Learn clicked, id:', id, 'cached:', !!lessonCache[id]); loadReading(id, lesson) }} disabled={loadingReading === id}
                     onMouseEnter={() => setHover(`read-${id}`)} onMouseLeave={() => setHover(null)}
-                    style={btn(`read-${id}`, { width: '100%', padding: '11px', borderRadius: 12, border: `2px solid ${PRIMARY}`, background: PRIMARY_BG, color: PRIMARY_DARK, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY, color: 'white' })}>
+                    style={btn(`read-${id}`, { width: '100%', padding: '13px 16px', minHeight: 48, borderRadius: 12, border: `2px solid ${PRIMARY}`, background: PRIMARY_BG, color: PRIMARY_DARK, fontSize: 14, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }, { background: PRIMARY, color: 'white' })}>
                     {loadingReading === id ? (
-                      <span style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
-                        <span style={{ width: 14, height: 14, border: `2px solid ${PRIMARY_BORDER}`, borderTopColor: PRIMARY, borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block' }} />
+                      <>
+                        <span style={{ width: 14, height: 14, border: `2px solid ${PRIMARY_BORDER}`, borderTopColor: PRIMARY, borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block', flexShrink: 0 }} />
                         Loading...
-                      </span>
-                    ) : isCached ? '📖 Read & Learn ⚡' : '📖 Read & Learn'}
+                      </>
+                    ) : (
+                      <>
+                        <span>📖 Read &amp; Learn{isCached ? ' ⚡' : ''}</span>
+                        <span style={{ fontSize: 18, fontWeight: 400, lineHeight: 1 }}>›</span>
+                      </>
+                    )}
                   </button>
 
-                  <button onClick={() => toggleExpand(id)}
+                  <button className="tap-btn" onClick={() => toggleExpand(id)}
                     onMouseEnter={() => setHover(`exp-${id}`)} onMouseLeave={() => setHover(null)}
-                    style={btn(`exp-${id}`, { width: '100%', padding: '10px', borderRadius: 12, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE, color: PRIMARY, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { borderColor: PRIMARY, background: PRIMARY_BG })}>
+                    style={btn(`exp-${id}`, { width: '100%', padding: '10px', minHeight: 44, borderRadius: 12, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE, color: PRIMARY, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { borderColor: PRIMARY, background: PRIMARY_BG })}>
                     {isExpanded ? '▲ Hide lesson details' : '▼ Show lesson details'}
                   </button>
 
@@ -1240,9 +1249,9 @@ export default function DashboardPage() {
                     </div>
                   )}
 
-                  <button onClick={() => toggleComplete(id)}
+                  <button className="tap-btn" onClick={() => toggleComplete(id)}
                     onMouseEnter={() => setHover(`done-${id}`)} onMouseLeave={() => setHover(null)}
-                    style={btn(`done-${id}`, { width: '100%', padding: '12px', borderRadius: 12, border: `2px solid ${done ? GREEN : BEIGE_BORDER}`, background: done ? GREEN_BG : BEIGE_CARD, color: done ? GREEN_DARK : TEXT_MUTED, fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }, { borderColor: done ? GREEN_DARK : PRIMARY, background: done ? '#E0F5EA' : PRIMARY_BG })}>
+                    style={btn(`done-${id}`, { width: '100%', padding: '12px', minHeight: 48, borderRadius: 12, border: `2px solid ${done ? GREEN : BEIGE_BORDER}`, background: done ? GREEN_BG : BEIGE_CARD, color: done ? GREEN_DARK : TEXT_MUTED, fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }, { borderColor: done ? GREEN_DARK : PRIMARY, background: done ? '#E0F5EA' : PRIMARY_BG })}>
                     {done ? '✓ Completed!' : '○ Mark as completed'}
                   </button>
                 </div>

@@ -601,6 +601,11 @@ export default function LittleReadersPage() {
         @keyframes starPulse { 0%{transform:scale(1)} 40%{transform:scale(1.5)} 100%{transform:scale(1)} }
         @keyframes celebrate { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-10px)} }
         @keyframes slideDown { from{opacity:0;transform:translateY(-8px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes tapPulse { 0%,100%{transform:translateY(0) scale(1);opacity:1} 50%{transform:translateY(-4px) scale(1.2);opacity:0.7} }
+        .letter-card { -webkit-tap-highlight-color: transparent; }
+        .letter-card:active { transform: scale(0.96) !important; transition: transform 0.08s !important; }
+        .lr-btn { -webkit-tap-highlight-color: transparent; }
+        .lr-btn:active { opacity: 0.75 !important; transform: scale(0.97) !important; transition: all 0.08s !important; }
       `}</style>
 
       {/* Nav */}
@@ -758,14 +763,17 @@ export default function LittleReadersPage() {
                   onMouseEnter={() => setHover('prev')} onMouseLeave={() => setHover(null)}
                   style={btn('prev', { width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: '50%', border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 18, fontWeight: 700, color: letterIndex === 0 ? BEIGE_BORDER : TEXT_MUTED, fontFamily: 'inherit', flexShrink: 0, cursor: letterIndex === 0 ? 'default' : 'pointer' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>‹</button>
 
-                <div key={selectedLang} onClick={handleLetterTap}
+                <div key={selectedLang} className="letter-card" onClick={handleLetterTap}
                   style={{ flex: 1, background: exploredLetters.has(currentLetter.letter) ? PRIMARY_BG : BEIGE_CARD, borderRadius: 28, border: `2px solid ${exploredLetters.has(currentLetter.letter) ? PRIMARY_BORDER : BEIGE_BORDER}`, boxShadow: exploredLetters.has(currentLetter.letter) ? '0 8px 32px rgba(155,142,196,0.18)' : '0 4px 18px rgba(0,0,0,0.07)', padding: isMobile ? '28px 16px' : '36px 24px', textAlign: 'center' as const, cursor: 'pointer', userSelect: 'none' as const, WebkitUserSelect: 'none' as const, animation: letterBouncing ? 'cardBounce 0.65s ease' : 'none', transition: 'border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease' }}>
                   <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 72 : 96, fontWeight: 700, color: PRIMARY, lineHeight: 1, marginBottom: 8 }}>{currentLetter.letter}</div>
                   <div style={{ fontSize: isMobile ? 52 : 68, lineHeight: 1, marginBottom: 12 }}>{currentLetter.emoji}</div>
                   <div style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 15 : 18, fontWeight: 700, color: TEXT, marginBottom: 8, letterSpacing: '0.04em' }}>{currentLetter.animal.toUpperCase()}</div>
                   <div style={{ fontSize: isMobile ? 16 : 20, fontWeight: 800, color: ORANGE }}>{currentLetter.sound}</div>
                   {!exploredLetters.has(currentLetter.letter) && (
-                    <div style={{ marginTop: 14, fontSize: 12, color: TEXT_MUTED, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>TAP THE CARD!</div>
+                    <div style={{ marginTop: 16, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 4 }}>
+                      <span style={{ fontSize: 22, animation: 'tapPulse 1.5s ease infinite', display: 'inline-block' }}>👆</span>
+                      <span style={{ fontSize: 11, color: TEXT_MUTED, fontWeight: 700, textTransform: 'uppercase' as const, letterSpacing: '0.08em' }}>Tap to hear!</span>
+                    </div>
                   )}
                 </div>
 
@@ -865,15 +873,15 @@ export default function LittleReadersPage() {
                   {/* Action buttons */}
                   {!masteredCvc.has(currentCvc.word) ? (
                     <div style={{ display: 'flex', gap: 12 }}>
-                      <button onClick={handleSoundOut} disabled={soundingOut}
+                      <button className="lr-btn" onClick={handleSoundOut} disabled={soundingOut}
                         onMouseEnter={() => setHover('sound')} onMouseLeave={() => setHover(null)}
-                        style={btn('sound', { flex: 1, padding: isMobile ? '14px 8px' : '16px 12px', borderRadius: 16, border: `2px solid ${BLUE_BORDER}`, background: BLUE_BG, color: BLUE, fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', cursor: soundingOut ? 'not-allowed' : 'pointer', opacity: soundingOut ? 0.7 : 1, lineHeight: 1.3 }, { borderColor: BLUE, background: BLUE_BG })}>
+                        style={btn('sound', { flex: 1, padding: isMobile ? '14px 8px' : '16px 12px', minHeight: 48, borderRadius: 16, border: `2px solid ${BLUE_BORDER}`, background: BLUE_BG, color: BLUE, fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', cursor: soundingOut ? 'not-allowed' : 'pointer', opacity: soundingOut ? 0.7 : 1, lineHeight: 1.3 }, { borderColor: BLUE, background: BLUE_BG })}>
                         🔊 Sound it out
                       </button>
                       {soundedOut && (
-                        <button onClick={handleCvcKnowIt} disabled={cvcSaving}
+                        <button className="lr-btn" onClick={handleCvcKnowIt} disabled={cvcSaving}
                           onMouseEnter={() => setHover('cvcknow')} onMouseLeave={() => setHover(null)}
-                          style={btn('cvcknow', { flex: 1, padding: isMobile ? '14px 8px' : '16px 12px', borderRadius: 16, border: 'none', background: GREEN_DARK, color: 'white', fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', cursor: cvcSaving ? 'not-allowed' : 'pointer', opacity: cvcSaving ? 0.7 : 1, lineHeight: 1.3, animation: 'fadeSlideUp 0.2s ease' }, { background: '#5A9E7A' })}>
+                          style={btn('cvcknow', { flex: 1, padding: isMobile ? '14px 8px' : '16px 12px', minHeight: 48, borderRadius: 16, border: 'none', background: GREEN_DARK, color: 'white', fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', cursor: cvcSaving ? 'not-allowed' : 'pointer', opacity: cvcSaving ? 0.7 : 1, lineHeight: 1.3, animation: 'fadeSlideUp 0.2s ease' }, { background: '#5A9E7A' })}>
                           ⭐ I've got it!
                         </button>
                       )}
@@ -948,14 +956,14 @@ export default function LittleReadersPage() {
 
                   {flipped && (
                     <div style={{ display: 'flex', gap: 12, marginTop: 16, animation: 'fadeSlideUp 0.2s ease' }}>
-                      <button onClick={handlePracticeMore}
+                      <button className="lr-btn" onClick={handlePracticeMore}
                         onMouseEnter={() => setHover('practice')} onMouseLeave={() => setHover(null)}
-                        style={btn('practice', { flex: 1, padding: isMobile ? '14px 8px' : '16px 8px', borderRadius: 16, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, color: TEXT, fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3 }, { borderColor: PRIMARY_BORDER, background: PRIMARY_BG, color: PRIMARY })}>
+                        style={btn('practice', { flex: 1, padding: isMobile ? '14px 8px' : '16px 8px', minHeight: 48, borderRadius: 16, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, color: TEXT, fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3 }, { borderColor: PRIMARY_BORDER, background: PRIMARY_BG, color: PRIMARY })}>
                         🔄 Practice more
                       </button>
-                      <button onClick={handleKnowIt} disabled={saving}
+                      <button className="lr-btn" onClick={handleKnowIt} disabled={saving}
                         onMouseEnter={() => setHover('know')} onMouseLeave={() => setHover(null)}
-                        style={btn('know', { flex: 1, padding: isMobile ? '14px 8px' : '16px 8px', borderRadius: 16, border: 'none', background: GREEN_DARK, color: 'white', fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3, opacity: saving ? 0.7 : 1, cursor: saving ? 'not-allowed' as const : 'pointer' }, { background: '#5A9E7A' })}>
+                        style={btn('know', { flex: 1, padding: isMobile ? '14px 8px' : '16px 8px', minHeight: 48, borderRadius: 16, border: 'none', background: GREEN_DARK, color: 'white', fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', lineHeight: 1.3, opacity: saving ? 0.7 : 1, cursor: saving ? 'not-allowed' as const : 'pointer' }, { background: '#5A9E7A' })}>
                         ⭐ I know it!
                       </button>
                     </div>
