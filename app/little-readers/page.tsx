@@ -243,7 +243,7 @@ const LANG_LEARNING_MAP: Partial<Record<string, LangKey>> = {
   Swedish: 'SV', Spanish: 'ES', French: 'FR', German: 'DE',
 }
 const LANG_BCP47: Record<LangKey, string> = {
-  EN: 'en-GB', SV: 'sv-SE', ES: 'es-ES', FR: 'fr-FR', DE: 'de-DE',
+  EN: 'en-US', SV: 'sv-SE', ES: 'es-ES', FR: 'fr-FR', DE: 'de-DE',
 }
 const LANG_FLAGS: Record<LangKey, string> = {
   EN: '🇬🇧', SV: '🇸🇪', ES: '🇪🇸', FR: '🇫🇷', DE: '🇩🇪',
@@ -430,18 +430,23 @@ export default function LittleReadersPage() {
     speechSynthesis.cancel()
     speakTimers.current.forEach(t => clearTimeout(t))
     speakTimers.current = []
-    const letters = entry.animal.split('').filter(c => c.trim())
-    const texts = [entry.letter, entry.animal, ...letters]
-    let delay = 0
-    texts.forEach((text, i) => {
+
+    const bcp = LANG_BCP47[lang]
+    const say = (text: string, delay: number) => {
       const t = setTimeout(() => {
         const u = new SpeechSynthesisUtterance(text)
-        u.lang = LANG_BCP47[lang]; u.rate = 0.9; u.pitch = 1.2
+        u.lang = bcp
+        u.rate = 0.85
+        u.pitch = 1.2
         speechSynthesis.speak(u)
       }, delay)
       speakTimers.current.push(t)
-      delay += i === 0 ? 800 : i === 1 ? 1000 : 250
-    })
+    }
+
+    // Say the letter name, then the animal name in the selected language.
+    // Passing a single uppercase letter to en-US (not en-GB) avoids "capital A".
+    say(entry.letter, 0)
+    say(entry.animal, 750)
   }
 
   function handleLetterTap() {
