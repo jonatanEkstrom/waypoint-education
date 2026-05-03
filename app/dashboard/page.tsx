@@ -77,6 +77,7 @@ export default function DashboardPage() {
   const [feedbackSent, setFeedbackSent] = useState(false)
   const [viewingWeekOffset, setViewingWeekOffset] = useState(0)
   const [isMobile, setIsMobile] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const router = useRouter()
@@ -687,6 +688,8 @@ export default function DashboardPage() {
         .lesson-card { transition: box-shadow 0.15s ease, border-color 0.15s ease; }
         .tap-btn { -webkit-tap-highlight-color: transparent; }
         .tap-btn:active { opacity: 0.8 !important; transform: scale(0.98) !important; transition: all 0.08s !important; }
+        @keyframes menuSlideDown { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
+        .mobile-menu { animation: menuSlideDown 0.18s ease; }
       `}</style>
 
       {showFeedback && (
@@ -994,8 +997,9 @@ export default function DashboardPage() {
         </div>
       )}
 
-      <div className="no-print" style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: isMobile ? '12px 14px' : '14px 24px', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: isMobile ? 10 : 0 }}>
+      <div className="no-print" style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 1px 4px rgba(0,0,0,0.06)', position: 'relative', zIndex: 50 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: isMobile ? '12px 14px' : '14px 24px' }}>
+          {/* Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
             <span style={{ fontSize: 20 }}>🧭</span>
             <div>
@@ -1003,6 +1007,8 @@ export default function DashboardPage() {
               {!isMobile && <div style={{ fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>{child?.name} · {child?.city}, {child?.country}</div>}
             </div>
           </div>
+
+          {/* Desktop nav */}
           {!isMobile && (
             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
               {[['children', '👨‍👧 Children', '/dashboard/children'], ['little-readers', '📚 Little Readers', '/little-readers'], ['practice', '🎯 Practice', '/practice'], ['journal', '📖 Journal', '/journal'], ['portfolio', '🎨 Portfolio', '/portfolio'], ['community', '🌍 Community', '/community'], ['worksheets', '📄 Worksheets', '/worksheets'], ['la-report', '🏛️ LA Report', '/la-report']].map(([key, label, path]) => (
@@ -1022,31 +1028,45 @@ export default function DashboardPage() {
                 style={btn('newplan', { padding: '8px 14px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
                 + New plan
               </button>
-<button onClick={handleLogout}
+              <button onClick={handleLogout}
                 onMouseEnter={() => setHover('logout')} onMouseLeave={() => setHover(null)}
                 style={btn('logout', { padding: '8px 14px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: '#E07575', fontFamily: 'inherit' }, { background: '#FFF1F2' })}>
                 Logout
               </button>
             </div>
           )}
+
+          {/* Mobile hamburger */}
+          {isMobile && (
+            <button onClick={() => setMenuOpen(o => !o)}
+              style={{ background: menuOpen ? PRIMARY_BG : 'none', border: `2px solid ${menuOpen ? PRIMARY_BORDER : BEIGE_BORDER}`, borderRadius: 10, width: 40, height: 40, display: 'flex', flexDirection: 'column' as const, alignItems: 'center', justifyContent: 'center', gap: 5, cursor: 'pointer', transition: 'all 0.15s ease', flexShrink: 0 }}
+              aria-label="Menu">
+              <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? PRIMARY : TEXT_MUTED, borderRadius: 2, transition: 'all 0.2s ease', transform: menuOpen ? 'translateY(7px) rotate(45deg)' : 'none' }} />
+              <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? PRIMARY : TEXT_MUTED, borderRadius: 2, transition: 'all 0.2s ease', opacity: menuOpen ? 0 : 1 }} />
+              <span style={{ display: 'block', width: 18, height: 2, background: menuOpen ? PRIMARY : TEXT_MUTED, borderRadius: 2, transition: 'all 0.2s ease', transform: menuOpen ? 'translateY(-7px) rotate(-45deg)' : 'none' }} />
+            </button>
+          )}
         </div>
-        {/* Mobile nav row */}
-        {isMobile && (
-          <div style={{ display: 'flex', gap: 6, overflowX: 'auto' as const, paddingBottom: 2 }}>
-            {[['children', '👨‍👧', '/dashboard/children'], ['practice', '🎯', '/practice'], ['journal', '📖', '/journal'], ['portfolio', '🎨', '/portfolio'], ['community', '🌍', '/community'], ['worksheets', '📄', '/worksheets'], ['la-report', '🏛️', '/la-report']].map(([key, icon, path]) => (
-              <button key={key} onClick={() => router.push(path)}
-                style={{ padding: '7px 12px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit', flexShrink: 0, cursor: 'pointer' }}>
-                {icon}
+
+        {/* Mobile dropdown menu */}
+        {isMobile && menuOpen && (
+          <div className="mobile-menu" style={{ borderTop: `1px solid ${BEIGE_BORDER}`, padding: '8px 14px 14px', background: BEIGE_CARD }}>
+            {[['children', '👨‍👧 Children', '/dashboard/children'], ['little-readers', '📚 Little Readers', '/little-readers'], ['practice', '🎯 Practice', '/practice'], ['journal', '📖 Journal', '/journal'], ['portfolio', '🎨 Portfolio', '/portfolio'], ['community', '🌍 Community', '/community'], ['worksheets', '📄 Worksheets', '/worksheets'], ['la-report', '🏛️ LA Report', '/la-report']].map(([key, label, path]) => (
+              <button key={key} onClick={() => { setMenuOpen(false); router.push(path) }}
+                style={{ display: 'flex', alignItems: 'center', width: '100%', padding: '13px 4px', background: 'none', border: 'none', borderBottom: `1px solid ${BEIGE_BORDER}`, fontSize: 15, fontWeight: 700, color: TEXT, fontFamily: 'inherit', cursor: 'pointer', textAlign: 'left' as const, gap: 10 }}>
+                {label}
               </button>
             ))}
-            <button onClick={() => { localStorage.removeItem('cachedPlan'); localStorage.removeItem('cachedPlanChild'); localStorage.removeItem('cachedLessons'); router.push('/dashboard/children') }}
-              style={{ padding: '7px 12px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 12, fontWeight: 700, fontFamily: 'inherit', flexShrink: 0, cursor: 'pointer' }}>
-              + New
-            </button>
-<button onClick={handleLogout}
-              style={{ padding: '7px 12px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 12, fontWeight: 700, color: '#E07575', fontFamily: 'inherit', flexShrink: 0, cursor: 'pointer' }}>
-              Logout
-            </button>
+            <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+              <button onClick={() => { setMenuOpen(false); localStorage.removeItem('cachedPlan'); localStorage.removeItem('cachedPlanChild'); localStorage.removeItem('cachedLessons'); router.push('/dashboard/children') }}
+                style={{ flex: 1, padding: '11px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
+                + New plan
+              </button>
+              <button onClick={() => { setMenuOpen(false); handleLogout() }}
+                style={{ flex: 1, padding: '11px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: '#E07575', fontFamily: 'inherit', cursor: 'pointer' }}>
+                Logout
+              </button>
+            </div>
           </div>
         )}
       </div>
