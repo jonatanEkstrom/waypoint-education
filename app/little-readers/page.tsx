@@ -194,7 +194,54 @@ const CVC_WORDS = [
   { word: 'zip', emoji: '🤐', letters: ['z','i','p'] },
   { word: 'fox', emoji: '🦊', letters: ['f','o','x'] },
   { word: 'win', emoji: '🏆', letters: ['w','i','n'] },
+  { word: 'bed', emoji: '🛏️', letters: ['b','e','d'] },
+  { word: 'dig', emoji: '⛏️', letters: ['d','i','g'] },
+  { word: 'fan', emoji: '💨', letters: ['f','a','n'] },
+  { word: 'fog', emoji: '🌫️', letters: ['f','o','g'] },
+  { word: 'get', emoji: '✋', letters: ['g','e','t'] },
+  { word: 'hit', emoji: '🥊', letters: ['h','i','t'] },
+  { word: 'hug', emoji: '🤗', letters: ['h','u','g'] },
+  { word: 'jog', emoji: '👟', letters: ['j','o','g'] },
+  { word: 'kid', emoji: '👶', letters: ['k','i','d'] },
+  { word: 'leg', emoji: '🦵', letters: ['l','e','g'] },
+  { word: 'mop', emoji: '🧹', letters: ['m','o','p'] },
+  { word: 'net', emoji: '🥅', letters: ['n','e','t'] },
+  { word: 'nod', emoji: '🙂', letters: ['n','o','d'] },
+  { word: 'pat', emoji: '👋', letters: ['p','a','t'] },
+  { word: 'pop', emoji: '🎈', letters: ['p','o','p'] },
+  { word: 'pot', emoji: '🍯', letters: ['p','o','t'] },
+  { word: 'rag', emoji: '🧣', letters: ['r','a','g'] },
+  { word: 'rat', emoji: '🐀', letters: ['r','a','t'] },
+  { word: 'rub', emoji: '🤲', letters: ['r','u','b'] },
+  { word: 'sad', emoji: '😢', letters: ['s','a','d'] },
+  { word: 'sap', emoji: '🌲', letters: ['s','a','p'] },
+  { word: 'set', emoji: '🔧', letters: ['s','e','t'] },
+  { word: 'six', emoji: '6️⃣', letters: ['s','i','x'] },
+  { word: 'sob', emoji: '😭', letters: ['s','o','b'] },
+  { word: 'tag', emoji: '🏷️', letters: ['t','a','g'] },
+  { word: 'tan', emoji: '🌞', letters: ['t','a','n'] },
+  { word: 'tap', emoji: '🚿', letters: ['t','a','p'] },
+  { word: 'ten', emoji: '🔟', letters: ['t','e','n'] },
+  { word: 'tip', emoji: '💡', letters: ['t','i','p'] },
+  { word: 'tug', emoji: '⛵', letters: ['t','u','g'] },
+  { word: 'vat', emoji: '🪣', letters: ['v','a','t'] },
+  { word: 'wig', emoji: '💇', letters: ['w','i','g'] },
+  { word: 'yak', emoji: '🐃', letters: ['y','a','k'] },
+  { word: 'yam', emoji: '🍠', letters: ['y','a','m'] },
+  { word: 'yap', emoji: '🐕', letters: ['y','a','p'] },
+  { word: 'zap', emoji: '⚡', letters: ['z','a','p'] },
 ]
+
+function buildCvcSession(mastered: Set<string>): typeof CVC_WORDS {
+  const unmastered = CVC_WORDS.filter(w => !mastered.has(w.word))
+  const masteredWords = CVC_WORDS.filter(w => mastered.has(w.word))
+  // Fisher-Yates shuffle of unmastered words
+  for (let i = unmastered.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1))
+    ;[unmastered[i], unmastered[j]] = [unmastered[j], unmastered[i]]
+  }
+  return [...unmastered, ...masteredWords]
+}
 
 const SIGHT_WORDS = [
   { word: 'THE',  emoji: '👆', sentence: 'THE CAT SAT ON THE MAT.' },
@@ -276,6 +323,7 @@ export default function LittleReadersPage() {
 
   // Level 2: CVC Words
   const [cvcIndex, setCvcIndex] = useState(0)
+  const [cvcSessionOrder, setCvcSessionOrder] = useState<typeof CVC_WORDS>(() => buildCvcSession(new Set()))
   const [masteredCvc, setMasteredCvc] = useState<Set<string>>(new Set())
   const [soundedOut, setSoundedOut] = useState(false)
   const [soundingOut, setSoundingOut] = useState(false)
@@ -375,6 +423,11 @@ export default function LittleReadersPage() {
     const lv: 1|2|3 = (lvRaw === 1 || lvRaw === 2 || lvRaw === 3) ? lvRaw : 1
     setSelectedLevel(lv)
 
+    // Build session order: shuffled unmastered first, mastered appended at end
+    const session = buildCvcSession(cvc)
+    setCvcSessionOrder(session)
+    setCvcIndex(0)
+
     // Show welcome back or level selector
     const hasProgress = letters.size > 0 || cvc.size > 0 || words.size > 0
     if (!data || !hasProgress) {
@@ -382,9 +435,6 @@ export default function LittleReadersPage() {
     } else {
       setWelcomeBack(true)
       setShowLevelSelector(false)
-      // Resume at first unmastered CVC word
-      const firstUnmastered = CVC_WORDS.findIndex(w => !cvc.has(w.word))
-      if (firstUnmastered >= 0) setCvcIndex(firstUnmastered)
     }
 
     // Language
@@ -504,15 +554,20 @@ export default function LittleReadersPage() {
     setCvcSaving(true)
     setCvcPop(true)
     setTimeout(() => setCvcPop(false), 500)
-    const word = CVC_WORDS[cvcIndex]
+    const word = cvcSessionOrder[cvcIndex]
     const newMastered = new Set(masteredCvc)
     newMastered.add(word.word)
     setMasteredCvc(newMastered)
     setSoundedOut(false)
     clearCvcTimers()
-    const next = CVC_WORDS.findIndex((w, i) => i > cvcIndex && !newMastered.has(w.word))
-    const first = next >= 0 ? next : CVC_WORDS.findIndex(w => !newMastered.has(w.word))
-    if (first >= 0) setCvcIndex(first)
+    // Advance to next unmastered in the current session order
+    const next = cvcSessionOrder.findIndex((w, i) => i > cvcIndex && !newMastered.has(w.word))
+    if (next >= 0) {
+      setCvcIndex(next)
+    } else {
+      const first = cvcSessionOrder.findIndex(w => !newMastered.has(w.word))
+      if (first >= 0) setCvcIndex(first)
+    }
     await saveProgress({ cvc: newMastered })
     setCvcSaving(false)
   }
@@ -565,7 +620,7 @@ export default function LittleReadersPage() {
     setWelcomeDismissed(false)
     clearCvcTimers()
     if (userId) await loadProgress(userId, c.id, c.language_learning)
-    else { buildDeck(new Set()); setExploredLetters(new Set()); setMasteredCvc(new Set()); setShowLevelSelector(true) }
+    else { buildDeck(new Set()); setExploredLetters(new Set()); setMasteredCvc(new Set()); setCvcSessionOrder(buildCvcSession(new Set())); setShowLevelSelector(true) }
   }
 
   async function selectLevel(lv: 1|2|3) {
@@ -580,7 +635,7 @@ export default function LittleReadersPage() {
 
   const animalData = LETTER_ANIMALS_ALL[selectedLang]
   const currentLetter = animalData[letterIndex]
-  const currentCvc = CVC_WORDS[cvcIndex]
+  const currentCvc = cvcSessionOrder[cvcIndex] ?? CVC_WORDS[0]
   const l1Complete = exploredLetters.size === 26
   const l2Complete = masteredCvc.size === CVC_WORDS.length
 
@@ -829,7 +884,7 @@ export default function LittleReadersPage() {
                     Try Level 3: Sight Words →
                   </button>
                   <br />
-                  <button onClick={() => { const e = new Set<string>(); setMasteredCvc(e); setCvcIndex(0); setSoundedOut(false); saveProgress({ cvc: e }) }}
+                  <button onClick={() => { const e = new Set<string>(); setMasteredCvc(e); setCvcSessionOrder(buildCvcSession(e)); setCvcIndex(0); setSoundedOut(false); saveProgress({ cvc: e }) }}
                     style={{ background: 'none', border: 'none', color: TEXT_MUTED, fontSize: 14, cursor: 'pointer', fontFamily: 'inherit', marginTop: 12 }}>
                     🔄 Practice again
                   </button>
@@ -845,6 +900,11 @@ export default function LittleReadersPage() {
                     <div style={{ background: BEIGE_BORDER, borderRadius: 100, height: 10, overflow: 'hidden' }}>
                       <div style={{ height: '100%', background: `linear-gradient(90deg, ${BLUE}, ${GREEN_DARK})`, borderRadius: 100, width: `${(masteredCvc.size / CVC_WORDS.length) * 100}%`, transition: 'width 0.5s ease' }} />
                     </div>
+                  </div>
+
+                  {/* Word counter */}
+                  <div style={{ textAlign: 'center' as const, marginBottom: 12, fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>
+                    Word {cvcIndex + 1} of {cvcSessionOrder.length}
                   </div>
 
                   {/* Card + arrows */}
@@ -871,8 +931,8 @@ export default function LittleReadersPage() {
                       </div>
                     </div>
 
-                    <button onClick={() => navigateCvc(Math.min(CVC_WORDS.length - 1, cvcIndex + 1))} disabled={cvcIndex === CVC_WORDS.length - 1}
-                      style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: '50%', border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 18, fontWeight: 700, color: cvcIndex === CVC_WORDS.length - 1 ? BEIGE_BORDER : TEXT_MUTED, fontFamily: 'inherit', flexShrink: 0, cursor: cvcIndex === CVC_WORDS.length - 1 ? 'default' : 'pointer', transition: 'all 0.15s' }}>›</button>
+                    <button onClick={() => navigateCvc(Math.min(cvcSessionOrder.length - 1, cvcIndex + 1))} disabled={cvcIndex === cvcSessionOrder.length - 1}
+                      style={{ width: isMobile ? 40 : 48, height: isMobile ? 40 : 48, borderRadius: '50%', border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 18, fontWeight: 700, color: cvcIndex === cvcSessionOrder.length - 1 ? BEIGE_BORDER : TEXT_MUTED, fontFamily: 'inherit', flexShrink: 0, cursor: cvcIndex === cvcSessionOrder.length - 1 ? 'default' : 'pointer', transition: 'all 0.15s' }}>›</button>
                   </div>
 
                   {/* Action buttons */}
@@ -892,7 +952,7 @@ export default function LittleReadersPage() {
                       )}
                     </div>
                   ) : (
-                    <button onClick={() => navigateCvc((cvcIndex + 1) % CVC_WORDS.length)}
+                    <button onClick={() => navigateCvc((cvcIndex + 1) % cvcSessionOrder.length)}
                       style={{ width: '100%', padding: isMobile ? '14px 8px' : '16px 12px', borderRadius: 16, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, color: TEXT_MUTED, fontSize: isMobile ? 13 : 15, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer', transition: 'all 0.15s' }}>
                       Next word →
                     </button>
@@ -900,7 +960,7 @@ export default function LittleReadersPage() {
 
                   {/* Word grid */}
                   <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginTop: 24, justifyContent: 'center' }}>
-                    {CVC_WORDS.map((w, i) => (
+                    {cvcSessionOrder.map((w, i) => (
                       <button key={w.word} onClick={() => navigateCvc(i)}
                         style={{ padding: '4px 10px', borderRadius: 100, border: `2px solid ${i === cvcIndex ? BLUE : masteredCvc.has(w.word) ? '#A8D5BA' : BEIGE_BORDER}`, background: i === cvcIndex ? BLUE_BG : masteredCvc.has(w.word) ? GREEN_BG : BEIGE_CARD, color: i === cvcIndex ? BLUE : masteredCvc.has(w.word) ? GREEN_DARK : TEXT_MUTED, fontSize: 11, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', transition: 'all 0.15s' }}>
                         {masteredCvc.has(w.word) ? '✓ ' : ''}{w.word}
