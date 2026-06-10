@@ -50,7 +50,7 @@ export async function proxy(req: NextRequest) {
 
   const { data: profile } = await supabase
     .from('profiles')
-    .select('subscription_status, trial_ends_at')
+    .select('subscription_status, trial_end_date')
     .eq('id', user.id)
     .single()
 
@@ -58,13 +58,16 @@ export async function proxy(req: NextRequest) {
     return NextResponse.redirect(new URL('/subscribe', req.url))
   }
 
-  const { subscription_status, trial_ends_at } = profile
+  const { subscription_status, trial_end_date } = profile
 
   // Paid subscriber — always allow
   if (subscription_status === 'active') return res
 
-  // Trial — allow only if trial_ends_at is set and hasn't passed
-  if (subscription_status === 'trial' && trial_ends_at && new Date(trial_ends_at) > new Date()) {
+  // Trial — redirect to /pricing if expired or end date is missing
+  if (subscription_status === 'trial') {
+    if (!trial_end_date || new Date(trial_end_date) < new Date()) {
+      return NextResponse.redirect(new URL('/pricing', req.url))
+    }
     return res
   }
 
