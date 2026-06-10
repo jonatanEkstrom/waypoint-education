@@ -526,7 +526,7 @@ export default function LittleReadersPage() {
     setSoundingOut(true)
     clearCvcTimers()
     setSoundingOut(true)
-    const word = CVC_WORDS[cvcIndex]
+    const word = cvcSessionOrder[cvcIndex]
     let delay = 0
     word.letters.forEach((letter, i) => {
       const t1 = setTimeout(() => setHighlightLetter(i), delay)
