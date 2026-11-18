@@ -1,10 +1,14 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { requireAccess } from '@/app/lib/server/access'
 
 const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
+  const guard = await requireAccess()
+  if ('response' in guard) return guard.response
+
   const { language, age_group, child_name, language_week, previous_summary } = await request.json()
   console.log('[generate-language-plan] Received:', { language, age_group, child_name, language_week })
 

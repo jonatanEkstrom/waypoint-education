@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { requireAccess } from '@/app/lib/server/access'
 
 export const maxDuration = 60
 
@@ -8,6 +9,9 @@ const client = new Anthropic({
 })
 
 export async function POST(request: NextRequest) {
+  const guard = await requireAccess()
+  if ('response' in guard) return guard.response
+
   try {
     const { subject, theme, age_group, name, city } = await request.json()
 

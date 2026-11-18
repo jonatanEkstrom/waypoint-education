@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
 import Anthropic from '@anthropic-ai/sdk'
+import { requireAccess } from '@/app/lib/server/access'
 
 export const maxDuration = 30
 
@@ -16,18 +16,20 @@ function normalizeAgeGroup(raw: string): string {
 }
 
 export async function POST(request: NextRequest) {
+  const guard = await requireAccess()
+  if ('response' in guard) return guard.response
+
   try {
     const { child_id, subject_slug, city, country } = await request.json()
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
+    const supabase = guard.admin
 
+    // Service role bypasses RLS, so ownership must be checked explicitly.
     const { data: child, error: childError } = await supabase
       .from('children')
       .select('name, age_group')
       .eq('id', child_id)
+      .eq('user_id', guard.user.id)
       .single()
 
     if (childError || !child) {

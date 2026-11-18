@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
+import { adminClient, ensureTrial, hasAccess, syncCheckoutSession } from './app/lib/server/access'
 
-const AUTH_ONLY_ROUTES = ['/little-readers']
-const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community', '/practice']
+const AUTH_ONLY_ROUTES: string[] = []
+const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community', '/practice', '/little-readers']
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -41,34 +42,23 @@ export async function proxy(req: NextRequest) {
   // Auth-only routes — no subscription check needed
   if (isAuthOnly) return res
 
-  // Allow through immediately after a Stripe checkout redirect so the
-  // dashboard can handle the session before the webhook has propagated.
+  const admin = adminClient()
+
+  // Returning from Stripe Checkout: verify the session with Stripe before
+  // granting access. The webhook may not have arrived yet.
   const sessionId = req.nextUrl.searchParams.get('session_id')
-  if (sessionId && (sessionId.startsWith('cs_live_') || sessionId.startsWith('cs_test_'))) {
+  if (sessionId && await syncCheckoutSession(admin, user.id, sessionId)) {
     return res
   }
 
-  const { data: profile } = await supabase
-    .from('profiles')
-    .select('subscription_status, trial_end_date')
-    .eq('id', user.id)
-    .single()
+  // New accounts get the one-time trial here, so it does not depend on the
+  // client calling /api/start-trial (which fails when email confirmation is on).
+  const profile = await ensureTrial(admin, user)
 
-  if (!profile) {
-    return NextResponse.redirect(new URL('/subscribe', req.url))
-  }
+  if (hasAccess(profile)) return res
 
-  const { subscription_status, trial_end_date } = profile
-
-  // Paid subscriber — always allow
-  if (subscription_status === 'active') return res
-
-  // Trial — redirect to /pricing if expired or end date is missing
-  if (subscription_status === 'trial') {
-    if (!trial_end_date || new Date(trial_end_date) < new Date()) {
-      return NextResponse.redirect(new URL('/pricing', req.url))
-    }
-    return res
+  if (profile?.subscription_status === 'trial') {
+    return NextResponse.redirect(new URL('/pricing', req.url))
   }
 
   return NextResponse.redirect(new URL('/subscribe', req.url))

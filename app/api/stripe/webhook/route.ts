@@ -85,7 +85,9 @@ export async function POST(req: NextRequest) {
     const sub = event.data.object as Stripe.Subscription
     const userId = sub.metadata?.user_id
     if (userId) {
-      const status = sub.status === 'active' ? 'active' : 'expired'
+      const status = sub.status === 'active' || sub.status === 'trialing' ? 'active'
+        : sub.status === 'past_due' ? 'past_due'
+        : 'expired'
       const ok = await updateByUserId(supabase, userId, { subscription_status: status }, event.type)
       if (!ok) return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
     }
