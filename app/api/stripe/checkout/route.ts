@@ -5,9 +5,9 @@ import { isOfferLive, ensureFirstPeriodCoupon } from '@/app/lib/server/offer'
 
 // Server-side allow-list. The client may only pick a plan, never an arbitrary price.
 const PRICES: Record<'monthly' | 'quarterly' | 'yearly', string> = {
-  monthly: (process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY ?? 'price_1TJaFcF8H8N4qjrrCXM9tMaB').trim(),
-  quarterly: (process.env.NEXT_PUBLIC_STRIPE_PRICE_QUARTERLY ?? 'price_1TJaIjF8H8N4qjrrOzkaYY5y').trim(),
-  yearly: (process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY ?? 'price_1TJaLFF8H8N4qjrrl8lUwbPE').trim(),
+  monthly: (process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY ?? 'price_1TM09UF8H8N4qjrrLwmOViS5').trim(),
+  quarterly: (process.env.NEXT_PUBLIC_STRIPE_PRICE_QUARTERLY ?? 'price_1TM0AJF8H8N4qjrrF9HEjQfb').trim(),
+  yearly: (process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY ?? 'price_1TM0ApF8H8N4qjrrkunPjBSn').trim(),
 }
 
 const EXTRA_CHILD_PRICE: Record<string, { unit_amount: number; interval: 'month' | 'year'; interval_count: number }> = {
@@ -86,9 +86,9 @@ export async function POST(req: NextRequest) {
         }] : []),
       ],
       subscription_data: {
-        metadata: { user_id: user.id, children: String(children), billing },
+        metadata: { app: 'waypoint', user_id: user.id, children: String(children), billing },
       },
-      metadata: { user_id: user.id, children: String(children), billing },
+      metadata: { app: 'waypoint', user_id: user.id, children: String(children), billing },
       success_url: `${base}/dashboard?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${base}/subscribe`,
     })

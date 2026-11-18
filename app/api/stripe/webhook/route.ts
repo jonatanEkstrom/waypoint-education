@@ -36,6 +36,16 @@ async function updateByCustomerId(
   return true
 }
 
+// The Stripe account is shared with other Haijja products (e.g. IntentTrail),
+// so every event arrives here. Only act on Waypoint objects.
+const WAYPOINT_BILLING = new Set(['monthly', 'quarterly', 'yearly'])
+function isWaypoint(metadata: Stripe.Metadata | null | undefined): boolean {
+  if (!metadata) return false
+  if (metadata.app) return metadata.app === 'waypoint'
+  // Legacy Waypoint checkouts had no app tag but always set user_id + billing.
+  return !!metadata.user_id && WAYPOINT_BILLING.has(metadata.billing ?? '')
+}
+
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
   const body = await req.text()
@@ -61,6 +71,7 @@ export async function POST(req: NextRequest) {
   // ── checkout.session.completed ────────────────────────────────────────────
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session
+    if (!isWaypoint(session.metadata)) return NextResponse.json({ received: true, ignored: true })
     const userId = session.metadata?.user_id
     if (!userId) {
       console.error('[webhook] checkout.session.completed missing user_id in metadata')
@@ -83,7 +94,7 @@ export async function POST(req: NextRequest) {
   // ── customer.subscription.updated ────────────────────────────────────────
   if (event.type === 'customer.subscription.updated') {
     const sub = event.data.object as Stripe.Subscription
-    const userId = sub.metadata?.user_id
+    const userId = isWaypoint(sub.metadata) ? sub.metadata?.user_id : undefined
     if (userId) {
       const status = sub.status === 'active' || sub.status === 'trialing' ? 'active'
         : sub.status === 'past_due' ? 'past_due'
@@ -96,7 +107,7 @@ export async function POST(req: NextRequest) {
   // ── customer.subscription.deleted ────────────────────────────────────────
   if (event.type === 'customer.subscription.deleted') {
     const sub = event.data.object as Stripe.Subscription
-    const userId = sub.metadata?.user_id
+    const userId = isWaypoint(sub.metadata) ? sub.metadata?.user_id : undefined
     if (userId) {
       const ok = await updateByUserId(supabase, userId, { subscription_status: 'expired' }, event.type)
       if (!ok) return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
