@@ -233,7 +233,6 @@ export default function ChildrenPage() {
       try {
         const { data: { user } } = await supabase.auth.getUser()
         if (user) {
-          await supabase.from('weekly_plans').delete().eq('user_id', user.id).eq('child_name', selected.name)
           if (langChanged) await supabase.from('language_plans').delete().eq('user_id', user.id).eq('child_name', selected.name)
         }
       } catch (e) { console.error('[saveEdit] cache invalidation error:', e) }

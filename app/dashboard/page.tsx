@@ -1,6 +1,7 @@
 'use client'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import LessonView, { type LessonData } from '../components/LessonView'
 import { supabase } from '../lib/supabase'
 
 const PRIMARY = '#9B8EC4'
@@ -17,19 +18,18 @@ const GREEN_BORDER = '#D5F0E3'
 const TEXT = '#2D2D2D'
 const TEXT_MUTED = '#9E9188'
 
-// Maps the subject labels stored in children.subjects (see SUBJECT_OPTIONS in
-// app/dashboard/children/page.tsx) to the subject_slug values /api/generate-lesson expects.
-const SUBJECT_SLUGS: Record<string, string> = {
-  'Math': 'mathematics', 'Mathematics': 'mathematics',
-  'Science': 'science',
-  'Language Arts': 'language', 'Language': 'language', 'Languages': 'language',
+type SubjectProgress = {
+  slug: string; name: string; total_concepts: number; concepts_completed: number
+  lessons_completed: number; total_lessons: number; next_concept: string | null; next_stage: number | null
 }
 
 const SUBJECT_META: Record<string, { icon: string; bg: string; text: string; border: string }> = {
   mathematics: { icon: '🔢', bg: '#FFF0F5', text: '#C4748E', border: '#F5C6D5' },
+  english: { icon: '📖', bg: '#F0F5FF', text: '#6080C4', border: '#C6D5F5' },
   science: { icon: '🔬', bg: GREEN_BG, text: GREEN_DARK, border: GREEN_BORDER },
-  language: { icon: '🗣️', bg: '#F0F5FF', text: '#6080C4', border: '#C6D5F5' },
+  geography: { icon: '🌍', bg: '#FFF7E6', text: '#B7791F', border: '#F5D9A8' },
 }
+const DEFAULT_META = { icon: '📘', bg: '#F0EBF9', text: '#9B8EC4', border: '#DDD0F0' }
 
 function getTodayName() {
   const map: Record<number, string> = { 1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday', 5: 'Friday' }
@@ -43,7 +43,9 @@ function getWeekNumber() {
 export default function DashboardPage() {
   const [child, setChild] = useState<any>(null)
   const [selectedSubjectSlug, setSelectedSubjectSlug] = useState<string | null>(null)
-  const [lesson, setLesson] = useState<any>(null)
+  const [lesson, setLesson] = useState<LessonData | null>(null)
+  const [subjectProgress, setSubjectProgress] = useState<SubjectProgress[] | null>(null)
+  const [celebrate, setCelebrate] = useState<string | null>(null)
   const [lessonLoading, setLessonLoading] = useState(false)
   const [lessonError, setLessonError] = useState<'all_complete' | 'error' | null>(null)
   const [markingComplete, setMarkingComplete] = useState(false)
@@ -107,6 +109,7 @@ export default function DashboardPage() {
     if (!childData.language_learning) childData.language_learning = 'None'
     setChild(childData)
     refreshChild(childData.id, childData.user_id)
+    loadProgress(childData.id)
   }, [])
 
   async function refreshChild(id: string, userId?: string) {
@@ -120,6 +123,19 @@ export default function DashboardPage() {
     } catch (e) { console.error('[Dashboard] Failed to refresh child:', e) }
   }
 
+  async function loadProgress(childId: string) {
+    try {
+      const res = await fetch(`/api/progress?child_id=${encodeURIComponent(childId)}`)
+      if (res.status === 402) { router.push('/subscribe'); return }
+      if (!res.ok) throw new Error(`progress ${res.status}`)
+      const data = await res.json()
+      setSubjectProgress(data.subjects ?? [])
+    } catch (e) {
+      console.error('[Dashboard] progress failed:', e)
+      setSubjectProgress([])
+    }
+  }
+
   async function loadLesson(slug: string) {
     if (!child) return
     setLessonLoading(true)
@@ -129,27 +145,13 @@ export default function DashboardPage() {
       const res = await fetch('/api/generate-lesson', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ child_id: child.id, subject_slug: slug, city: child.city, country: child.country })
+        body: JSON.stringify({ child_id: child.id, subject_slug: slug }),
       })
-      if (!res.ok || !res.body) throw new Error('Failed to load lesson')
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let fullText = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        fullText += decoder.decode(value, { stream: true })
-      }
-      fullText += decoder.decode()
-      const cleaned = fullText.replace(/```json|```/g, '').trim()
-      const parsed = JSON.parse(cleaned)
-      if (parsed.error === 'all_complete') {
-        setLessonError('all_complete')
-      } else if (parsed.error) {
-        throw new Error(parsed.error)
-      } else {
-        setLesson(parsed)
-      }
+      if (res.status === 402) { router.push('/subscribe'); return }
+      const data = await res.json().catch(() => ({}))
+      if (data.error === 'all_complete') { setLessonError('all_complete'); return }
+      if (!res.ok || data.error) throw new Error(data.error || `lesson ${res.status}`)
+      setLesson(data as LessonData)
     } catch (e) {
       console.error('[loadLesson] Failed:', e)
       setLessonError('error')
@@ -163,28 +165,38 @@ export default function DashboardPage() {
     loadLesson(slug)
   }
 
-  async function markLessonComplete() {
+  async function markLessonComplete(quizScore: number | null, quizTotal: number) {
     if (!lesson?.concept_id || !child?.id || !selectedSubjectSlug) return
     setMarkingComplete(true)
     try {
-      const { error } = await supabase.from('child_progress').insert({
-        child_id: child.id,
-        concept_id: lesson.concept_id,
-        status: 'completed',
+      const res = await fetch('/api/lesson-complete', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ child_id: child.id, concept_id: lesson.concept_id, stage: lesson.stage, quiz_score: quizScore, quiz_total: quizTotal }),
       })
-      if (error) throw error
+      if (!res.ok) throw new Error(`complete ${res.status}`)
+      const data = await res.json()
+      if (data.concept_done) setCelebrate(lesson.concept_name)
+      loadProgress(child.id)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
       await loadLesson(selectedSubjectSlug)
     } catch (e) {
       console.error('[markLessonComplete] Failed:', e)
+      alertSaveFailed()
     } finally {
       setMarkingComplete(false)
     }
+  }
+
+  function alertSaveFailed() {
+    setLessonError('error')
   }
 
   function closeLesson() {
     setSelectedSubjectSlug(null)
     setLesson(null)
     setLessonError(null)
+    setCelebrate(null)
   }
 
   async function loadLanguagePlan() {
@@ -336,9 +348,7 @@ export default function DashboardPage() {
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
-  const availableSubjects = ((child?.subjects || []) as string[])
-    .map(name => ({ name, slug: SUBJECT_SLUGS[name] }))
-    .filter((s): s is { name: string; slug: string } => !!s.slug)
+  const availableSubjects = subjectProgress ?? []
 
   const btn = (id: string, base: React.CSSProperties, hoverStyle: React.CSSProperties): React.CSSProperties => ({
     ...base, ...(hover === id ? hoverStyle : {}), transition: 'all 0.15s ease', cursor: 'pointer'
@@ -530,28 +540,42 @@ export default function DashboardPage() {
               <p style={{ color: TEXT_MUTED, fontSize: 14, margin: 0 }}>Pick a subject to start today's lesson.</p>
             </div>
 
-            {availableSubjects.length === 0 ? (
+            {subjectProgress === null ? (
+              <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const, marginBottom: 24 }}>
+                {[0, 1, 2, 3].map(i => (
+                  <div key={i} style={{ width: isMobile ? 'calc(50% - 6px)' : 170, height: 132, borderRadius: 18, background: BEIGE_BORDER, opacity: 0.5 }} />
+                ))}
+              </div>
+            ) : availableSubjects.length === 0 ? (
               <div style={{ background: BEIGE_CARD, borderRadius: 16, padding: 24, border: `2px solid ${BEIGE_BORDER}`, textAlign: 'center' as const, color: TEXT_MUTED }}>
-                No lessons available for your subjects yet.
+                We couldn&apos;t load your subjects. <button onClick={() => child && loadProgress(child.id)} style={{ background: 'none', border: 'none', color: PRIMARY, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 14 }}>Try again</button>
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const, marginBottom: 24 }}>
-                {availableSubjects.map(({ name, slug }) => {
-                  const meta = SUBJECT_META[slug]
-                  const isActive = selectedSubjectSlug === slug
+                {availableSubjects.map(sp => {
+                  const meta = SUBJECT_META[sp.slug] ?? DEFAULT_META
+                  const isActive = selectedSubjectSlug === sp.slug
+                  const pct = sp.total_lessons ? Math.round((sp.lessons_completed / sp.total_lessons) * 100) : 0
                   return (
-                    <button key={slug} className="tap-btn" onClick={() => handleSubjectClick(slug)}
-                      onMouseEnter={() => setHover(`subj-${slug}`)} onMouseLeave={() => setHover(null)}
-                      style={btn(`subj-${slug}`, {
-                        display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 8,
-                        padding: '20px 24px', minWidth: 120, borderRadius: 18,
+                    <button key={sp.slug} className="tap-btn" onClick={() => handleSubjectClick(sp.slug)}
+                      onMouseEnter={() => setHover(`subj-${sp.slug}`)} onMouseLeave={() => setHover(null)}
+                      style={btn(`subj-${sp.slug}`, {
+                        display: 'flex', flexDirection: 'column' as const, alignItems: 'flex-start', gap: 6,
+                        padding: '16px 18px', width: isMobile ? 'calc(50% - 6px)' : 170, borderRadius: 18,
                         border: `2px solid ${isActive ? meta.text : meta.border}`,
                         background: isActive ? meta.text : meta.bg,
                         color: isActive ? 'white' : meta.text,
-                        fontSize: 14, fontWeight: 700, fontFamily: 'inherit',
+                        fontSize: 14, fontWeight: 700, fontFamily: 'inherit', textAlign: 'left' as const,
                       }, { filter: 'brightness(0.97)' })}>
-                      <span style={{ fontSize: 28 }}>{meta.icon}</span>
-                      <span>{name}</span>
+                      <span style={{ fontSize: 26 }}>{meta.icon}</span>
+                      <span>{sp.name}</span>
+                      <span style={{ fontSize: 11, fontWeight: 600, opacity: 0.85, lineHeight: 1.35 }}>
+                        {sp.next_concept ? `Next: ${sp.next_concept}` : '🎉 All topics done'}
+                      </span>
+                      <span style={{ width: '100%', height: 5, borderRadius: 100, background: isActive ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.07)', overflow: 'hidden', marginTop: 2 }}>
+                        <span style={{ display: 'block', width: `${pct}%`, height: '100%', background: isActive ? 'white' : meta.text }} />
+                      </span>
+                      <span style={{ fontSize: 10, fontWeight: 700, opacity: 0.8 }}>{sp.concepts_completed}/{sp.total_concepts} topics</span>
                     </button>
                   )
                 })}
@@ -571,7 +595,7 @@ export default function DashboardPage() {
                 {lessonLoading && (
                   <div style={{ textAlign: 'center' as const, padding: '40px 20px' }}>
                     <div style={{ width: 48, height: 48, border: `4px solid ${PRIMARY_BORDER}`, borderTopColor: PRIMARY, borderRadius: '50%', animation: 'spin 1s linear infinite', margin: '0 auto 16px' }} />
-                    <p style={{ color: TEXT_MUTED, fontSize: 14 }}>Preparing your lesson...</p>
+                    <p style={{ color: TEXT_MUTED, fontSize: 14 }}>Planning today&apos;s adventure for {child?.name}… this takes about 10 seconds.</p>
                   </div>
                 )}
 
@@ -592,87 +616,18 @@ export default function DashboardPage() {
                   </div>
                 )}
 
-                {!lessonLoading && !lessonError && lesson && (
-                  <div>
-                    <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 20 : 24, color: TEXT, marginBottom: 20 }}>{lesson.reading_title}</h2>
-
-                    {lesson.introduction && (
-                      <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${PRIMARY_BORDER}` }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 8 }}>🎯 Introduction</div>
-                        <p style={{ fontSize: 15, color: TEXT, margin: 0, lineHeight: 1.75 }}>{lesson.introduction}</p>
-                      </div>
-                    )}
-
-                    {lesson.main_content && (
-                      <div style={{ background: BEIGE, borderRadius: 14, padding: 20, marginBottom: 16, border: `2px solid ${BEIGE_BORDER}` }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 12 }}>📚 The Lesson</div>
-                        {lesson.main_content.split('\n\n').map((para: string, i: number) => (
-                          <p key={i} style={{ fontSize: 15, color: TEXT, lineHeight: 1.8, margin: '0 0 10px 0' }}>{para}</p>
-                        ))}
-                      </div>
-                    )}
-
-                    {lesson.example && (
-                      <div style={{ background: GREEN_BG, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${GREEN_BORDER}` }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: GREEN_DARK, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 8 }}>💡 Example</div>
-                        <p style={{ fontSize: 15, color: TEXT, margin: 0, lineHeight: 1.75 }}>{lesson.example}</p>
-                      </div>
-                    )}
-
-                    {lesson.activity && (
-                      <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${PRIMARY_BORDER}` }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>🏃 Activity — {lesson.activity.title}</div>
-                        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' as const, marginBottom: 12 }}>
-                          {lesson.activity.time && (
-                            <span style={{ padding: '3px 10px', borderRadius: 100, background: PRIMARY, color: 'white', fontSize: 11, fontWeight: 700 }}>⏱ {lesson.activity.time}</span>
-                          )}
-                          {lesson.activity.materials && (
-                            <span style={{ padding: '3px 10px', borderRadius: 100, background: GREEN_BG, color: GREEN_DARK, fontSize: 11, fontWeight: 700, border: `1px solid ${GREEN_BORDER}` }}>🧰 {lesson.activity.materials}</span>
-                          )}
-                        </div>
-                        <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.7 }}>{lesson.activity.description}</p>
-                      </div>
-                    )}
-
-                    {lesson.discussion_questions?.length > 0 && (
-                      <div style={{ marginBottom: 16 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 10 }}>💬 Discuss Together</div>
-                        <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 8 }}>
-                          {lesson.discussion_questions.map((q: string, i: number) => (
-                            <div key={i} style={{ background: BEIGE, borderRadius: 12, padding: '12px 16px', border: `2px solid ${BEIGE_BORDER}`, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-                              <span style={{ background: PRIMARY_BG, color: PRIMARY, borderRadius: '50%', width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0 }}>{i + 1}</span>
-                              <p style={{ fontSize: 14, color: TEXT, margin: 0, lineHeight: 1.6 }}>{q}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {lesson.fun_fact && (
-                      <div style={{ background: '#FFFBEB', borderRadius: 14, padding: 16, marginBottom: 16, border: '2px solid #FDE68A' }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#D97706', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 6 }}>⚡ Fun Fact</div>
-                        <p style={{ fontSize: 15, color: '#92400E', margin: 0, lineHeight: 1.7, fontStyle: 'italic' }}>{lesson.fun_fact}</p>
-                      </div>
-                    )}
-
-                    {lesson.parent_tip && (
-                      <div style={{ background: '#FFF8EC', borderLeft: `4px solid #F5DFA0`, borderRadius: '0 12px 12px 0', padding: '12px 16px', marginBottom: 20 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#C49040', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
-                        <p style={{ fontSize: 13, color: '#6B5A3E', margin: 0, lineHeight: 1.6 }}>{lesson.parent_tip}</p>
-                      </div>
-                    )}
-
-                    <button className="tap-btn" onClick={markLessonComplete} disabled={markingComplete}
-                      onMouseEnter={() => setHover('mark-complete')} onMouseLeave={() => setHover(null)}
-                      style={btn('mark-complete', { width: '100%', padding: '13px 16px', minHeight: 48, borderRadius: 12, border: 'none', background: GREEN, color: GREEN_DARK, fontSize: 14, fontWeight: 700, fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: markingComplete ? 0.7 : 1 }, { background: GREEN_DARK, color: 'white' })}>
-                      {markingComplete ? (
-                        <>
-                          <span style={{ width: 14, height: 14, border: `2px solid ${GREEN_BORDER}`, borderTopColor: GREEN_DARK, borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block', flexShrink: 0 }} />
-                          Saving...
-                        </>
-                      ) : '✓ Mark as complete & continue'}
-                    </button>
+                {!lessonLoading && celebrate && (
+                  <div style={{ textAlign: 'center' as const, padding: '18px 16px', marginBottom: 16, borderRadius: 16, background: 'linear-gradient(135deg, #FFF7E6, #EDF7F2)', border: '2px solid #F5D9A8' }}>
+                    <div style={{ fontSize: 36 }}>🏅</div>
+                    <p style={{ fontSize: 16, fontWeight: 800, color: TEXT, margin: '6px 0 2px 0' }}>Topic complete: {celebrate}!</p>
+                    <p style={{ fontSize: 13, color: TEXT_MUTED, margin: 0 }}>A new stamp for {child?.name}&apos;s learning passport. Here&apos;s the next adventure.</p>
+                    <button onClick={() => setCelebrate(null)} style={{ marginTop: 8, background: 'none', border: 'none', color: PRIMARY, fontWeight: 700, cursor: 'pointer', fontFamily: 'inherit', fontSize: 13 }}>Dismiss</button>
                   </div>
+                )}
+
+                {!lessonLoading && !lessonError && lesson && (
+                  <LessonView key={`${lesson.concept_id}-${lesson.stage}`} lesson={lesson} isMobile={isMobile}
+                    completing={markingComplete} onComplete={markLessonComplete} />
                 )}
               </div>
             )}

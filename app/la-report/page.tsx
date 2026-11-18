@@ -37,26 +37,14 @@ interface JournalEntry {
   story?: string
 }
 
-interface Lesson {
+interface LessonRecord {
   subject: string
-  title: string
-  duration: string
-  activity: string
-  goal?: string
-}
-
-interface DayPlan {
-  day: string
-  focus: string
-  lessons: Lesson[]
-}
-
-interface WeekPlan {
-  child_name: string
-  week_number: number
-  city: string
-  country: string
-  plan: { week_theme: string; days: DayPlan[] }
+  topic: string
+  stage: number | null
+  nc_reference: string | null
+  city: string | null
+  country: string | null
+  created_at: string
 }
 
 const PHILOSOPHY: Record<string, string> = {
@@ -89,9 +77,6 @@ function philosophyParagraph(child: Child): string {
   return base + suffix
 }
 
-function weekNumberToDate(n: number): Date {
-  return new Date(n * 7 * 24 * 60 * 60 * 1000)
-}
 
 function fmt(d: Date): string {
   return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' })
@@ -144,7 +129,7 @@ export default function LAReportPage() {
   const [children, setChildren] = useState<Child[]>([])
   const [selected, setSelected] = useState<Child | null>(null)
   const [journal, setJournal] = useState<JournalEntry[]>([])
-  const [plans, setPlans] = useState<WeekPlan[]>([])
+  const [lessons, setLessons] = useState<LessonRecord[]>([])
   const [isMobile, setIsMobile] = useState(false)
 
   useEffect(() => {
@@ -179,12 +164,12 @@ export default function LAReportPage() {
         }
       } catch {}
       setSelected(active)
-      await fetchData(user.id, active.name)
+      await fetchData(user.id, active.name, active.id)
     }
     setLoading(false)
   }
 
-  async function fetchData(userId: string, childName: string) {
+  async function fetchData(userId: string, childName: string, childId?: string) {
     setFetching(true)
     const [journalRes, plansRes] = await Promise.all([
       supabase
@@ -193,20 +178,20 @@ export default function LAReportPage() {
         .eq('user_id', userId)
         .order('created_at', { ascending: true }),
       supabase
-        .from('weekly_plans')
-        .select('child_name, week_number, city, country, plan')
+        .from('lesson_history')
+        .select('subject, topic, stage, nc_reference, city, country, created_at, child_id, child_name')
         .eq('user_id', userId)
-        .eq('child_name', childName)
-        .order('week_number', { ascending: true }),
+        .order('created_at', { ascending: true }),
     ])
     if (journalRes.data) setJournal(journalRes.data)
-    if (plansRes.data) setPlans(plansRes.data)
+    if (plansRes.data) setLessons((plansRes.data as (LessonRecord & { child_id: string | null; child_name: string })[])
+      .filter(r => (childId ? r.child_id === childId : false) || (!r.child_id && r.child_name === childName)))
     setFetching(false)
   }
 
   async function changeChild(child: Child) {
     setSelected(child)
-    if (user) await fetchData(user.id, child.name)
+    if (user) await fetchData(user.id, child.name, child.id)
   }
 
   // ── Derived data ──
@@ -223,8 +208,8 @@ export default function LAReportPage() {
     if (!minDate || d < minDate) minDate = d
     if (!maxDate || d > maxDate) maxDate = d
   })
-  plans.forEach(wp => {
-    const d = weekNumberToDate(wp.week_number)
+  lessons.forEach(l => {
+    const d = new Date(l.created_at)
     if (!minDate || d < minDate) minDate = d
     if (!maxDate || d > maxDate) maxDate = d
   })
@@ -239,25 +224,25 @@ export default function LAReportPage() {
     byMonth[key].push(e)
   })
 
-  // Group lessons by subject across all weekly plans
-  const bySubject: Record<string, Array<{ week: string; day: string; title: string; duration: string; activity: string }>> = {}
-  plans.forEach(wp => {
-    const weekStr = weekNumberToDate(wp.week_number)
-      .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
-    wp.plan?.days?.forEach(day => {
-      day.lessons?.forEach(l => {
-        const subj = l.subject || 'General'
-        if (!bySubject[subj]) bySubject[subj] = []
-        bySubject[subj].push({ week: `w/c ${weekStr}`, day: day.day, title: l.title, duration: l.duration, activity: l.activity })
-      })
+  // Group completed lessons by subject
+  const bySubject: Record<string, Array<{ date: string; topic: string; nc: string; place: string }>> = {}
+  lessons.forEach(l => {
+    const subj = l.subject || 'General'
+    if (!bySubject[subj]) bySubject[subj] = []
+    bySubject[subj].push({
+      date: new Date(l.created_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }),
+      topic: l.topic,
+      nc: l.nc_reference ?? '',
+      place: [l.city, l.country].filter(Boolean).join(', '),
     })
   })
 
   const planSubjects = new Set(Object.keys(bySubject))
   const allSubjects = Array.from(new Set([...(selected?.subjects ?? []), ...Array.from(planSubjects)]))
-  const locations = Array.from(new Set(
-    journal.map(e => [e.city, e.country].filter(Boolean).join(', ')).filter(Boolean)
-  ))
+  const locations = Array.from(new Set([
+    ...journal.map(e => [e.city, e.country].filter(Boolean).join(', ')),
+    ...lessons.map(l => [l.city, l.country].filter(Boolean).join(', ')),
+  ].filter(Boolean)))
 
   // ── Render ──
 
@@ -432,13 +417,13 @@ export default function LAReportPage() {
 
         {/* ── Section 3: Lesson Plans ── */}
         <div className="page-break" style={{ paddingTop: 44, marginBottom: 8 }}>
-          <SectionHeader number="3" title="Structured Lesson Plans" subtitle={selected ? `${selected.name}'s Weekly Plans` : ''} />
+          <SectionHeader number="3" title="Structured Learning Record" subtitle={selected ? `Lessons completed by ${selected.name}` : ''} />
           <p style={{ fontSize: 13, color: TEXT_MUTED, marginTop: -8, marginBottom: 24, fontStyle: 'italic' }}>
-            AI-generated lesson plans tailored to the child's age group, current location, and educational approach, grouped by subject area.
+            Lessons follow a sequenced curriculum aligned to the England National Curriculum (EYFS for under-fives). Each topic is taught in three lessons — Discover, Practise and Explore — and set in the child's current location. Grouped by subject area.
           </p>
 
           {Object.keys(bySubject).length === 0 ? (
-            <p style={{ color: TEXT_MUTED, fontSize: 14 }}>No lesson plans recorded.</p>
+            <p style={{ color: TEXT_MUTED, fontSize: 14 }}>No lessons recorded yet.</p>
           ) : (
             Object.entries(bySubject).sort(([a], [b]) => a.localeCompare(b)).map(([subject, lessons]) => (
               <div key={subject} className="avoid-break" style={{ marginBottom: 32 }}>
@@ -448,7 +433,7 @@ export default function LAReportPage() {
                 <table style={{ width: '100%', borderCollapse: 'collapse' as const, fontSize: 13 }}>
                   <thead>
                     <tr style={{ background: BEIGE }}>
-                      {['Week / Day', 'Lesson Title', 'Duration', 'Activity Description'].map(h => (
+                      {['Date', 'Topic & lesson', 'Curriculum alignment', 'Location'].map(h => (
                         <th key={h} style={{ textAlign: 'left' as const, padding: '8px 10px', fontSize: 10, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.06em' }}>{h}</th>
                       ))}
                     </tr>
@@ -456,12 +441,10 @@ export default function LAReportPage() {
                   <tbody>
                     {lessons.map((l, i) => (
                       <tr key={i} style={{ borderBottom: `1px solid ${BEIGE_BORDER}`, background: i % 2 === 0 ? 'white' : BEIGE }}>
-                        <td style={{ padding: '9px 10px', verticalAlign: 'top', color: TEXT_MUTED, fontSize: 12, width: '22%' }}>
-                          {l.week}<br /><span style={{ fontWeight: 700, color: TEXT }}>{l.day}</span>
-                        </td>
-                        <td style={{ padding: '9px 10px', verticalAlign: 'top', color: TEXT, fontWeight: 600, width: '26%' }}>{l.title}</td>
-                        <td style={{ padding: '9px 10px', verticalAlign: 'top', color: TEXT_MUTED, whiteSpace: 'nowrap' as const, width: '10%' }}>{l.duration}</td>
-                        <td style={{ padding: '9px 10px', verticalAlign: 'top', color: TEXT, lineHeight: 1.5, fontSize: 12 }}>{l.activity}</td>
+                        <td style={{ padding: '9px 10px', verticalAlign: 'top', color: TEXT_MUTED, fontSize: 12, width: '16%', whiteSpace: 'nowrap' as const }}>{l.date}</td>
+                        <td style={{ padding: '9px 10px', verticalAlign: 'top', color: TEXT, fontWeight: 600, width: '36%' }}>{l.topic}</td>
+                        <td style={{ padding: '9px 10px', verticalAlign: 'top', color: TEXT, lineHeight: 1.5, fontSize: 12, width: '30%' }}>{l.nc}</td>
+                        <td style={{ padding: '9px 10px', verticalAlign: 'top', color: TEXT_MUTED, fontSize: 12 }}>{l.place}</td>
                       </tr>
                     ))}
                   </tbody>
@@ -481,7 +464,7 @@ export default function LAReportPage() {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
             {[
               { label: 'Journal Entries', value: journal.length, icon: '📖' },
-              { label: 'Weeks Planned', value: plans.length, icon: '📅' },
+              { label: 'Lessons Completed', value: lessons.length, icon: '✅' },
               { label: 'Subjects', value: allSubjects.length, icon: '📚' },
               { label: 'Locations', value: locations.length, icon: '🌍' },
             ].map(s => (

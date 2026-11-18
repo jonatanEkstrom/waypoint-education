@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Country, City } from 'country-state-city'
 import { supabase } from '../lib/supabase'
 
-const ageGroups = ["4–6 years","7–9 years","10–12 years","13–15 years","16–18 years"]
+const ageGroups = ["3–4 years","5–6 years","7–9 years","10–12 years","13+ years"]
 const subjects = ["Math","Science","Language Arts","History","Geography","Art","Music","Physical Education","Coding","Life Skills"]
 const learnStyles = ["Hands-on & building","Reading & writing","Visual & video","Discussion & exploration"]
 const curricula = [

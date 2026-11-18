@@ -1,159 +1,116 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireAccess } from '@/app/lib/server/access'
+import { ageBandFor, ensureCurriculum, LESSONS_PER_CONCEPT, type AgeBand } from '@/app/lib/server/curriculum'
+import { buildLessonPrompt, parseLesson, STAGES } from '@/app/lib/server/lesson-prompt'
 
-export const maxDuration = 30
+export const maxDuration = 60
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-// children.age_group is a UI label ("3–4 years", "5–6 years", "7–9 years",
-// "10–12 years", "13+ years") while age_groups.label holds the curriculum
-// bands ("5-6", "7-8", "9-10", "11-12"). Map each UI label to the closest band
-// that has content. Ages outside the curriculum use the nearest band.
-const AGE_BAND_BY_LABEL: Record<string, string> = {
-  '3-4': '5-6',
-  '5-6': '5-6',
-  '7-9': '7-8',
-  '10-12': '11-12',
-  '13+': '11-12',
-}
-
-function normalizeAgeGroup(raw: string): string {
-  const hyphenated = raw.replace(/[\u2010-\u2015]/g, '-')
-  const key = hyphenated.replace(/\byears?\b/gi, '').replace(/\s+/g, '').trim()
-  if (AGE_BAND_BY_LABEL[key]) return AGE_BAND_BY_LABEL[key]
-  const range = hyphenated.match(/\d+\s*-\s*\d+/)
-  return range ? range[0].replace(/\s+/g, '') : key
-}
+const MODEL = 'claude-haiku-4-5-20251001'
 
 export async function POST(request: NextRequest) {
   const guard = await requireAccess()
   if ('response' in guard) return guard.response
+  const { admin, user } = guard
 
   try {
-    const { child_id, subject_slug, city, country } = await request.json()
+    const body = await request.json().catch(() => ({}))
+    const childId = typeof body.child_id === 'string' ? body.child_id : ''
+    const subjectSlug = typeof body.subject_slug === 'string' ? body.subject_slug : ''
+    if (!childId || !subjectSlug) return NextResponse.json({ error: 'bad_request' }, { status: 400 })
 
-    const supabase = guard.admin
+    await ensureCurriculum(admin)
 
-    // Service role bypasses RLS, so ownership must be checked explicitly.
-    const { data: child, error: childError } = await supabase
+    // Service role bypasses RLS, so ownership is checked explicitly.
+    const { data: child } = await admin
       .from('children')
-      .select('name, age_group')
-      .eq('id', child_id)
-      .eq('user_id', guard.user.id)
-      .single()
+      .select('id, name, age_group, city, country, interests, subjects, learning_style, learn_style, reading_level, focus_time')
+      .eq('id', childId)
+      .eq('user_id', user.id)
+      .maybeSingle()
+    if (!child) return NextResponse.json({ error: 'child_not_found' }, { status: 404 })
 
-    if (childError || !child) {
-      return NextResponse.json({ error: 'child_not_found' }, { status: 404 })
+    const band: AgeBand = ageBandFor(child.age_group)
+    const [{ data: subject }, { data: ageGroup }] = await Promise.all([
+      admin.from('subjects').select('id, slug, name').eq('slug', subjectSlug).maybeSingle(),
+      admin.from('age_groups').select('id, label, nc_stage').eq('label', band).maybeSingle(),
+    ])
+    if (!subject) return NextResponse.json({ error: 'subject_not_found' }, { status: 404 })
+    if (!ageGroup) return NextResponse.json({ error: 'age_group_not_found' }, { status: 422 })
+
+    const [{ data: concepts }, { data: progress }] = await Promise.all([
+      admin
+        .from('curriculum_concepts')
+        .select('id, concept_key, concept_name, concept_description, nc_reference, strand, sequence_order')
+        .eq('subject_id', subject.id)
+        .eq('age_group_id', ageGroup.id)
+        .order('sequence_order', { ascending: true }),
+      admin.from('child_progress').select('concept_id, lessons_completed').eq('child_id', child.id),
+    ])
+    const list = concepts ?? []
+    const done = new Map((progress ?? []).map(p => [p.concept_id, p.lessons_completed ?? 0]))
+
+    const index = list.findIndex(c => (done.get(c.id) ?? 0) < LESSONS_PER_CONCEPT)
+    if (index === -1) {
+      return NextResponse.json({ error: 'all_complete', total_concepts: list.length }, { status: 200 })
     }
+    const concept = list[index]
+    const stage = (done.get(concept.id) ?? 0) + 1
+    const previous = list.slice(Math.max(0, index - 3), index).map(c => c.concept_name)
 
-    const { data: ageGroup, error: ageGroupError } = await supabase
-      .from('age_groups')
-      .select('id')
-      .eq('label', normalizeAgeGroup(child.age_group))
-      .single()
-
-    if (ageGroupError || !ageGroup) {
-      return NextResponse.json({ error: 'age_group_not_found' }, { status: 422 })
-    }
-
-    const { data: subject, error: subjectError } = await supabase
-      .from('subjects')
-      .select('id')
-      .eq('slug', subject_slug)
-      .single()
-
-    if (subjectError || !subject) {
-      return NextResponse.json({ error: 'subject_not_found' }, { status: 404 })
-    }
-
-    const { data: completedProgress } = await supabase
-      .from('child_progress')
-      .select('concept_id')
-      .eq('child_id', child_id)
-      .eq('status', 'completed')
-
-    const completedIds = (completedProgress ?? []).map((p) => p.concept_id)
-
-    let conceptQuery = supabase
-      .from('curriculum_concepts')
-      .select('id, concept_key, concept_name, concept_description, sequence_order')
-      .eq('subject_id', subject.id)
-      .eq('age_group_id', ageGroup.id)
-      .order('sequence_order', { ascending: true })
-      .limit(1)
-
-    if (completedIds.length > 0) {
-      conceptQuery = conceptQuery.not('id', 'in', `(${completedIds.join(',')})`)
-    }
-
-    const { data: concepts, error: conceptError } = await conceptQuery
-
-    if (conceptError) {
-      throw conceptError
-    }
-
-    const concept = concepts?.[0]
-
-    if (!concept) {
-      return NextResponse.json({ error: 'all_complete' }, { status: 200 })
-    }
-
-    const systemPrompt = `You are a children's lesson writer. Write a lesson that teaches EXACTLY one concept, and no other:
-
-Concept: ${concept.concept_name}
-Description: ${concept.concept_description}
-
-Do not introduce, explain, or drift into any other topic or concept, even if it seems related. The child's city (${city}, ${country}) may only be used as a backdrop or setting for examples — it must never change the subject matter or pull in unrelated topics. Stay strictly within the bounds of the concept above for the entire lesson.`
-
-    const userPrompt = `Create a short lesson for ${child.name} on the concept "${concept.concept_name}". Return ONLY valid JSON, no markdown.
-
-OUTPUT this exact JSON:
-{
-  "concept_id": "${concept.id}",
-  "reading_title": "Specific lesson title",
-  "introduction": "Exactly 2 sentences introducing the topic. Reference ${city} as a backdrop.",
-  "main_content": "Point 1 in 1 sentence.\\n\\nPoint 2 in 1 sentence.\\n\\nPoint 3 in 1 sentence.",
-  "example": "One concrete example illustrating the concept.",
-  "activity": {
-    "title": "Activity name",
-    "materials": "Materials or 'None needed'",
-    "time": "10-15 min",
-    "description": "3-4 sentences describing what to do."
-  },
-  "discussion_questions": ["One open-ended question about the topic."],
-  "fun_fact": "One surprising fact in 1 sentence.",
-  "parent_tip": "One practical tip for the parent."
-}`
-
-    const stream = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 800,
-      system: systemPrompt,
-      stream: true,
-      messages: [{ role: 'user', content: userPrompt }],
+    const city = (child.city || '').trim()
+    const country = (child.country || '').trim()
+    const { system, user: userPrompt } = buildLessonPrompt({
+      childName: child.name,
+      band,
+      ncStage: ageGroup.nc_stage ?? '',
+      subjectName: subject.name,
+      concept: {
+        name: concept.concept_name,
+        objective: concept.concept_description,
+        nc: concept.nc_reference ?? '',
+        strand: concept.strand ?? '',
+      },
+      stage,
+      previousConcepts: previous,
+      city,
+      country,
+      interests: [...(Array.isArray(child.interests) ? child.interests : []), ...(Array.isArray(child.subjects) ? child.subjects : [])],
+      learningStyle: child.learning_style || child.learn_style || '',
+      readingLevel: child.reading_level || '',
+      focusTime: child.focus_time || '',
     })
 
-    const readable = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder()
-        for await (const event of stream) {
-          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-            controller.enqueue(encoder.encode(event.delta.text))
-          }
-        }
-        controller.close()
+    let lesson = null
+    for (let attempt = 0; attempt < 2 && !lesson; attempt++) {
+      const msg = await anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 2500,
+        system,
+        messages: [{ role: 'user', content: userPrompt }],
+      })
+      const text = msg.content.map(b => (b.type === 'text' ? b.text : '')).join('')
+      lesson = parseLesson(text)
+    }
+    if (!lesson) return NextResponse.json({ error: 'generation_failed' }, { status: 502 })
+
+    return NextResponse.json({
+      ...lesson,
+      concept_id: concept.id,
+      concept_name: concept.concept_name,
+      nc_reference: concept.nc_reference,
+      stage,
+      stage_name: STAGES[stage - 1].name,
+      progress: {
+        concept_number: index + 1,
+        total_concepts: list.length,
+        lessons_per_concept: LESSONS_PER_CONCEPT,
+        concepts_completed: list.filter(c => (done.get(c.id) ?? 0) >= LESSONS_PER_CONCEPT).length,
       },
     })
-
-    return new Response(readable, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    })
-  } catch (error: any) {
-    console.error('Generate lesson error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    })
+  } catch (error: unknown) {
+    console.error('[generate-lesson] error:', error)
+    return NextResponse.json({ error: 'server_error' }, { status: 500 })
   }
 }
