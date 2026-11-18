@@ -21,7 +21,7 @@ export default function TermsPage() {
 
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '64px 24px' }}>
         <h1 style={{ fontFamily: 'Georgia,serif', fontSize: 40, marginBottom: 8, color: TEXT }}>Terms of Service</h1>
-        <p style={{ color: TEXT_MUTED, fontSize: 14, marginBottom: 48 }}>Last updated: 22 March 2026</p>
+        <p style={{ color: TEXT_MUTED, fontSize: 14, marginBottom: 48 }}>Last updated: 18 November 2026</p>
 
         <div style={{ background: BEIGE_CARD, borderRadius: 20, padding: '40px 48px', border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 1px 6px rgba(0,0,0,0.04)' }}>
 
@@ -45,9 +45,10 @@ export default function TermsPage() {
             <p>You may not share your account with others or create multiple accounts to circumvent any limitations or free trial terms.</p>
           </Section>
 
-          <Section title="5. Free trial and subscription">
-            <p>Your subscription includes a 10-day free trial. A card is required at signup but you will not be charged until after the trial ends.</p>
-            <p>After the free trial, continued use of the service requires a paid subscription. Subscription fees are billed in advance on a monthly, quarterly, or annual basis depending on the plan you select.</p>
+          <Section title="5. Introductory offer, free trial and subscription">
+            <p>Accounts created before 1 December 2026 receive a one-time 10-day free trial. No payment card is required for the trial.</p>
+            <p>From 1 December 2026, new customers who have not previously paid for a subscription pay 50% of the regular price for their first billing period on any plan. From the second billing period the regular price applies, and the subscription renews automatically until cancelled. The offer can be used once per customer and may be changed or withdrawn for new signups at any time.</p>
+            <p>Continued use of the service requires a paid subscription. Subscription fees are billed in advance on a monthly, quarterly, or annual basis depending on the plan you select.</p>
             <p>Prices are displayed in EUR. You are responsible for any applicable taxes in your jurisdiction.</p>
             <p>You may cancel your subscription at any time. Cancellation takes effect at the end of the current billing period. We do not offer prorated refunds for partial billing periods unless required by applicable law.</p>
           </Section>

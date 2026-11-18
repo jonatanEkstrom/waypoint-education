@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useOfferLive, halfPrice } from '../lib/offer'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../lib/supabase'
@@ -21,6 +22,7 @@ const PLANS = [
     key: 'monthly',
     label: 'Monthly',
     price: '€11',
+    amount: 11,
     sub: 'per month',
     billed: 'Billed monthly',
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_MONTHLY ?? 'price_1TJaFcF8H8N4qjrrCXM9tMaB',
@@ -31,6 +33,7 @@ const PLANS = [
     key: 'quarterly',
     label: 'Quarterly',
     price: '€29',
+    amount: 29,
     sub: 'per quarter',
     billed: 'Billed €29 every 3 months',
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_QUARTERLY ?? 'price_1TJaIjF8H8N4qjrrOzkaYY5y',
@@ -41,6 +44,7 @@ const PLANS = [
     key: 'yearly',
     label: 'Yearly',
     price: '€99',
+    amount: 99,
     sub: 'per year',
     billed: 'Billed €99/year',
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_YEARLY ?? 'price_1TJaLFF8H8N4qjrrl8lUwbPE',
@@ -61,6 +65,7 @@ const FEATURES = [
 ]
 
 export default function SubscribePage() {
+  const offer = useOfferLive()
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
@@ -118,7 +123,7 @@ export default function SubscribePage() {
       {/* Hero */}
       <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG} 0%, #EDF7F2 50%, #FFF8EC 100%)`, padding: isMobile ? '48px 16px 40px' : '72px 24px 56px', textAlign: 'center' }}>
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: BEIGE_CARD, color: TEXT_MUTED, padding: '8px 18px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 24, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 2px 8px rgba(0,0,0,0.05)' }}>
-          <span style={{ fontSize: 16 }}>⏰</span> Your 10-day free trial has ended
+          <span style={{ fontSize: 16 }}>{offer ? '🎁' : '⏰'}</span> {offer ? 'New customers: first billing period 50% off' : 'Your 10-day free trial has ended'}
         </div>
         <h1 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 28 : 44, lineHeight: 1.15, marginBottom: 16, color: TEXT }}>
           Keep the adventure going.
@@ -157,7 +162,12 @@ export default function SubscribePage() {
                 <span style={{ fontFamily: 'Georgia,serif', fontSize: 40, fontWeight: 700, color: TEXT }}>{plan.price}</span>
                 <span style={{ color: TEXT_MUTED, fontSize: 14 }}> {plan.sub}</span>
               </div>
-              <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: 20 }}>{plan.billed}</div>
+              <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: offer ? 6 : 20 }}>{plan.billed}</div>
+              {offer && (
+                <div style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, marginBottom: 20 }}>
+                  First {plan.sub.replace('per ', '')}: €{halfPrice(plan.amount)} (50% off)
+                </div>
+              )}
 
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', flex: 1 }}>
                 {FEATURES.map(f => (
@@ -175,7 +185,7 @@ export default function SubscribePage() {
                   { width: '100%', padding: '14px', borderRadius: 100, border: 'none', background: plan.highlight ? PRIMARY : BEIGE_BORDER, color: plan.highlight ? 'white' : TEXT, fontSize: 14, fontWeight: 800, fontFamily: 'inherit', opacity: loading !== null ? 0.7 : 1, cursor: loading !== null ? 'wait' as const : 'pointer' },
                   { background: plan.highlight ? PRIMARY_DARK : '#d5cdc3' }
                 )}>
-                {loading === plan.key ? 'Redirecting...' : 'Subscribe →'}
+                {loading === plan.key ? 'Redirecting...' : offer ? `Start for €${halfPrice(plan.amount)} →` : 'Subscribe →'}
               </button>
             </div>
           ))}

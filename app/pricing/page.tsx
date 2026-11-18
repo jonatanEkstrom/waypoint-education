@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useOfferLive, halfPrice } from '../lib/offer'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../lib/supabase'
@@ -65,6 +66,7 @@ const EXTRA_CHILD_LABEL: Record<string, string> = {
 }
 
 export default function PricingPage() {
+  const offer = useOfferLive()
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
   const [isMobile, setIsMobile] = useState(false)
@@ -119,7 +121,7 @@ export default function PricingPage() {
       {/* Header */}
       <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG} 0%, #EDF7F2 50%, #FFF8EC 100%)`, padding: isMobile ? '48px 16px 40px' : '80px 24px 64px', textAlign: 'center' }}>
         <div style={{ display: 'inline-block', background: '#EDF7F2', color: GREEN_DARK, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 16, border: `1px solid ${GREEN}` }}>
-          🎁 Your free trial has ended
+          {offer ? '🎁 New customers: first billing period 50% off' : '🎁 Your free trial has ended'}
         </div>
         <h1 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 30 : 48, lineHeight: 1.15, marginBottom: 16, color: TEXT }}>
           Simple, transparent pricing
@@ -181,7 +183,12 @@ export default function PricingPage() {
                 <span style={{ color: TEXT_MUTED, fontSize: 15 }}>{plan.billing}</span>
               </div>
               {plan.sub && (
-                <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: children > 4 ? 4 : 20 }}>{plan.sub}</div>
+                <div style={{ fontSize: 13, color: TEXT_MUTED, marginBottom: offer || children > 4 ? 4 : 20 }}>{plan.sub}</div>
+              )}
+              {offer && (
+                <div style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, marginBottom: children > 4 ? 4 : 20 }}>
+                  First {plan.billing.replace('/', '')}: €{halfPrice(plan.price)} (50% off)
+                </div>
               )}
               {children > 4 && (
                 <div style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, marginBottom: 20 }}>
@@ -215,7 +222,7 @@ export default function PricingPage() {
                   transition: 'all 0.15s',
                 }}
               >
-                {loading === plan.key ? 'Redirecting...' : 'Start free trial →'}
+                {loading === plan.key ? 'Redirecting...' : offer ? 'Get 50% off first period →' : 'Subscribe →'}
               </button>
             </div>
           ))}

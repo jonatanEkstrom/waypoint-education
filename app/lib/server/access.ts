@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server'
 import { createServerClient } from '@supabase/ssr'
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import Stripe from 'stripe'
+import { isOfferLive } from './offer'
 
 export const TRIAL_DAYS = 10
 
@@ -63,14 +64,17 @@ export async function getAccessProfile(admin: SupabaseClient, userId: string): P
 }
 
 /**
- * Grants the one-time free trial if this account has never had one and has no
- * subscription history. Idempotent. Returns the resulting profile.
+ * Grants the one-time free trial if this account has never had one, has no
+ * subscription history and signed up before the launch offer. Idempotent.
  */
 export async function ensureTrial(admin: SupabaseClient, user: User): Promise<AccessProfile | null> {
   const existing = await getAccessProfile(admin, user.id)
   const neverTrialed = !existing?.trial_started_at
   const noSubscriptionHistory = !existing?.subscription_status
   if (!neverTrialed || !noSubscriptionHistory) return existing
+  // From the launch offer date, new accounts get 50% off the first period at
+  // checkout instead of a free trial.
+  if (isOfferLive()) return existing
 
   const now = new Date()
   const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
@@ -103,11 +107,13 @@ export async function syncCheckoutSession(admin: SupabaseClient, userId: string,
     const session = await stripe.checkout.sessions.retrieve(sessionId)
     const paid = session.status === 'complete' && (session.payment_status === 'paid' || session.payment_status === 'no_payment_required')
     if (!paid || session.metadata?.user_id !== userId) return false
-    const { error } = await admin.from('profiles').update({
+    // Upsert: from the launch offer, new accounts may not have a profile row yet.
+    const { error } = await admin.from('profiles').upsert({
+      id: userId,
       subscription_status: 'active',
       stripe_customer_id: session.customer as string,
       stripe_subscription_id: (session.subscription as string) ?? null,
-    }).eq('id', userId)
+    }, { onConflict: 'id' })
     return !error
   } catch (e: any) {
     console.error('[syncCheckoutSession] error:', e.message)

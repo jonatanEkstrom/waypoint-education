@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
 import { requireUser, getAccessProfile } from '@/app/lib/server/access'
+import { isOfferLive, ensureFirstPeriodCoupon } from '@/app/lib/server/offer'
 
 // Server-side allow-list. The client may only pick a plan, never an arbitrary price.
 const PRICES: Record<'monthly' | 'quarterly' | 'yearly', string> = {
@@ -48,13 +49,19 @@ export async function POST(req: NextRequest) {
 
     // Reuse the existing Stripe customer instead of creating duplicates.
     const { data: billingRow } = await admin
-      .from('profiles').select('stripe_customer_id').eq('id', user.id).maybeSingle()
+      .from('profiles').select('stripe_customer_id, stripe_subscription_id').eq('id', user.id).maybeSingle()
     let customerId = billingRow?.stripe_customer_id as string | undefined
     if (!customerId) {
       const customer = await stripe.customers.create({ email: user.email, metadata: { user_id: user.id } })
       customerId = customer.id
-      await admin.from('profiles').update({ stripe_customer_id: customerId }).eq('id', user.id)
+      await admin.from('profiles').upsert({ id: user.id, email: user.email, stripe_customer_id: customerId }, { onConflict: 'id' })
     }
+
+    // Launch offer: 50% off the first invoice for anyone who has never paid.
+    const neverPaid = !billingRow?.stripe_subscription_id
+    const discounts = isOfferLive() && neverPaid
+      ? [{ coupon: await ensureFirstPeriodCoupon(stripe) }]
+      : undefined
 
     const extraChild = EXTRA_CHILD_PRICE[billing]
     const extra = children - INCLUDED_CHILDREN
@@ -64,6 +71,7 @@ export async function POST(req: NextRequest) {
       mode: 'subscription',
       customer: customerId,
       client_reference_id: user.id,
+      ...(discounts ? { discounts } : {}),
       payment_method_types: ['card'],
       line_items: [
         { price: price_id, quantity: 1 },

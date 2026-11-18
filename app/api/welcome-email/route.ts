@@ -1,16 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
+import { adminClient } from '@/app/lib/server/access'
+import { isOfferLive } from '@/app/lib/server/offer'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.RESEND_API_KEY
-  console.log('[welcome-email] RESEND_API_KEY present:', !!apiKey, '| length:', apiKey?.length ?? 0)
-
   try {
     const { email } = await request.json()
-    console.log('[welcome-email] Sending to:', email)
-    if (!email) return NextResponse.json({ error: 'Missing email' }, { status: 400 })
+    if (!email || typeof email !== 'string') return NextResponse.json({ error: 'Missing email' }, { status: 400 })
+
+    // Only send to an account that signed up in the last 15 minutes, so this
+    // endpoint cannot be used to send mail to arbitrary addresses.
+    const { data: list, error: listError } = await adminClient().auth.admin.listUsers({ page: 1, perPage: 1000 })
+    if (listError) throw listError
+    const target = email.trim().toLowerCase()
+    const recent = list.users.find(u =>
+      u.email?.toLowerCase() === target &&
+      Date.now() - new Date(u.created_at).getTime() < 15 * 60 * 1000
+    )
+    if (!recent) return NextResponse.json({ success: true })
+
+    const offer = isOfferLive()
 
     const { data, error } = await resend.emails.send({
       from: 'Waypoint Education <noreply@waypointeducation.world>',
@@ -39,7 +50,9 @@ export async function POST(request: NextRequest) {
         We're so glad you're here. Waypoint was built for families like yours — curious, adventurous, and convinced that the best classroom has no walls.
       </p>
       <p style="font-size:15px;line-height:1.7;color:#2D2D2D;margin:0 0 24px">
-        Your <strong>10-day free trial has started.</strong> Explore everything at your own pace — you won't be charged a thing until day 10, and you can cancel any time before that with zero fuss.
+        ${offer
+          ? 'Your account is ready. Choose a plan to get started — <strong>your first billing period is 50% off</strong>, and you can cancel anytime.'
+          : "Your <strong>10-day free trial has started.</strong> Explore everything at your own pace — no card needed, and nothing is charged unless you choose a plan."}
       </p>
 
       <div style="background:#F0EBF9;border-radius:14px;padding:20px 24px;border:1px solid #DDD0F0;margin-bottom:28px">
@@ -55,7 +68,7 @@ export async function POST(request: NextRequest) {
       </a>
 
       <p style="text-align:center;font-size:12px;color:#9E9188;margin:14px 0 0;font-weight:600">
-        10 days free · Cancel anytime
+        ${offer ? 'First period 50% off · Cancel anytime' : '10 days free · Cancel anytime'}
       </p>
     </div>
 
@@ -93,13 +106,13 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       console.error('[welcome-email] Resend API error:', JSON.stringify(error))
-      return NextResponse.json({ error }, { status: 500 })
+      return NextResponse.json({ error: 'send_failed' }, { status: 500 })
     }
 
     console.log('[welcome-email] Sent successfully, id:', data?.id)
     return NextResponse.json({ success: true, id: data?.id })
   } catch (error: any) {
     console.error('[welcome-email] Unexpected error:', error?.message, error)
-    return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json({ error: 'send_failed' }, { status: 500 })
   }
 }

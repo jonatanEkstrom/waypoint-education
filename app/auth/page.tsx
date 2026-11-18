@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, Suspense } from 'react'
+import { useOfferLive, TRIAL_TAGLINE } from '../lib/offer'
 import { supabase } from '../lib/supabase'
 import { useRouter, useSearchParams } from 'next/navigation'
 import Link from 'next/link'
@@ -23,6 +24,7 @@ function AuthForm() {
   const [error, setError] = useState('')
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
+  const offer = useOfferLive()
   const router = useRouter()
   const params = useSearchParams()
 
@@ -87,7 +89,7 @@ function AuthForm() {
             body: JSON.stringify({ user_id: data.user.id, email: data.user.email }),
           })
         }
-        router.push('/onboarding')
+        router.push(offer ? '/subscribe' : '/onboarding')
       }
     } catch (e: any) {
       setError(e.message)
@@ -136,7 +138,7 @@ function AuthForm() {
           {!isLogin && (
             <div style={{ background: BEIGE, borderRadius: 12, padding: '12px 16px', marginBottom: 20, border: `1px solid ${BEIGE_BORDER}` }}>
               <p style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, margin: 0 }}>
-                ✨ 10 days free · No card required
+                ✨ {offer ? 'First month 50% off' : TRIAL_TAGLINE}
               </p>
             </div>
           )}
@@ -186,7 +188,7 @@ function AuthForm() {
         </div>
 
         <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>
-          10 days free · No card required
+          {offer ? 'First month 50% off · Cancel anytime' : TRIAL_TAGLINE}
         </p>
         <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 12 }}>
           <Link href="/privacy" style={{ fontSize: 12, color: TEXT_MUTED, textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</Link>
