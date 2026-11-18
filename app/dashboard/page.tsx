@@ -79,13 +79,19 @@ export default function DashboardPage() {
         if (!user) return
         const { data: profile } = await supabase
           .from('profiles')
-          .select('subscription_status, trial_started_at')
+          .select('subscription_status, trial_started_at, trial_end_date')
           .eq('id', user.id)
           .single()
         if (!profile || profile.subscription_status === 'active') return
-        if (!profile.trial_started_at) return
-        const daysSinceStart = Math.floor((Date.now() - new Date(profile.trial_started_at).getTime()) / (1000 * 60 * 60 * 24))
-        setTrialDaysLeft(Math.max(0, 10 - daysSinceStart))
+        // trial_end_date is what the server uses for access; trial_started_at + 10
+        // is only a fallback for old rows without an end date.
+        const end = profile.trial_end_date
+          ? new Date(profile.trial_end_date).getTime()
+          : profile.trial_started_at
+            ? new Date(profile.trial_started_at).getTime() + 10 * 24 * 60 * 60 * 1000
+            : null
+        if (end === null) return
+        setTrialDaysLeft(Math.max(0, Math.ceil((end - Date.now()) / (1000 * 60 * 60 * 24))))
       } catch (e) {
         console.error('[Dashboard] Failed to fetch trial status:', e)
       }
@@ -139,6 +145,8 @@ export default function DashboardPage() {
       const parsed = JSON.parse(cleaned)
       if (parsed.error === 'all_complete') {
         setLessonError('all_complete')
+      } else if (parsed.error) {
+        throw new Error(parsed.error)
       } else {
         setLesson(parsed)
       }

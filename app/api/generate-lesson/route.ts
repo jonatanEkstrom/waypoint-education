@@ -6,13 +6,24 @@ export const maxDuration = 30
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 
-// children.age_group is stored as a free-text label like "5–6 years" (en-dash + "years"),
-// while age_groups.label is a plain "5-6" range. Normalize before matching.
+// children.age_group is a UI label ("3–4 years", "5–6 years", "7–9 years",
+// "10–12 years", "13+ years") while age_groups.label holds the curriculum
+// bands ("5-6", "7-8", "9-10", "11-12"). Map each UI label to the closest band
+// that has content. Ages outside the curriculum use the nearest band.
+const AGE_BAND_BY_LABEL: Record<string, string> = {
+  '3-4': '5-6',
+  '5-6': '5-6',
+  '7-9': '7-8',
+  '10-12': '11-12',
+  '13+': '11-12',
+}
+
 function normalizeAgeGroup(raw: string): string {
-  const hyphenated = raw.replace(/[‐-―]/g, '-')
+  const hyphenated = raw.replace(/[\u2010-\u2015]/g, '-')
+  const key = hyphenated.replace(/\byears?\b/gi, '').replace(/\s+/g, '').trim()
+  if (AGE_BAND_BY_LABEL[key]) return AGE_BAND_BY_LABEL[key]
   const range = hyphenated.match(/\d+\s*-\s*\d+/)
-  if (range) return range[0].replace(/\s+/g, '')
-  return hyphenated.replace(/\byears?\b/gi, '').trim()
+  return range ? range[0].replace(/\s+/g, '') : key
 }
 
 export async function POST(request: NextRequest) {
@@ -43,7 +54,7 @@ export async function POST(request: NextRequest) {
       .single()
 
     if (ageGroupError || !ageGroup) {
-      return NextResponse.json({ error: 'age_group_not_found' }, { status: 200 })
+      return NextResponse.json({ error: 'age_group_not_found' }, { status: 422 })
     }
 
     const { data: subject, error: subjectError } = await supabase
