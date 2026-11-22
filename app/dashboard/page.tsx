@@ -451,11 +451,6 @@ export default function DashboardPage() {
                 style={btn('print', { padding: '8px 14px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: PRIMARY, fontFamily: 'inherit' }, { background: PRIMARY_BG, borderColor: PRIMARY })}>
                 🖨️ Print
               </button>
-              <button onClick={() => router.push('/dashboard/children')}
-                onMouseEnter={() => setHover('newplan')} onMouseLeave={() => setHover(null)}
-                style={btn('newplan', { padding: '8px 14px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
-                + New plan
-              </button>
               <button onClick={handleLogout}
                 onMouseEnter={() => setHover('logout')} onMouseLeave={() => setHover(null)}
                 style={btn('logout', { padding: '8px 14px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: '#E07575', fontFamily: 'inherit' }, { background: '#FFF1F2' })}>
@@ -486,10 +481,6 @@ export default function DashboardPage() {
               </button>
             ))}
             <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
-              <button onClick={() => { setMenuOpen(false); router.push('/dashboard/children') }}
-                style={{ flex: 1, padding: '11px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
-                + New plan
-              </button>
               <button onClick={() => { setMenuOpen(false); handleLogout() }}
                 style={{ flex: 1, padding: '11px', borderRadius: 100, border: '2px solid #F4A7A7', background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: '#E07575', fontFamily: 'inherit', cursor: 'pointer' }}>
                 Logout

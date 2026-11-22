@@ -250,7 +250,7 @@ export default function ChildrenPage() {
     loadChildren()
   }
 
-  async function startPlan(child: Child) {
+  async function openLessons(child: Child) {
     const { data: { user } } = await supabase.auth.getUser()
     localStorage.setItem('activeChild', JSON.stringify({ ...child, user_id: user?.id }))
     localStorage.removeItem('cachedPlan')
@@ -574,10 +574,10 @@ export default function ChildrenPage() {
                         </div>
                       )}
 
-                      <button onClick={() => startPlan(selected)}
-                        onMouseEnter={() => setHover('generate')} onMouseLeave={() => setHover(null)}
-                        style={btn('generate', { width: '100%', padding: '16px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY_DARK })}>
-                        📅 Generate this week's lesson plan
+                      <button onClick={() => openLessons(selected)}
+                        onMouseEnter={() => setHover('open-lessons')} onMouseLeave={() => setHover(null)}
+                        style={btn('open-lessons', { width: '100%', padding: '16px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY_DARK })}>
+                        Open lessons for {selected.name} →
                       </button>
 
                       <div style={{ display: 'flex', gap: 10 }}>
