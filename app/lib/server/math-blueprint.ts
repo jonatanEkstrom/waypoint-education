@@ -15,17 +15,35 @@ const goals: Readonly<Record<string, MathGoal>> = {
     check: 'Ask the learner to count a new arrangement of 16 objects and tell you how many there are.',
     success: 'Counts each object once and gives the final count as the total.',
   },
+  m56_read_write_20: {
+    prerequisite: 'Count objects up to 20 and say the total.',
+    activity: 'Match numbered cards to trays of counters. Take turns making a set for someone else to label.',
+    check: 'Show the card 14. Ask the learner to build that number, then write the numeral for a different set of 12.',
+    success: 'Builds a set of 14 and labels the second set 12. Accept pointing to 12 if handwriting is a barrier.',
+  },
   m56_one_more_less: {
     prerequisite: 'Count objects and say how many are in the set.',
     activity: 'Make a small pretend market stall. Add or remove one object at a time and predict the new total.',
     check: 'Starting with 8 objects, ask the learner to show one more and then one less than 8.',
     success: 'Makes sets of 9 and 7 and explains which action changed the count each way.',
   },
+  m56_compare: {
+    prerequisite: 'Count two small sets separately.',
+    activity: 'Make two rows of toy goods and pair one object from each row to see which has extras.',
+    check: 'Show sets of 9 and 12 laid out with different spacing. Ask which has more and how to prove it.',
+    success: 'Identifies 12 as greater and justifies it by counting or one-to-one matching.',
+  },
   m56_number_bonds_10: {
     prerequisite: 'Count to 10 and identify the total in two small groups.',
     activity: 'Fill a ten-frame with counters of two colours and try different ways to make 10.',
     check: 'Show 6 counters on a ten-frame and ask how many more fill it.',
     success: 'Shows that 4 more make 10 and can point to both parts.',
+  },
+  m56_add_symbols: {
+    prerequisite: 'Combine two small sets and count the total.',
+    activity: 'Model a shopping basket with two groups and match it to an addition equation. Move the total to the other side of the equals sign and discuss why both sides still balance.',
+    check: 'Ask the learner to model 3 + 4 = 7 and explain what the plus and equals signs say.',
+    success: 'Shows that plus combines the groups and equals means both sides have the same value.',
   },
   m56_add_20: {
     prerequisite: 'Join two small groups and use number bonds to 10.',
@@ -38,6 +56,12 @@ const goals: Readonly<Record<string, MathGoal>> = {
     activity: 'Start with a pile of objects, move some away and describe what changed.',
     check: 'Ask the learner to show 14 take away 5 using objects or a drawing.',
     success: 'Shows the starting 14, removes 5 and identifies the 9 remaining.',
+  },
+  m56_count_100: {
+    prerequisite: 'Count to 20 and recognise that each successive number is one more.',
+    activity: 'Take turns saying the next number along a paper track. Stop at a change of tens and count across it.',
+    check: 'Ask the learner to count from 46 to 54 and then from 96 to 100.',
+    success: 'Continues the sequence across changes of tens and reaches 100 in order.',
   },
   m56_tens_ones: {
     prerequisite: 'Count 10 objects reliably and recognise numerals up to 20.',
@@ -80,6 +104,12 @@ const goals: Readonly<Record<string, MathGoal>> = {
     activity: 'Build three-digit numbers on a place-value mat, including one with an empty place.',
     check: 'Ask the learner to represent 305 and explain the zero.',
     success: 'Shows three hundreds, zero tens and five ones.',
+  },
+  m79_number_line: {
+    prerequisite: 'Compare numbers by their value and recognise equal steps of ten.',
+    activity: 'Use a strip of paper as a route between two stops. Mark the endpoints and add equally spaced stops before placing a number.',
+    check: 'On a number line marked 20, 30 and 40 at equal intervals, ask where 35 belongs.',
+    success: 'Places 35 halfway between 30 and 40 and explains it is five from each.',
   },
   m79_times_2_5_10: {
     prerequisite: 'Make equal groups and count in twos, fives or tens.',
