@@ -1,3 +1,4 @@
+import { mathBlueprintGuidance } from '@/app/lib/server/math-blueprint'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireAccess } from '@/app/lib/server/access'
@@ -28,10 +29,10 @@ export async function POST(request: NextRequest) {
       const { data: course } = await guard.admin.from('subjects').select('id').eq('slug', subject).maybeSingle()
       if (!band || !course) return NextResponse.json({ error: 'goal_not_found' }, { status: 404 })
       const { data: concept } = await guard.admin.from('curriculum_concepts')
-        .select('concept_name, concept_description').eq('id', concept_id)
+        .select('concept_key, concept_name, concept_description').eq('id', concept_id)
         .eq('age_group_id', band.id).eq('subject_id', course.id).maybeSingle()
       if (!concept) return NextResponse.json({ error: 'goal_not_found' }, { status: 404 })
-      goal = `Use only this learning goal for every question: ${concept.concept_name}. ${concept.concept_description}`
+      goal = `Use only this learning goal for every question: ${concept.concept_name}. ${concept.concept_description}\n${mathBlueprintGuidance(concept.concept_key)}`
     }
 
     const prompt = `Create a worksheet for ${name}, ${age_group}, in ${city}.
@@ -42,7 +43,7 @@ ${goal}
 
 DIFFICULTY LEVEL FOR ${age_group}: ${difficulty}
 
-STRICT RULE: This student is ${age_group}. Every single question must match this exact difficulty. Do NOT use simple or basic questions for older students.
+Use the age guidance for reading load and response format. When a learning goal is supplied, keep the mathematical demand at that goal.
 
 Return ONLY valid JSON, no other text:
 {
