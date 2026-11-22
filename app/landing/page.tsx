@@ -65,8 +65,8 @@ const FAQS = [
     a: 'Worldschooling uses travel and everyday experiences as opportunities to learn. A market visit can become a maths activity, and a walk by the coast can lead to a science discussion. Check the home education rules that apply to your family.',
   },
   {
-    q: 'Do I need to follow the National Curriculum in England?',
-    a: 'GOV.UK explains that home-educating families in England must provide a suitable full-time education and can choose how to teach it. The national curriculum is optional for home education. Check the official guidance for your circumstances.',
+    q: 'What do I need to do as a parent?',
+    a: "Read through the lesson, help your child with the activity and use the short check to decide whether they are ready to move on. Younger children may need you to read aloud and do parts of the activity with them.",
   },
   {
     q: 'How does Waypoint create lessons?',
@@ -176,12 +176,12 @@ export default function LandingPage() {
           <div style={{ display: 'inline-block', background: '#FFF8EC', color: ORANGE, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 28, border: '1px solid #FBDFA3' }}>
             ✈️ {offer ? '50% off your first billing period' : TRIAL_TAGLINE}
           </div>
-          <h1 aria-label="AI-Powered Homeschooling for Traveling Families" style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 34 : 56, lineHeight: isMobile ? 1.2 : 1.1, marginBottom: 22, color: TEXT }}>
-            Every destination<br />
-            <span style={{ color: PRIMARY }}>becomes a classroom.</span>
+          <h1 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 34 : 56, lineHeight: isMobile ? 1.2 : 1.1, marginBottom: 22, color: TEXT }}>
+            Less planning.<br />
+            <span style={{ color: PRIMARY }}>More learning together.</span>
           </h1>
           <p style={{ fontSize: isMobile ? 16 : 20, color: TEXT_MUTED, lineHeight: 1.7, maxWidth: 580, margin: '0 auto 40px' }}>
-            Waypoint gives your child the next learning goal, with a short lesson and a practical activity. Use the places you visit to bring the lesson to life.
+            Waypoint picks your child's next learning goal. AI prepares a short lesson, a hands-on activity and a quick check. Read it through, help your child get started and see what they understood.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexDirection: isMobile ? 'column' as const : 'row' as const, alignItems: 'center', marginBottom: 20 }}>
             <button onClick={() => router.push('/auth')}
@@ -215,13 +215,13 @@ export default function LandingPage() {
             School that follows your family
           </h2>
           <p style={{ textAlign: 'center', color: TEXT_MUTED, fontSize: isMobile ? 15 : 17, marginBottom: isMobile ? 36 : 52 }}>
-            From choosing a subject to recording what your child has learned.
+            Waypoint prepares the lesson. You help your child try it.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 20 : 28 }}>
             {[
-              { step: '1', icon: '📍', title: 'Tell us where you are', desc: 'Add your city and country so lessons can use examples from your surroundings.' },
-              { step: '2', icon: '✨', title: 'Start the next lesson', desc: 'Pick an available subject. Waypoint selects the next goal and creates a short lesson around it.' },
-              { step: '3', icon: '🌏', title: 'Learn anywhere', desc: 'Try the activity, practise the goal with a worksheet and record your progress.' },
+              { step: '1', icon: '📍', title: 'Choose a subject', desc: 'Choose an available subject for your child. Add your location to give the lesson a familiar setting.' },
+              { step: '2', icon: '✨', title: 'Review the prepared lesson', desc: 'Waypoint picks the next goal and AI prepares an example, an activity and a tip for you.' },
+              { step: '3', icon: '🌏', title: 'Help your child get started', desc: 'Try the activity together. Use the short check to decide whether to practise again or move on.' },
             ].map(s => (
               <div key={s.step} style={{ background: BEIGE_CARD, borderRadius: 24, padding: isMobile ? 24 : 32, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 2px 10px rgba(0,0,0,0.04)', position: 'relative' }}>
                 <div style={{ width: 32, height: 32, borderRadius: 100, background: PRIMARY, color: 'white', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
