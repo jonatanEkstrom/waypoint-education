@@ -51,11 +51,23 @@ const goals: Readonly<Record<string, MathGoal>> = {
     check: 'Ask the learner to make three equal groups of two objects.',
     success: 'Builds three groups with two in each and identifies six objects in total.',
   },
+  m56_sharing: {
+    prerequisite: 'Count small sets and tell when two groups have the same number.',
+    activity: 'Deal ten counters one at a time between two pretend customers. Compare the piles and put the counters back together.',
+    check: 'Ask the learner to share 12 counters fairly among three people.',
+    success: 'Gives each person four counters and explains that everyone has the same amount.',
+  },
   m56_halves: {
     prerequisite: 'Understand that fair sharing gives each group the same amount.',
     activity: 'Fold paper shapes or divide sets into two equal parts and compare with an unequal split.',
     check: 'Ask the learner to split eight counters into halves and explain why both parts are halves.',
     success: 'Makes two equal groups of four and explains that halves must be equal.',
+  },
+  m56_quarters: {
+    prerequisite: 'Split a whole into two equal parts and explain what a half is.',
+    activity: 'Fold a rectangular paper menu in half and then fold it in half again. Unfold it to compare the four equal parts.',
+    check: 'Ask the learner to show one quarter of a paper strip and explain why it is a quarter.',
+    success: 'Partitions the original strip into four equal parts and identifies one of them.',
   },
   m79_place_value_100: {
     prerequisite: 'Understand that ten ones make one ten.',
@@ -80,6 +92,24 @@ const goals: Readonly<Record<string, MathGoal>> = {
     activity: 'Fold equal-sized paper strips into different numbers of equal pieces and label one piece of each.',
     check: 'Ask the learner to shade one third of a strip and explain why it is one third.',
     success: 'Shows three equal parts and identifies one of them.',
+  },
+  m79_non_unit_fractions: {
+    prerequisite: 'Find one equal share of a whole set and explain what the denominator counts.',
+    activity: 'Divide 12 counters into four equal groups and select one, then two, then three of those groups.',
+    check: 'Ask the learner to find two thirds of nine counters and show how they know.',
+    success: 'Makes three groups of three, selects two groups and explains that the selected groups contain six counters.',
+  },
+  m79_equivalent_fractions: {
+    prerequisite: 'Name unit and non-unit fractions of a whole divided into equal parts.',
+    activity: 'Fold two strips of the same length into halves and quarters, then line up one half with two quarters.',
+    check: 'Ask the learner to show whether one half and two quarters of the same whole represent the same amount.',
+    success: 'Aligns the shaded lengths or uses an equivalent drawing and explains why the amounts match.',
+  },
+  m79_add_fractions: {
+    prerequisite: 'Read fractions with a shared denominator as counts of equal-sized parts of the same whole.',
+    activity: 'Use a strip divided into fifths and combine one fifth with two fifths to count the selected parts.',
+    check: 'Ask the learner to model two sixths plus one sixth and explain what stays the same.',
+    success: 'Shows three sixths and explains that the parts are still sixths. Accepts one half if supported by the model.',
   },
 }
 
