@@ -138,7 +138,7 @@ function AuthForm() {
           {!isLogin && (
             <div style={{ background: BEIGE, borderRadius: 12, padding: '12px 16px', marginBottom: 20, border: `1px solid ${BEIGE_BORDER}` }}>
               <p style={{ fontSize: 13, color: GREEN_DARK, fontWeight: 700, margin: 0 }}>
-                ✨ {offer ? 'First month 50% off' : TRIAL_TAGLINE}
+                ✨ {offer ? '50% off the first billing period for eligible new subscribers' : `New accounts: ${TRIAL_TAGLINE}`}
               </p>
             </div>
           )}
@@ -187,9 +187,6 @@ function AuthForm() {
 
         </div>
 
-        <p style={{ textAlign: 'center', marginTop: 16, fontSize: 12, color: TEXT_MUTED, fontWeight: 600 }}>
-          {offer ? 'First month 50% off · Cancel anytime' : TRIAL_TAGLINE}
-        </p>
         <div style={{ display: 'flex', gap: 20, justifyContent: 'center', marginTop: 12 }}>
           <Link href="/privacy" style={{ fontSize: 12, color: TEXT_MUTED, textDecoration: 'none', fontWeight: 600 }}>Privacy Policy</Link>
           <Link href="/terms" style={{ fontSize: 12, color: TEXT_MUTED, textDecoration: 'none', fontWeight: 600 }}>Terms of Service</Link>
