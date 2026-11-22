@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireAccess } from '@/app/lib/server/access'
 
+import { curriculumBand, teachingGuidance } from '@/app/lib/curriculum'
+
 export const maxDuration = 60
 
 const client = new Anthropic({
@@ -13,21 +15,30 @@ export async function POST(request: NextRequest) {
   if ('response' in guard) return guard.response
 
   try {
-    const { subject, theme, age_group, name, city } = await request.json()
-
-    const difficultyGuide: Record<string, string> = {
-      '4–6 years': 'Very simple. Single words, counting to 10, basic colors and shapes. Like kindergarten.',
-      '7–9 years': 'Simple sentences, basic math (addition/subtraction), simple science facts.',
-      '10–12 years': 'Intermediate. Multiplication, paragraphs, cause and effect, basic history.',
-      '13–15 years': 'Advanced. Algebra concepts, essay-style answers, analysis, historical context, scientific method.',
-      '16–18 years': 'University prep level. Critical thinking, debate-style questions, complex analysis, advanced concepts, real-world applications. No basic questions.',
+    const { subject, theme, child_id, concept_id } = await request.json()
+    const { data: child } = await guard.admin.from('children')
+      .select('name, age_group, city').eq('id', child_id).eq('user_id', guard.user.id).maybeSingle()
+    if (!child) return NextResponse.json({ error: 'child_not_found' }, { status: 404 })
+    const { name, age_group, city } = child
+    const difficulty = teachingGuidance(age_group)
+    let goal = ''
+    if (concept_id) {
+      const { data: band } = await guard.admin.from('age_groups').select('id')
+        .eq('label', curriculumBand(age_group)).maybeSingle()
+      const { data: course } = await guard.admin.from('subjects').select('id').eq('slug', subject).maybeSingle()
+      if (!band || !course) return NextResponse.json({ error: 'goal_not_found' }, { status: 404 })
+      const { data: concept } = await guard.admin.from('curriculum_concepts')
+        .select('concept_name, concept_description').eq('id', concept_id)
+        .eq('age_group_id', band.id).eq('subject_id', course.id).maybeSingle()
+      if (!concept) return NextResponse.json({ error: 'goal_not_found' }, { status: 404 })
+      goal = `Use only this learning goal for every question: ${concept.concept_name}. ${concept.concept_description}`
     }
-
-    const difficulty = difficultyGuide[age_group] || difficultyGuide['10–12 years']
 
     const prompt = `Create a worksheet for ${name}, ${age_group}, in ${city}.
 Subject: ${subject}
 Theme: ${theme || subject}
+
+${goal}
 
 DIFFICULTY LEVEL FOR ${age_group}: ${difficulty}
 

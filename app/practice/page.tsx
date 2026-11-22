@@ -66,12 +66,13 @@ const SUBJECTS = [
 
 function getDefaultTrack(age_group: string): TrackKey | null {
   if (age_group === '10–12 years') return 'explorer'
-  if (age_group === '13+ years')   return null  // let user pick
+  if (age_group === '13–15 years') return 'discoverer'
+  if (age_group === '16–18 years') return 'pioneer'
   return null  // too young
 }
 
 function isTooYoung(age_group: string) {
-  return age_group === '5–6 years' || age_group === '7–9 years' || age_group === '3–4 years'
+  return age_group === '4–6 years' || age_group === '5–6 years' || age_group === '7–9 years' || age_group === '3–4 years'
 }
 
 type Step = 'track-pick' | 'select' | 'generating' | 'exercise' | 'evaluating' | 'feedback'

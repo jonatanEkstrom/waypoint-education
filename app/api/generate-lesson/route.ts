@@ -2,18 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireAccess } from '@/app/lib/server/access'
 
+import { curriculumBand, teachingGuidance } from '@/app/lib/curriculum'
+
 export const maxDuration = 30
 
 const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-
-// children.age_group is stored as a free-text label like "5–6 years" (en-dash + "years"),
-// while age_groups.label is a plain "5-6" range. Normalize before matching.
-function normalizeAgeGroup(raw: string): string {
-  const hyphenated = raw.replace(/[‐-―]/g, '-')
-  const range = hyphenated.match(/\d+\s*-\s*\d+/)
-  if (range) return range[0].replace(/\s+/g, '')
-  return hyphenated.replace(/\byears?\b/gi, '').trim()
-}
 
 export async function POST(request: NextRequest) {
   const guard = await requireAccess()
@@ -27,7 +20,7 @@ export async function POST(request: NextRequest) {
     // Service role bypasses RLS, so ownership must be checked explicitly.
     const { data: child, error: childError } = await supabase
       .from('children')
-      .select('name, age_group')
+      .select('name, age_group, focus_time, reading_level')
       .eq('id', child_id)
       .eq('user_id', guard.user.id)
       .single()
@@ -39,7 +32,7 @@ export async function POST(request: NextRequest) {
     const { data: ageGroup, error: ageGroupError } = await supabase
       .from('age_groups')
       .select('id')
-      .eq('label', normalizeAgeGroup(child.age_group))
+      .eq('label', curriculumBand(child.age_group))
       .single()
 
     if (ageGroupError || !ageGroup) {
@@ -56,11 +49,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'subject_not_found' }, { status: 404 })
     }
 
-    const { data: completedProgress } = await supabase
+    const { data: completedProgress, error: progressError } = await supabase
       .from('child_progress')
       .select('concept_id')
       .eq('child_id', child_id)
       .eq('status', 'completed')
+
+    if (progressError) throw progressError
 
     const completedIds = (completedProgress ?? []).map((p) => p.concept_id)
 
@@ -92,6 +87,10 @@ export async function POST(request: NextRequest) {
 
 Concept: ${concept.concept_name}
 Description: ${concept.concept_description}
+Learner: ${child.age_group}
+Teaching guidance: ${teachingGuidance(child.age_group)}
+Reading level: ${child.reading_level || "unspecified"}
+Preferred focus time: ${child.focus_time || "unspecified"}. Use the shorter of this and the teaching guidance; split longer work into steps with movement breaks.
 
 Do not introduce, explain, or drift into any other topic or concept, even if it seems related. The child's city (${city}, ${country}) may only be used as a backdrop or setting for examples — it must never change the subject matter or pull in unrelated topics. Stay strictly within the bounds of the concept above for the entire lesson.`
 
@@ -107,10 +106,11 @@ OUTPUT this exact JSON:
   "activity": {
     "title": "Activity name",
     "materials": "Materials or 'None needed'",
-    "time": "10-15 min",
+    "time": "Short duration consistent with the teaching guidance",
     "description": "3-4 sentences describing what to do."
   },
   "discussion_questions": ["One open-ended question about the topic."],
+  "check_for_understanding": "One quick task, with a separate note for the parent describing what a correct response demonstrates.",
   "fun_fact": "One surprising fact in 1 sentence.",
   "parent_tip": "One practical tip for the parent."
 }`

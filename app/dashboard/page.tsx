@@ -3,6 +3,8 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 
+import { CURRICULUM_SUBJECTS } from '../lib/curriculum'
+
 const PRIMARY = '#9B8EC4'
 const PRIMARY_DARK = '#7B6BAA'
 const PRIMARY_BG = '#F0EBF9'
@@ -17,18 +19,11 @@ const GREEN_BORDER = '#D5F0E3'
 const TEXT = '#2D2D2D'
 const TEXT_MUTED = '#9E9188'
 
-// Maps the subject labels stored in children.subjects (see SUBJECT_OPTIONS in
-// app/dashboard/children/page.tsx) to the subject_slug values /api/generate-lesson expects.
-const SUBJECT_SLUGS: Record<string, string> = {
-  'Math': 'mathematics', 'Mathematics': 'mathematics',
-  'Science': 'science',
-  'Language Arts': 'language', 'Language': 'language', 'Languages': 'language',
-}
-
 const SUBJECT_META: Record<string, { icon: string; bg: string; text: string; border: string }> = {
   mathematics: { icon: '🔢', bg: '#FFF0F5', text: '#C4748E', border: '#F5C6D5' },
   science: { icon: '🔬', bg: GREEN_BG, text: GREEN_DARK, border: GREEN_BORDER },
-  language: { icon: '🗣️', bg: '#F0F5FF', text: '#6080C4', border: '#C6D5F5' },
+  geography: { icon: '🗺️', bg: '#FFF8EC', text: '#96632B', border: '#F5DFC1' },
+  english: { icon: '🗣️', bg: '#F0F5FF', text: '#6080C4', border: '#C6D5F5' },
 }
 
 function getTodayName() {
@@ -171,6 +166,8 @@ export default function DashboardPage() {
       const parsed = JSON.parse(cleaned)
       if (parsed.error === 'all_complete') {
         setLessonError('all_complete')
+      } else if (parsed.error) {
+        setLessonError('error')
       } else {
         setLesson(parsed)
       }
@@ -361,7 +358,7 @@ export default function DashboardPage() {
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
   const availableSubjects = ((child?.subjects || []) as string[])
-    .map(name => ({ name, slug: SUBJECT_SLUGS[name] }))
+    .map(name => ({ name, slug: CURRICULUM_SUBJECTS[name] }))
     .filter((s): s is { name: string; slug: string } => !!s.slug)
 
   const btn = (id: string, base: React.CSSProperties, hoverStyle: React.CSSProperties): React.CSSProperties => ({
@@ -686,6 +683,15 @@ export default function DashboardPage() {
                       </div>
                     )}
 
+                    {lesson.check_for_understanding && (
+                      <section style={{ marginBottom: 16 }}>
+                        <h3>Check understanding</h3>
+                        <p>{lesson.check_for_understanding}</p>
+                        <button type="button" onClick={() => loadLesson(selectedSubjectSlug!)}>Try another example</button>
+                        {' · '}
+                        <a href={`/worksheets?concept=${encodeURIComponent(lesson.concept_id)}&subject=${encodeURIComponent(selectedSubjectSlug ?? '')}`}>Practise this goal</a>
+                      </section>
+                    )}
                     <button className="tap-btn" onClick={markLessonComplete} disabled={markingComplete}
                       onMouseEnter={() => setHover('mark-complete')} onMouseLeave={() => setHover(null)}
                       style={btn('mark-complete', { width: '100%', padding: '13px 16px', minHeight: 48, borderRadius: 12, border: 'none', background: GREEN, color: GREEN_DARK, fontSize: 14, fontWeight: 700, fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: markingComplete ? 0.7 : 1 }, { background: GREEN_DARK, color: 'white' })}>
@@ -694,7 +700,7 @@ export default function DashboardPage() {
                           <span style={{ width: 14, height: 14, border: `2px solid ${GREEN_BORDER}`, borderTopColor: GREEN_DARK, borderRadius: '50%', animation: 'spin 0.8s linear infinite', display: 'inline-block', flexShrink: 0 }} />
                           Saving...
                         </>
-                      ) : '✓ Mark as complete & continue'}
+                      ) : '✓ Understood · continue'}
                     </button>
                   </div>
                 )}

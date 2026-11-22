@@ -14,6 +14,8 @@ const GREEN_DARK = '#6AAF8A'
 const TEXT = '#2D2D2D'
 const TEXT_MUTED = '#9E9188'
 
+import { CURRICULUM_SUBJECTS } from '../lib/curriculum'
+
 const subjects = ["Math","Science","Language Arts","History","Geography","Art","Music","Physical Education","Coding","Life Skills"]
 
 const subjectColors: any = {
@@ -32,6 +34,8 @@ const subjectColors: any = {
 export default function WorksheetsPage() {
   const [child, setChild] = useState<any>(null)
   const [subject, setSubject] = useState('')
+  const [conceptId, setConceptId] = useState<string | null>(null)
+  const [error, setError] = useState('')
   const [theme, setTheme] = useState('')
   const [loading, setLoading] = useState(false)
   const [worksheet, setWorksheet] = useState<any>(null)
@@ -58,6 +62,12 @@ export default function WorksheetsPage() {
     const stored = localStorage.getItem('activeChild')
     if (!stored) { router.push('/onboarding'); return }
     setChild(JSON.parse(stored))
+    const params = new URLSearchParams(window.location.search)
+    const selectedSubject = subjects.find(item => CURRICULUM_SUBJECTS[item] === params.get('subject'))
+    if (selectedSubject) {
+      setSubject(selectedSubject)
+      setConceptId(params.get('concept'))
+    }
     const check = () => setIsMobile(window.innerWidth < 640)
     check()
     window.addEventListener('resize', check)
@@ -66,6 +76,7 @@ export default function WorksheetsPage() {
 
   async function generateWorksheet() {
     if (!subject) return
+    setError('')
     setLoading(true)
     setWorksheet(null)
     setSelectedLeft(null)
@@ -81,9 +92,13 @@ export default function WorksheetsPage() {
       const res = await fetch('/api/generate-worksheet', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ subject, theme, age_group: child?.age_group, name: child?.name, city: child?.city })
+        body: JSON.stringify({
+          subject: conceptId ? CURRICULUM_SUBJECTS[subject] : subject,
+          theme, child_id: child?.id, concept_id: conceptId,
+        })
       })
       const data = await res.json()
+      if (!res.ok || !data.worksheet) throw new Error('Worksheet generation failed')
       if (data.worksheet) {
         setWorksheet(data.worksheet)
         const rights = data.worksheet.matching.pairs.map((p: any) => p.right)
@@ -91,6 +106,7 @@ export default function WorksheetsPage() {
       }
     } catch (e) {
       console.error(e)
+      setError('Could not create this worksheet. Please try again.')
     } finally {
       setLoading(false)
     }
@@ -296,7 +312,7 @@ export default function WorksheetsPage() {
                 const c = subjectColors[sub] || { text: PRIMARY, bg: PRIMARY_BG, border: PRIMARY_BORDER }
                 const sel = subject === sub
                 return (
-                  <button key={sub} onClick={() => setSubject(sub)}
+                  <button key={sub} onClick={() => { setSubject(sub); setConceptId(null) }}
                     style={{ padding: '8px 16px', borderRadius: 100, border: `2px solid ${sel ? c.border : BEIGE_BORDER}`, background: sel ? c.bg : BEIGE_CARD, color: sel ? c.text : TEXT_MUTED, cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'inherit' }}>
                     {sub}
                   </button>
@@ -312,6 +328,7 @@ export default function WorksheetsPage() {
               style={{ width: '100%', padding: '13px 16px', borderRadius: 14, border: `2px solid ${BEIGE_BORDER}`, fontSize: 15, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box' as const, background: BEIGE, color: TEXT }} />
           </div>
 
+          {error && <p role="alert">{error}</p>}
           <button onClick={generateWorksheet} disabled={loading || !subject}
             style={{ width: '100%', padding: 14, borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 800, cursor: loading || !subject ? 'not-allowed' : 'pointer', opacity: loading || !subject ? 0.4 : 1, fontFamily: 'inherit', transition: 'all 0.15s' }}>
             {loading ? '✨ Creating worksheet...' : '✨ Generate worksheet'}

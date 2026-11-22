@@ -144,6 +144,7 @@ export default function LAReportPage() {
   const [children, setChildren] = useState<Child[]>([])
   const [selected, setSelected] = useState<Child | null>(null)
   const [journal, setJournal] = useState<JournalEntry[]>([])
+  const [completedGoals, setCompletedGoals] = useState<{ id: string; name: string }[]>([])
   const [plans, setPlans] = useState<WeekPlan[]>([])
   const [isMobile, setIsMobile] = useState(false)
 
@@ -179,14 +180,14 @@ export default function LAReportPage() {
         }
       } catch {}
       setSelected(active)
-      await fetchData(user.id, active.name)
+      await fetchData(user.id, active)
     }
     setLoading(false)
   }
 
-  async function fetchData(userId: string, childName: string) {
+  async function fetchData(userId: string, child: Child) {
     setFetching(true)
-    const [journalRes, plansRes] = await Promise.all([
+    const [journalRes, plansRes, progressRes] = await Promise.all([
       supabase
         .from('journal_entries')
         .select('id, date, city, country, text, story')
@@ -196,17 +197,23 @@ export default function LAReportPage() {
         .from('weekly_plans')
         .select('child_name, week_number, city, country, plan')
         .eq('user_id', userId)
-        .eq('child_name', childName)
+        .eq('child_name', child.name)
         .order('week_number', { ascending: true }),
+      supabase.from('child_progress').select('concept_id').eq('child_id', child.id).eq('status', 'completed'),
     ])
     if (journalRes.data) setJournal(journalRes.data)
     if (plansRes.data) setPlans(plansRes.data)
+    const ids = [...new Set((progressRes.data ?? []).map(row => row.concept_id))]
+    const { data: goals } = ids.length
+      ? await supabase.from('curriculum_concepts').select('id, concept_name').in('id', ids).order('concept_name')
+      : { data: [] }
+    setCompletedGoals((goals ?? []).map(goal => ({ id: goal.id, name: goal.concept_name })))
     setFetching(false)
   }
 
   async function changeChild(child: Child) {
     setSelected(child)
-    if (user) await fetchData(user.id, child.name)
+    if (user) await fetchData(user.id, child)
   }
 
   // ── Derived data ──
@@ -437,7 +444,13 @@ export default function LAReportPage() {
             AI-generated lesson plans tailored to the child's age group, current location, and educational approach, grouped by subject area.
           </p>
 
-          {Object.keys(bySubject).length === 0 ? (
+          {completedGoals.length > 0 && (
+            <section>
+              <h3>Completed learning goals</h3>
+              <ul>{completedGoals.map(goal => <li key={goal.id}>{goal.name}</li>)}</ul>
+            </section>
+          )}
+          {Object.keys(bySubject).length === 0 && completedGoals.length === 0 ? (
             <p style={{ color: TEXT_MUTED, fontSize: 14 }}>No lesson plans recorded.</p>
           ) : (
             Object.entries(bySubject).sort(([a], [b]) => a.localeCompare(b)).map(([subject, lessons]) => (

@@ -39,7 +39,9 @@ const AGE_GROUP_OPTIONS = [
   { emoji: '🌟', label: '5–6 years',  value: '5–6 years' },
   { emoji: '🚀', label: '7–9 years',  value: '7–9 years' },
   { emoji: '📚', label: '10–12 years', value: '10–12 years' },
-  { emoji: '🎓', label: '13+ years',  value: '13+ years' },
+  { emoji: '🎓', label: '13–15 years', value: '13–15 years' },
+  { emoji: '🎓', label: '16–18 years', value: '16–18 years' },
+  { emoji: '🎓', label: '13+ years (legacy)', value: '13+ years' },
 ]
 
 const READING_LEVELS = [
