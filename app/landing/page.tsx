@@ -51,41 +51,38 @@ const PLANS = [
 ]
 
 const FEATURES = [
-  { icon: '🗺️', title: 'Location-based lessons', desc: 'Every lesson is rooted in where you are right now — local markets, temples, nature, history and more.' },
-  { icon: '⚡', title: 'AI lesson plans in 30 seconds', desc: 'Get a full 5-day lesson plan instantly, tailored to your child\'s age, location and learning style.' },
-  { icon: '📄', title: 'Interactive worksheets', desc: 'Fun worksheets with matching, fill-in-the-blank and quizzes — all auto-graded by AI.' },
-  { icon: '📖', title: 'Travel journal', desc: 'Capture memories, reflections and discoveries from every destination you visit together.' },
-  { icon: '👩‍👧', title: 'Parent tips included', desc: 'Every lesson comes with a practical guide on how to teach it — no teaching background needed.' },
-  { icon: '🧠', title: 'Built-in progress tracking', desc: 'Mini quizzes after each lesson keep learning on track and show you what\'s sticking.' },
-  { icon: '📖', title: 'Little Readers', desc: 'Playful flashcards, phonics games and rhyme activities that teach reading — in your family\'s language. Progress saves automatically for each child.' },
-  { icon: '📁', title: 'Living Portfolio', desc: 'Every journal entry becomes part of your child\'s portfolio automatically. Tag by subject and export a beautiful PDF report — perfect for UK Local Authority inquiries.' },
-  { icon: '🌍', title: 'Learn in Your Language', desc: 'Set your family\'s language once. Stories, lessons and activities are generated in that language — whether Swedish, French, Spanish or English.' },
+  { icon: '📄', title: 'Interactive worksheets', desc: 'Practise the same learning goal with matching, fill-in-the-blank and short-answer activities.' },
+  { icon: '👩‍👧', title: 'Tips for parents', desc: 'Get a teaching tip and a short check to help you decide whether to repeat the lesson or move on.' },
+  { icon: '📖', title: 'Little Readers', desc: 'Practise letter sounds, sounding out words and recognising common words with separate progress for each child.' },
+  { icon: '🧠', title: 'Practice Mode', desc: 'Learners aged 10 and up can try structured exercises and receive AI feedback.' },
+  { icon: '🗺️', title: 'Travel journal', desc: 'Record discoveries and experiences from your travels.' },
+  { icon: '📁', title: 'Learning records', desc: 'Review journal entries and completed learning goals, and save a Local Authority report as a PDF.' },
 ]
 
 const FAQS = [
   {
     q: 'What is worldschooling?',
-    a: 'Worldschooling is a form of home education in which families travel continuously or semi-continuously and use the world itself as their primary classroom. Rather than following a fixed national curriculum, worldschooling families design learning around real experiences: visiting ancient ruins, exploring local markets, learning from indigenous communities, and adapting lessons to each destination. Worldschooling is legal in most countries and is recognised in the UK under the right to home educate outside the school system. It blends academic subjects with cultural immersion, language exposure, and independent thinking — producing children who are adaptable, curious, and globally literate.',
+    a: 'Worldschooling uses travel and everyday experiences as opportunities to learn. A market visit can become a maths activity, and a walk by the coast can lead to a science discussion. Check the home education rules that apply to your family.',
   },
   {
-    q: 'Do I need a formal curriculum for home education?',
-    a: 'In England and Wales, the law (Education Act 1996, Section 7) requires parents to ensure their child receives a full-time education suitable to their age, ability and aptitude — but it does not specify how or where that education is delivered. There is no legal requirement to follow the National Curriculum, use a registered provider, or teach set hours per day. Local Authorities can request information about your educational provision, but home-educating families have wide latitude in choosing their approach. Waypoint helps families document their learning regardless of which philosophy they follow — Charlotte Mason, Classical, Unschooling, Montessori, or Eclectic.',
+    q: 'Do I need to follow the National Curriculum in England?',
+    a: 'GOV.UK explains that home-educating families in England must provide a suitable full-time education and can choose how to teach it. The national curriculum is optional for home education. Check the official guidance for your circumstances.',
   },
   {
-    q: 'How does Waypoint create personalised lesson plans?',
-    a: "Waypoint uses Claude (Anthropic's AI model) to generate lesson plans tailored to three key inputs: your child's current location, their age group and learning style, and your chosen teaching philosophy. When you enter a city — say, Lisbon, Chiang Mai, or Buenos Aires — the AI weaves that location into every lesson: local history, geography, food systems, language, ecology. Plans are generated fresh each week and are never generic or recycled. The process takes under 30 seconds and produces a full five-day schedule with lesson titles, goals, activities, and parent delivery tips.",
+    q: 'How does Waypoint create lessons?',
+    a: "Choose an available subject and Waypoint picks the next learning goal. Claude creates a lesson with an example, an activity and a tip for parents. It uses your child's age group and can take their reading level and focus time into account. Your location can shape the examples.",
   },
   {
-    q: 'Can I use Waypoint to produce UK Local Authority reports?',
-    a: "Yes. Waypoint includes a dedicated Local Authority report generator. The report compiles your child's journal entries, completed lesson plans, and subject coverage into a structured document formatted for Local Authority inquiries. It includes a written educational philosophy statement, a learning record grouped by subject, and a summary of the topics covered. The report can be exported as a PDF directly from the app. Many UK home-educating families use it to respond to Section 437 notices or to proactively demonstrate their provision.",
+    q: 'Can I prepare a Local Authority report?',
+    a: 'Yes. Waypoint brings together journal entries, completed learning goals and any saved weekly plans in a report you can print or save as a PDF through your browser.',
   },
   {
     q: 'What ages does Waypoint support?',
-    a: 'Waypoint supports children from 4 to 18 years old, divided into four age tiers: Early Explorers (4–6), Young Adventurers (7–9), Junior Scholars (10–12), and Independent Thinkers (13–18). Each tier receives age-appropriate vocabulary, lesson depth, activity complexity, and reading-level calibration. The Practice Mode — with structured exercises, AI feedback, and Socratic follow-up — is available for children aged 10 and above. Little Readers, the phonics and reading programme, is designed for children aged 3–8 who are learning to read.',
+    a: 'Child profiles cover ages 3 to 18, with lessons organised in age bands. Practice Mode starts at age 10. Little Readers offers activities for children who are learning to read.',
   },
   {
     q: 'Do I need teaching experience to use Waypoint?',
-    a: "No teaching background is needed. Every lesson generated by Waypoint includes a parent tip section that explains how to introduce the topic, what questions to ask, and how to adapt the activity if your child is struggling or needs more challenge. The app is designed for parents, not professional educators. The AI handles lesson design, content accuracy, and curriculum sequencing — your job is to facilitate and enjoy learning alongside your child.",
+    a: "Waypoint is designed for parents. Lessons include an activity and a teaching tip to help you get started. Review AI-generated material before using it with your child.",
   },
 ]
 
@@ -95,8 +92,8 @@ const TRIAL_FAQ = {
 }
 
 const OFFER_FAQ = {
-  q: 'How does the first-month discount work?',
-  a: "New families pay 50% of the price for their first billing period on any plan — €5.50 for the first month, €14.50 for the first quarter or €49.50 for the first year. From the second billing period you pay the regular price. You can cancel anytime from your account, and cancelling stops the next renewal.",
+  q: 'How does the introductory discount work?',
+  a: "Eligible new subscribers pay 50% of the price for their first billing period on any plan — €5.50 for the first month, €14.50 for the first quarter or €49.50 for the first year. From the second billing period you pay the regular price. You can cancel anytime from your account, and cancelling stops the next renewal.",
 }
 
 export default function LandingPage() {
@@ -123,7 +120,7 @@ export default function LandingPage() {
     '@context': 'https://schema.org',
     '@type': 'SoftwareApplication',
     name: 'Waypoint Education',
-    description: 'AI-powered homeschooling platform for worldschooling and traveling families. Generate personalised lesson plans in 30 seconds, track progress, and export Local Authority reports.',
+    description: 'Short AI-generated lessons for home-educating and travelling families, with practical activities, worksheets and learning records.',
     url: 'https://waypointeducation.world',
     applicationCategory: 'EducationApplication',
     operatingSystem: 'Web browser',
@@ -131,11 +128,11 @@ export default function LandingPage() {
       '@type': 'Offer',
       price: '11',
       priceCurrency: 'EUR',
-      description: 'Monthly subscription, billed monthly. First month 50% off for new customers.',
+      description: 'Regular monthly subscription price.',
     },
     featureList: [
-      'AI lesson plan generation',
-      'Location-based personalised curriculum',
+      'AI-generated lessons based on learning goals',
+      'Lesson examples that can use your location',
       'UK Local Authority report export',
       'Travel journal and portfolio',
       'Practice Mode with AI feedback',
@@ -168,7 +165,7 @@ export default function LandingPage() {
           <button onClick={() => router.push('/auth')}
             onMouseEnter={() => setHover('navtrial')} onMouseLeave={() => setHover(null)}
             style={btn('navtrial', { padding: isMobile ? '7px 12px' : '8px 20px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
-            {offer ? (isMobile ? 'Get started →' : 'Get first month 50% off →') : (isMobile ? 'Try free →' : 'Start free trial →')}
+            {offer ? (isMobile ? 'Get started →' : 'See introductory offer →') : (isMobile ? 'Try free →' : 'Start free trial →')}
           </button>
         </div>
       </nav>
@@ -177,14 +174,14 @@ export default function LandingPage() {
       <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG} 0%, #EDF7F2 50%, #FFF8EC 100%)`, padding: isMobile ? '64px 16px 52px' : '108px 24px 96px' }}>
         <div style={{ maxWidth: 740, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ display: 'inline-block', background: '#FFF8EC', color: ORANGE, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 28, border: '1px solid #FBDFA3' }}>
-            ✈️ {offer ? 'First month 50% off' : TRIAL_TAGLINE}
+            ✈️ {offer ? '50% off your first billing period' : TRIAL_TAGLINE}
           </div>
           <h1 aria-label="AI-Powered Homeschooling for Traveling Families" style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 34 : 56, lineHeight: isMobile ? 1.2 : 1.1, marginBottom: 22, color: TEXT }}>
             Every destination<br />
             <span style={{ color: PRIMARY }}>becomes a classroom.</span>
           </h1>
           <p style={{ fontSize: isMobile ? 16 : 20, color: TEXT_MUTED, lineHeight: 1.7, maxWidth: 580, margin: '0 auto 40px' }}>
-            AI-generated lesson plans tied to wherever you are in the world. Tell us your location — we'll handle the curriculum.
+            Waypoint gives your child the next learning goal, with a short lesson and a practical activity. Use the places you visit to bring the lesson to life.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexDirection: isMobile ? 'column' as const : 'row' as const, alignItems: 'center', marginBottom: 20 }}>
             <button onClick={() => router.push('/auth')}
@@ -205,7 +202,7 @@ export default function LandingPage() {
       {/* Trust bar */}
       <div style={{ background: BEIGE_CARD, padding: isMobile ? '20px 16px' : '28px 24px', borderBottom: `2px solid ${BEIGE_BORDER}` }}>
         <div style={{ maxWidth: 820, margin: '0 auto', display: 'flex', gap: isMobile ? 16 : 40, justifyContent: 'center', flexWrap: 'wrap' as const, alignItems: 'center' }}>
-          {['🌍 Works in every country', '👶 Ages 4–18', '📚 6 teaching philosophies', '⚡ Lesson plan in 30 seconds'].map(item => (
+          {['🧩 Short lessons', '📄 Linked worksheets', '📖 Learning records'].map(item => (
             <span key={item} style={{ fontSize: isMobile ? 12 : 14, fontWeight: 700, color: TEXT_MUTED }}>{item}</span>
           ))}
         </div>
@@ -218,13 +215,13 @@ export default function LandingPage() {
             School that follows your family
           </h2>
           <p style={{ textAlign: 'center', color: TEXT_MUTED, fontSize: isMobile ? 15 : 17, marginBottom: isMobile ? 36 : 52 }}>
-            Three steps and you're ready to learn anywhere on Earth.
+            From choosing a subject to recording what your child has learned.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 20 : 28 }}>
             {[
-              { step: '1', icon: '📍', title: 'Tell us where you are', desc: 'Enter your current country and city. We weave your real location into every lesson — from the food markets of Bangkok to the canals of Amsterdam.' },
-              { step: '2', icon: '✨', title: 'Get a personalised plan', desc: 'In seconds, Claude generates a full 5-day lesson plan matched to your child\'s age, subjects and learning style. No prep work needed.' },
-              { step: '3', icon: '🌏', title: 'Learn anywhere', desc: 'Work through lessons, complete worksheets and record journal entries — whether you\'re at a café, on a train, or under a palm tree.' },
+              { step: '1', icon: '📍', title: 'Tell us where you are', desc: 'Add your city and country so lessons can use examples from your surroundings.' },
+              { step: '2', icon: '✨', title: 'Start the next lesson', desc: 'Pick an available subject. Waypoint selects the next goal and creates a short lesson around it.' },
+              { step: '3', icon: '🌏', title: 'Learn anywhere', desc: 'Try the activity, practise the goal with a worksheet and record your progress.' },
             ].map(s => (
               <div key={s.step} style={{ background: BEIGE_CARD, borderRadius: 24, padding: isMobile ? 24 : 32, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 2px 10px rgba(0,0,0,0.04)', position: 'relative' }}>
                 <div style={{ width: 32, height: 32, borderRadius: 100, background: PRIMARY, color: 'white', fontSize: 14, fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>
@@ -243,10 +240,10 @@ export default function LandingPage() {
       <div id="features" style={{ background: BEIGE_CARD, padding: sectionPad }}>
         <div style={{ maxWidth: 920, margin: '0 auto' }}>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 38, textAlign: 'center', marginBottom: 12, color: TEXT }}>
-            Everything a worldschooling family needs
+            Tools for home education on the road
           </h2>
           <p style={{ textAlign: 'center', color: TEXT_MUTED, fontSize: isMobile ? 15 : 17, marginBottom: isMobile ? 36 : 52 }}>
-            No planning stress. No missed school days. Just learning that moves with you.
+            Plan the next lesson, practise together and keep a record of your learning.
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 20 }}>
             {FEATURES.map(f => (
@@ -265,10 +262,10 @@ export default function LandingPage() {
         <div style={{ maxWidth: 700, margin: '0 auto', textAlign: 'center' as const }}>
           <div style={{ fontSize: isMobile ? 36 : 48, marginBottom: 16 }}>🇬🇧</div>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 24 : 34, marginBottom: 16, color: TEXT }}>
-            New to homeschooling in the UK?
+            Preparing a home education report?
           </h2>
           <p style={{ color: TEXT_MUTED, fontSize: isMobile ? 15 : 17, lineHeight: 1.75, maxWidth: 580, margin: '0 auto' }}>
-            175,000+ families in England now home educate. You don't need permission or a strict curriculum — Waypoint helps you track progress and export reports if your Local Authority ever asks.
+            Use Waypoint to bring together your journal and completed goals. For the rules in England, see the <a href="https://www.gov.uk/home-education">official home education guidance</a>.
           </p>
         </div>
       </div>
@@ -305,11 +302,6 @@ export default function LandingPage() {
                     {plan.badge}
                   </div>
                 )}
-                {plan.highlight && (
-                  <div style={{ fontSize: 11, fontWeight: 800, color: PRIMARY, letterSpacing: '0.08em', textTransform: 'uppercase' as const, marginBottom: 6 }}>
-                    Most popular
-                  </div>
-                )}
                 <div style={{ fontFamily: 'Georgia,serif', fontSize: 20, fontWeight: 700, color: TEXT, marginBottom: 6 }}>{plan.label}</div>
                 <div style={{ marginBottom: 4 }}>
                   <span style={{ fontFamily: 'Georgia,serif', fontSize: 40, fontWeight: 700, color: TEXT }}>{plan.price}</span>
@@ -327,11 +319,11 @@ export default function LandingPage() {
 
                 <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 28px 0', flex: 1 }}>
                   {[
-                    'AI lesson plans for any location',
+                    'Short AI-generated lessons',
                     'Interactive worksheets & quizzes',
                     'Travel journal',
-                    'Ages 4–18 supported',
-                    '6 teaching philosophies',
+                    'Child profiles for ages 3–18',
+                    'Learning records',
                   ].map(item => (
                     <li key={item} style={{ padding: '7px 0', fontSize: 13, color: TEXT, display: 'flex', gap: 8, alignItems: 'flex-start', borderBottom: `1px solid ${BEIGE_BORDER}` }}>
                       <span style={{ color: GREEN_DARK, fontWeight: 700, flexShrink: 0, marginTop: 1 }}>✓</span> {item}
@@ -366,12 +358,12 @@ export default function LandingPage() {
             Ready to take school on the road?
           </h2>
           <p style={{ color: 'rgba(255,255,255,0.88)', fontSize: isMobile ? 15 : 17, lineHeight: 1.7, marginBottom: 32, maxWidth: 440, margin: '0 auto 32px' }}>
-            Join families homeschooling across 90+ countries. {offer ? 'Your first month is half price.' : 'Your first 10 days are completely free.'}
+            Try a lesson with your family and see how it fits into your day.
           </p>
           <button onClick={() => router.push('/auth')}
             onMouseEnter={() => setHover('midcta')} onMouseLeave={() => setHover(null)}
             style={btn('midcta', { padding: '16px 40px', borderRadius: 100, border: 'none', background: 'white', color: PRIMARY, fontSize: 16, fontWeight: 800, fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }, { background: '#f5f0ff' })}>
-            Create your free account →
+            {offer ? 'Create an account →' : 'Start your free trial →'}
           </button>
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 14, fontWeight: 600 }}>{offer ? OFFER_TAGLINE : 'No card required · 10 days free'}</p>
         </div>

@@ -20,7 +20,7 @@ export const metadata: Metadata = {
     template: "%s | Waypoint Education",
   },
   description:
-    "Waypoint Education is an AI-powered homeschooling platform for worldschooling and traveling families. Generate personalised lesson plans, track progress, and export reports for any Local Authority.",
+    "Short lessons for travelling and home-educating families, with practical activities, interactive worksheets and learning records.",
   keywords: [
     "worldschooling",
     "homeschooling",
@@ -45,7 +45,7 @@ export const metadata: Metadata = {
     siteName: "Waypoint Education",
     title: "Waypoint Education — AI Homeschooling for Traveling Families",
     description:
-      "AI-powered homeschooling for worldschooling and traveling families. Personalised lesson plans in 30 seconds, anywhere in the world.",
+      "Short lessons for travelling and home-educating families, with practical activities, interactive worksheets and learning records.",
     images: [
       {
         url: `${BASE_URL}/og-image.png`,
@@ -60,7 +60,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Waypoint Education — AI Homeschooling for Traveling Families",
     description:
-      "AI-powered homeschooling for worldschooling and traveling families. Personalised lesson plans in 30 seconds, anywhere in the world.",
+      "Short lessons for travelling and home-educating families, with practical activities, interactive worksheets and learning records.",
     images: [`${BASE_URL}/og-image.png`],
   },
   robots: {
