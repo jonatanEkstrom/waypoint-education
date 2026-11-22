@@ -687,6 +687,14 @@ export default function DashboardPage() {
                       </div>
                     )}
 
+                    {selectedSubjectSlug === 'mathematics' && (
+                      <p className="no-print">
+                        <a href={`/worksheets/colour-by-number?mode=${child.age_group === '7–9 years' ? 'sums' : 'numbers'}&motif=${child.age_group === '7–9 years' ? 'market' : 'boat'}`}>
+                          Print a colouring activity
+                        </a>
+                      </p>
+                    )}
+
                     {lesson.check_for_understanding && (
                       <section style={{ marginBottom: 16 }}>
                         <h3>Check understanding</h3>

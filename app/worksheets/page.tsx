@@ -302,6 +302,7 @@ export default function WorksheetsPage() {
 
         {/* Generator */}
         <div style={sectionStyle}>
+          <p><a href="/worksheets/colour-by-number">Printable colour-by-number activity →</a></p>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 19, color: TEXT, marginBottom: 6 }}>Create a worksheet ✨</h2>
           <p style={{ color: TEXT_MUTED, fontSize: 13, marginBottom: 20 }}>An interactive worksheet made just for {child?.name}.</p>
 

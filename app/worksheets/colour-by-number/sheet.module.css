@@ -1,0 +1,72 @@
+.page {
+  min-height: 100vh;
+  background: #f7f4ef;
+  padding: 24px 16px;
+  color: #222;
+}
+.controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 12px;
+  max-width: 760px;
+  margin: 0 auto 20px;
+}
+.controls label {
+  display: grid;
+  gap: 4px;
+}
+.controls select, .controls button {
+  padding: 8px 12px;
+  border: 1px solid #58516c;
+  border-radius: 8px;
+  background: white;
+  color: #222;
+}
+.controls a {
+  color: #4e3b75;
+}
+.sheet {
+  max-width: 760px;
+  margin: auto;
+  background: white;
+  padding: 24px;
+}
+.sheet h1 {
+  margin: 0;
+  font-size: 28px;
+}
+.sheet p {
+  margin: 8px 0;
+}
+.key {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  padding: 0;
+}
+.key li {
+  border: 1px solid black;
+  padding: 4px 8px;
+}
+.drawing {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 172mm;
+  margin: 10px auto 0;
+}
+@media print {
+  @page { size: A4 portrait; margin: 12mm; }
+  .controls { display: none; }
+  .page, .sheet {
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    background: white;
+    color: black;
+  }
+  .sheet { break-inside: avoid; }
+  .drawing { height: 172mm; }
+}
