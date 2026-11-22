@@ -86,7 +86,7 @@ OUTPUT this exact JSON:
   "check_for_understanding": "One quick task or question the learner can answer orally, with objects, or in writing.",
   "parent_success_criterion": "What the learner must independently show or explain before moving on.",
   "fun_fact": "One surprising fact in 1 sentence.",
-  "parent_tip": "One practical tip for the parent."
+  "parent_tip": "One practical action the parent can take to help the learner start the activity, in one or two short sentences. Do not give away the answer to the understanding check."
 }`
 
     const stream = await anthropic.messages.create({

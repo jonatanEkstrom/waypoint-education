@@ -621,6 +621,33 @@ export default function DashboardPage() {
                   <div>
                     <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 20 : 24, color: TEXT, marginBottom: 20 }}>{lesson.reading_title}</h2>
 
+                    {(lesson.activity?.materials || lesson.parent_tip || lesson.parent_success_criterion) && (
+                      <section aria-labelledby="parent-guide-title" className="lesson-card"
+                        style={{ background: '#FFF8EC', border: '1px solid #E8D6AE', borderRadius: 14, padding: 16, marginBottom: 20 }}>
+                        <h3 id="parent-guide-title" style={{ color: TEXT, margin: '0 0 12px', fontSize: 17 }}>
+                          Parent guide
+                        </h3>
+                        {lesson.activity?.materials && (
+                          <p style={{ color: TEXT, margin: '0 0 10px', lineHeight: 1.6 }}>
+                            <strong>What you need</strong><br />
+                            {lesson.activity.materials}{lesson.activity.time && <> · {lesson.activity.time}</>}
+                          </p>
+                        )}
+                        {lesson.parent_tip && (
+                          <p style={{ color: TEXT, margin: '0 0 10px', lineHeight: 1.6 }}>
+                            <strong>Help your child get started</strong><br />
+                            {lesson.parent_tip}
+                          </p>
+                        )}
+                        {lesson.parent_success_criterion && (
+                          <details style={{ color: TEXT, lineHeight: 1.6 }}>
+                            <summary style={{ fontWeight: 700, cursor: 'pointer' }}>What understanding looks like</summary>
+                            <p style={{ margin: '6px 0 0' }}>{lesson.parent_success_criterion}</p>
+                          </details>
+                        )}
+                      </section>
+                    )}
+
                     {lesson.introduction && (
                       <div style={{ background: PRIMARY_BG, borderRadius: 14, padding: 18, marginBottom: 16, border: `2px solid ${PRIMARY_BORDER}` }}>
                         <div style={{ fontSize: 11, fontWeight: 700, color: PRIMARY, textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 8 }}>🎯 Introduction</div>
@@ -680,13 +707,6 @@ export default function DashboardPage() {
                       </div>
                     )}
 
-                    {lesson.parent_tip && (
-                      <div style={{ background: '#FFF8EC', borderLeft: `4px solid #F5DFA0`, borderRadius: '0 12px 12px 0', padding: '12px 16px', marginBottom: 20 }}>
-                        <div style={{ fontSize: 11, fontWeight: 700, color: '#C49040', textTransform: 'uppercase' as const, letterSpacing: '0.06em', marginBottom: 4 }}>👨‍👩‍👧 Parent tip</div>
-                        <p style={{ fontSize: 13, color: '#6B5A3E', margin: 0, lineHeight: 1.6 }}>{lesson.parent_tip}</p>
-                      </div>
-                    )}
-
                     {selectedSubjectSlug === 'mathematics' && (
                       <p className="no-print">
                         <a href={`/worksheets/colour-by-number?mode=${child.age_group === '7–9 years' ? 'sums' : 'numbers'}&motif=${child.age_group === '7–9 years' ? 'market' : 'boat'}`}>
@@ -699,7 +719,6 @@ export default function DashboardPage() {
                       <section style={{ marginBottom: 16 }}>
                         <h3>Check understanding</h3>
                         <p>{lesson.check_for_understanding}</p>
-                        {lesson.parent_success_criterion && <p><strong>What to look for</strong> {lesson.parent_success_criterion}</p>}
                         <button type="button" disabled={markingComplete} onClick={() => saveLessonOutcome('needs_review')}>Needs more practice</button>
                         {' · '}
                         <a href={`/worksheets?concept=${encodeURIComponent(lesson.concept_id)}&subject=${encodeURIComponent(selectedSubjectSlug ?? '')}`}>Practise this goal</a>
