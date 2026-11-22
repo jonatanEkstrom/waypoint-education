@@ -5,7 +5,7 @@ type MathGoal = {
   success: string
 }
 
-// England's primary mathematics programmes informed these goal boundaries.
+// England's mathematics programmes informed these goal boundaries.
 // https://www.gov.uk/government/publications/national-curriculum-in-england-mathematics-programmes-of-study
 // Keep the database's concept IDs and ordering so existing progress remains valid.
 const goals: Readonly<Record<string, MathGoal>> = {
@@ -548,6 +548,186 @@ const goals: Readonly<Record<string, MathGoal>> = {
     activity: "Use counters to model the mean and use a circle to represent proportions in a small survey.",
     check: "Find the mean of 4, 6, 8 and 10. Then find the sector angle for 6 out of 24 votes.",
     success: "Gives mean 7 and sector angle 90°, with a calculation for each.",
+  },
+  m13_integers_powers: {
+    prerequisite: "Know square and cube notation and use brackets.",
+    activity: "Sort cards that pair powers with their inverse roots, then evaluate expressions with signed bases.",
+    check: "Evaluate (−3)² + ∛(−8) and explain the order.",
+    success: "Gives 7 and identifies 9 and −2 as the separate terms.",
+  },
+  m13_prime_factors: {
+    prerequisite: "Distinguish primes from composite numbers.",
+    activity: "Build factor trees for two departure intervals and use the resulting prime powers to find shared cycles.",
+    check: "Find the HCF and LCM of 18 and 24 using prime factors.",
+    success: "Gives 6 and 72 with the correct lowest shared and highest required powers.",
+  },
+  m13_standard_form: {
+    prerequisite: "Understand decimal place value and powers of ten.",
+    activity: "Compare a large map distance and a microscopic measurement by converting both into standard form.",
+    check: "Write 7,200,000 and 0.00045 in standard form.",
+    success: "Gives 7.2 × 10⁶ and 4.5 × 10⁻⁴ and explains the different exponent signs.",
+  },
+  m13_rounding_sf: {
+    prerequisite: "Use decimal place value and round to named units.",
+    activity: "Compare a precise measurement with versions rounded for a sign and a technical report.",
+    check: "Round 0.04786 to two significant figures and three decimal places.",
+    success: "Gives 0.048 for both and explains which digits determine each rounding position.",
+  },
+  m13_fraction_ops: {
+    prerequisite: "Convert mixed numbers and find equivalent fractions.",
+    activity: "Use strip models to distinguish dividing by a fraction from multiplying by it.",
+    check: "Calculate 1 1/2 ÷ 3/4 and justify the result.",
+    success: "Gives 2 and explains that two groups of 3/4 make 1 1/2.",
+  },
+  m13_percent_change: {
+    prerequisite: "Find percentages and express them as decimal multipliers.",
+    activity: "Compare marked-up and discounted prices on fictional receipts and reverse a change.",
+    check: "After a 20% discount a ticket costs 48 units. Find its original price.",
+    success: "Gets 60 by dividing by 0.8 and verifies the forward calculation.",
+  },
+  m13_simple_compound_interest: {
+    prerequisite: "Use percentage multipliers.",
+    activity: "Build a two-year table for two fictional savings plans with the same starting balance and rate.",
+    check: "Compare simple and compound interest on 200 units at 5% per year after two years.",
+    success: "Gives balances of 220 and 220.50 and explains where the difference comes from.",
+  },
+  m13_ratio_problems: {
+    prerequisite: "Scale equivalent ratios and find fractions of a total.",
+    activity: "Scale a recipe and mark each share on a bar diagram.",
+    check: "A 72-litre mixture has parts in the ratio 2:3:4. Find each amount.",
+    success: "Gives 16, 24 and 32 and verifies the total and ratio.",
+  },
+  m13_direct_proportion: {
+    prerequisite: "Find a unit rate and recognise a constant product.",
+    activity: "Compare a fixed-rate price table with a table for workers sharing a fixed task at equal rates.",
+    check: "Four workers take six hours. Under the same fixed-work model, find the time for eight.",
+    success: "Gets three hours and explains the constant 24 worker-hours and its assumptions.",
+  },
+  m13_speed: {
+    prerequisite: "Convert units of distance and time.",
+    activity: "Use a simple journey itinerary to compare average speeds in a common unit.",
+    check: "Find the average speed for 36 km in 45 minutes.",
+    success: "Gets 48 km/h by converting 45 minutes to 0.75 hours.",
+  },
+  m13_scale_maps: {
+    prerequisite: "Use ratios and convert metric distances.",
+    activity: "Measure a drawn route and apply the stated map scale.",
+    check: "On a 1:25,000 map two points are 6 cm apart. Find the straight-line distance.",
+    success: "Gets 1.5 km and shows the centimetre-to-kilometre conversion.",
+  },
+  m13_algebra_notation: {
+    prerequisite: "Interpret symbols as variables and distinguish terms from factors.",
+    activity: "Use labelled tokens to combine like terms and leave unlike terms separate.",
+    check: "Simplify 5x + 3y − 2x + y.",
+    success: "Gives 3x + 4y and explains which terms can combine.",
+  },
+  m13_expand_factorise: {
+    prerequisite: "Use the distributive law and find common factors.",
+    activity: "Use an area diagram to connect a rectangle with algebraic products.",
+    check: "Expand 3(2x − 5), then factorise 12x + 18 using the greatest common factor.",
+    success: "Gives 6x − 15 and 6(2x + 3) and checks by reversing each operation.",
+  },
+  m13_linear_equations: {
+    prerequisite: "Collect like terms and use inverse operations.",
+    activity: "Model an equation with variable cards and counters on a balanced scale.",
+    check: "Solve 5x − 4 = 2x + 11 and verify by substitution.",
+    success: "Gets x = 5, shows equivalent steps and evaluates both sides to 21.",
+  },
+  m13_rearrange_formulae: {
+    prerequisite: "Solve a linear equation and interpret a formula.",
+    activity: "Use a conversion formula both forwards and backwards, isolating a different variable.",
+    check: "Rearrange C = 4n + f to make n the subject.",
+    success: "Gives n = (C − f)/4 and explains why subtraction precedes division.",
+  },
+  m13_nth_term: {
+    prerequisite: "Identify the common difference in a linear sequence.",
+    activity: "Make a growing tile pattern and compare its diagram with its term number.",
+    check: "Find the nth term of 7, 11, 15, 19 and use it to find term 10.",
+    success: "Gives 4n + 3 and 43 and verifies the first term.",
+  },
+  m13_straight_line_graphs: {
+    prerequisite: "Plot coordinate pairs and substitute into expressions.",
+    activity: "Plot a fare model with a fixed starting charge and a cost per kilometre.",
+    check: "For y = 3x + 2, plot two points and explain the gradient and intercept.",
+    success: "Uses valid points and identifies a rise of 3 per unit and a y-intercept of 2.",
+  },
+  m13_real_life_graphs: {
+    prerequisite: "Read scaled axes and find a unit rate.",
+    activity: "Draw a distance-from-start graph for a walk with a stop and return.",
+    check: "Explain a horizontal segment and a later descending segment.",
+    success: "Uses time and distance axes to distinguish stopping from moving towards the start.",
+  },
+  m13_inequalities: {
+    prerequisite: "Solve linear equations and read a number line.",
+    activity: "Test values on both sides of a boundary and show allowed values on a line.",
+    check: "Solve −2x + 3 < 9 and mark the solution.",
+    success: "Gives x > −3 with an open endpoint and explains why dividing by −2 reverses the sign.",
+  },
+  m13_angles_parallel: {
+    prerequisite: "Know angles on a straight line and in a triangle.",
+    activity: "Draw parallel lines crossed by a transversal and mark matching angle pairs.",
+    check: "If an acute angle is 62°, find its corresponding angle and adjacent supplementary angle.",
+    success: "Gives 62° and 118°, naming the rules used.",
+  },
+  m13_constructions: {
+    prerequisite: "Recognise perpendicular lines and keep a compass radius fixed.",
+    activity: "Construct a perpendicular bisector from equal-radius arcs drawn from the endpoints of a segment.",
+    check: "Construct the perpendicular bisector of a 6 cm segment and explain why it passes through the midpoint.",
+    success: "Shows both arc intersections, a right angle and two 3 cm halves, supported by equal distances.",
+  },
+  m13_circle_area: {
+    prerequisite: "Identify radius and diameter and distinguish length from area.",
+    activity: "Measure a circular lid, estimate π from circumference divided by diameter, then calculate its area.",
+    check: "For radius 6 cm, give circumference and area in terms of π.",
+    success: "Gives 12π cm and 36π cm² and labels the units correctly.",
+  },
+  m13_prisms: {
+    prerequisite: "Find the area and perimeter of a cross-section.",
+    activity: "Build or draw a prism net and connect its faces to the cross-section and length.",
+    check: "A right triangular prism has a 3–4–5 cm triangular end and length 10 cm. Find its volume and surface area.",
+    success: "Gives 60 cm³ and 132 cm² from two end faces and three rectangles.",
+  },
+  m13_transformations: {
+    prerequisite: "Use a coordinate grid and distinguish direction from distance.",
+    activity: "Trace a triangle on squared paper and compare the results of sliding, reflecting, rotating and enlarging it.",
+    check: "Rotate (2, 1) 90° anticlockwise about the origin, then enlarge the result by scale factor 2 about the origin.",
+    success: "Gives (−1, 2) and then (−2, 4) and explains the role of the centre.",
+  },
+  m13_pythagoras: {
+    prerequisite: "Find square roots and identify the hypotenuse of a right triangle.",
+    activity: "Sketch the diagonal across a rectangular courtyard and label the right triangle.",
+    check: "Find the diagonal of a 9 m by 12 m rectangle and justify using Pythagoras.",
+    success: "Gets 15 m using the right angle and 9² + 12² = 225.",
+  },
+  m13_bearings: {
+    prerequisite: "Measure angles with a protractor and identify north.",
+    activity: "Draw a north arrow at each stop and trace a route using clockwise bearings.",
+    check: "If B is on a bearing of 065° from A, find the bearing of A from B.",
+    success: "Gives 245° and explains the 180° reversal.",
+  },
+  m13_probability: {
+    prerequisite: "Write parts of a whole as fractions.",
+    activity: "Build a labelled bag model and calculate a single event and its complement.",
+    check: "A bag holds three red and five blue counters. Find P(red) and P(not red).",
+    success: "Gives 3/8 and 5/8 and verifies that they sum to 1.",
+  },
+  m13_combined_events: {
+    prerequisite: "List equally likely outcomes for a single event.",
+    activity: "Create a two-way sample-space grid for a fair coin and a fair six-sided die.",
+    check: "Find the probability of heads and a die result greater than four.",
+    success: "Identifies 2 favourable outcomes out of 12 and simplifies to 1/6.",
+  },
+  m13_averages_range: {
+    prerequisite: "Find the total of a data set and order its values.",
+    activity: "Compare journey times before and after a single delay, using mean, median, mode and range.",
+    check: "For 4, 5, 5, 6, 20, calculate all four measures and choose a typical value.",
+    success: "Gives mean 8, median 5, mode 5 and range 16, with a reason for preferring a typical value.",
+  },
+  m13_scatter_graphs: {
+    prerequisite: "Plot ordered pairs and read scales.",
+    activity: "Plot paired journey data and discuss the pattern and unusual points.",
+    check: "Describe a scatter plot where longer journeys generally cost more, with one unusually expensive short journey.",
+    success: "Identifies positive correlation and an outlier and avoids claiming causation from the graph alone.",
   },
 }
 
