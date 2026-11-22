@@ -5,7 +5,7 @@ type MathGoal = {
   success: string
 }
 
-// England's Year 1–4 mathematics programmes informed these goal boundaries.
+// England's primary mathematics programmes informed these goal boundaries.
 // https://www.gov.uk/government/publications/national-curriculum-in-england-mathematics-programmes-of-study
 // Keep the database's concept IDs and ordering so existing progress remains valid.
 const goals: Readonly<Record<string, MathGoal>> = {
@@ -368,6 +368,186 @@ const goals: Readonly<Record<string, MathGoal>> = {
     activity: "Record a small tally and draw bars with a common scale.",
     check: "Read two bars at 6 and 10 and explain the difference.",
     success: "Reads the scale, gives a difference of 4 and names the categories being compared.",
+  },
+  m1012_place_value_million: {
+    prerequisite: "Read and partition four-digit numbers.",
+    activity: "Use a place-value chart to compare visitor counts with zero placeholders.",
+    check: "Write 604,018 in expanded form and state the value of the 4.",
+    success: "Gives 600,000 + 4,000 + 10 + 8 and identifies the 4 as thousands.",
+  },
+  m1012_rounding: {
+    prerequisite: "Locate numbers between consecutive multiples of a power of ten.",
+    activity: "Mark the endpoints and midpoint on a number line before rounding a population figure.",
+    check: "Round 684,500 to the nearest thousand and ten thousand.",
+    success: "Gives 685,000 and 680,000 and explains each midpoint decision.",
+  },
+  m1012_negative_numbers: {
+    prerequisite: "Read an evenly spaced number line.",
+    activity: "Use a paper thermometer to model temperatures crossing zero.",
+    check: "A temperature rises from −6°C to 4°C. Find the increase.",
+    success: "Finds 10°C and accounts for both parts across zero.",
+  },
+  m1012_factors_multiples: {
+    prerequisite: "Recall multiplication facts and model equal groups.",
+    activity: "Make rectangular arrays for 18 and 24 counters and compare possible side lengths.",
+    check: "List the positive common factors of 18 and 24.",
+    success: "Identifies 1, 2, 3 and 6 and distinguishes factors from multiples.",
+  },
+  m1012_primes: {
+    prerequisite: "Find all positive factors of a small number.",
+    activity: "Use arrays to test whether numbers up to 19 can form rectangles other than one row.",
+    check: "Decide whether 1, 9 and 17 are prime.",
+    success: "Identifies 17 only and explains each case using exactly two distinct positive factors.",
+  },
+  m1012_squares_cubes: {
+    prerequisite: "Interpret multiplication as equal factors.",
+    activity: "Build a square from tiles and a cube from equal layers of blocks.",
+    check: "Give the values of 4² and 3³ and explain the notation.",
+    success: "Gets 16 and 27 and identifies how often each base is multiplied by itself.",
+  },
+  m1012_long_multiplication: {
+    prerequisite: "Multiply by one-digit numbers and by multiples of ten.",
+    activity: "Split a two-digit multiplier into tens and ones and align partial products in columns.",
+    check: "Use long multiplication to find 1,234 × 26.",
+    success: "Gets 32,084 from 7,404 and 24,680 and explains the shift in place value.",
+  },
+  m1012_short_division: {
+    prerequisite: "Recall multiplication facts and exchange between place-value columns.",
+    activity: "Use short division to share a collection between equal tables.",
+    check: "Share 1,347 objects among four groups. Give the whole amount per group and remainder.",
+    success: "Finds 336 per group with three left over and checks the total.",
+  },
+  m1012_long_division: {
+    prerequisite: "Use short division and estimate multiples of two-digit numbers.",
+    activity: "Model the subtract-and-bring-down steps using place value and a known multiple table.",
+    check: "Use long division to divide 1,872 by 24.",
+    success: "Finds 78 and checks with 78 × 24 = 1,872.",
+  },
+  m1012_order_operations: {
+    prerequisite: "Calculate with the four operations and read brackets.",
+    activity: "Compare how brackets change the result of an expression using expression cards.",
+    check: "Evaluate 18 − 12 ÷ 3 + 2 × 5 and explain the order.",
+    success: "Gets 24 by evaluating division and multiplication before addition and subtraction.",
+  },
+  m1012_compare_fractions: {
+    prerequisite: "Recognise equivalent fractions using matching wholes.",
+    activity: "Align strips with compatible partitions to compare fractions using the same unit.",
+    check: "Order 3/4, 5/8 and 7/8 from smallest to largest.",
+    success: "Gives 5/8, 3/4, 7/8 and shows 3/4 = 6/8.",
+  },
+  m1012_mixed_numbers: {
+    prerequisite: "Name equal parts and count them beyond one whole.",
+    activity: "Make full wholes from fifths and regroup extras.",
+    check: "Convert 13/5 into a mixed number and convert 3 2/5 into fifths.",
+    success: "Gives 2 3/5 and 17/5 and explains grouping five fifths into one whole.",
+  },
+  m1012_add_sub_fractions: {
+    prerequisite: "Find equivalent fractions and convert mixed numbers.",
+    activity: "Use equally sized strips to rename fractions before joining or removing parts.",
+    check: "Find 1 1/2 − 2/3 and show the common unit.",
+    success: "Finds 5/6 and shows 9/6 − 4/6.",
+  },
+  m1012_multiply_fractions: {
+    prerequisite: "Find a fraction of a quantity and interpret a unit fraction.",
+    activity: "Shade a fraction of a shaded rectangle to model multiplication. Use a strip split into equal shares to model division.",
+    check: "Find 2/3 of 3/4, then split 3/4 into three equal shares.",
+    success: "Shows 1/2 and 1/4 respectively and distinguishes the two operations.",
+  },
+  m1012_decimals: {
+    prerequisite: "Recognise tenths and hundredths on a place-value chart.",
+    activity: "Compare measured lengths by writing each in a chart with a thousandths column.",
+    check: "Order 0.7, 0.073 and 0.703 from smallest to largest.",
+    success: "Gives 0.073, 0.7, 0.703 and explains that 0.7 equals 0.700.",
+  },
+  m1012_decimal_calc: {
+    prerequisite: "Read decimal place value and calculate with whole numbers.",
+    activity: "Use a made-up shop receipt to work with prices and change.",
+    check: "Three items cost 2.35 each and a customer pays 10.00. Calculate the change.",
+    success: "Gets 2.95 using a total of 7.05 and aligns decimal positions.",
+  },
+  m1012_percentages: {
+    prerequisite: "Find halves, quarters and tenths of a quantity.",
+    activity: "Shade a hundred-square grid to connect familiar fractions to percentages, then apply a discount.",
+    check: "Find 25% of 80 and the price after that discount.",
+    success: "Finds a discount of 20 and a final price of 60.",
+  },
+  m1012_fdp: {
+    prerequisite: "Read hundredths and find fractions of 100.",
+    activity: "Use a hundred-square grid to label a shaded amount as a fraction, decimal and percentage.",
+    check: "Write 3/5 as a decimal and percentage.",
+    success: "Gives 0.6 and 60% and justifies the equivalence.",
+  },
+  m1012_ratio: {
+    prerequisite: "Make equal groups and multiply both parts by a common factor.",
+    activity: "Use counters to scale a two-ingredient recipe, then split a total into ratio parts.",
+    check: "Share 30 counters in the ratio 2:3.",
+    success: "Finds 12 and 18 by dividing the total into five equal parts.",
+  },
+  m1012_currency: {
+    prerequisite: "Multiply and divide by whole numbers and identify conversion direction.",
+    activity: "Use a fictional exchange-rate board to practise both conversion directions.",
+    check: "At 1 euro = 40 units, convert 7 euros to units and 200 units to euros.",
+    success: "Gets 280 units and 5 euros and explains which direction multiplies.",
+  },
+  m1012_algebra_formulae: {
+    prerequisite: "Interpret a blank as an unknown and evaluate arithmetic expressions.",
+    activity: "Use a rule card for total cost based on a fixed charge and a cost per item.",
+    check: "If C = 4n + 3, find C when n = 5 and find n when C = 31.",
+    success: "Finds C = 23 and n = 7 and explains what each value represents.",
+  },
+  m1012_sequences: {
+    prerequisite: "Recognise equal differences between successive terms.",
+    activity: "Build a row of tile patterns that grows by three tiles at each step.",
+    check: "Continue 5, 8, 11 and explain the term-to-term rule.",
+    success: "Gives 14 and 17 and states that each term increases by three.",
+  },
+  m1012_unit_conversion: {
+    prerequisite: "Read metric units and multiply or divide by powers of ten.",
+    activity: "Compare travel lengths and recipe amounts using a unit chart. Give any imperial conversion factor needed.",
+    check: "Convert 2.35 m to centimetres and 750 mL to litres.",
+    success: "Gets 235 cm and 0.75 L and explains both scale factors.",
+  },
+  m1012_area_shapes: {
+    prerequisite: "Find the area of a rectangle and recognise perpendicular height.",
+    activity: "Cut and rearrange a paper parallelogram into a rectangle, then pair congruent triangles.",
+    check: "Find the areas of a parallelogram and triangle each with base 8 cm and perpendicular height 5 cm.",
+    success: "Gets 40 cm² and 20 cm² and explains the factor of two.",
+  },
+  m1012_volume: {
+    prerequisite: "Count square units and multiply three small dimensions.",
+    activity: "Build layers of unit cubes in a small rectangular box.",
+    check: "Find the volume of a 6 cm by 3 cm by 2 cm cuboid.",
+    success: "Gets 36 cm³ and explains that each of two layers contains 18 unit cubes.",
+  },
+  m1012_angles: {
+    prerequisite: "Recognise a right angle and use a protractor scale.",
+    activity: "Measure and draw angles, then make missing-angle puzzles on a line and in a triangle.",
+    check: "Draw an angle of 65° and find the third angle of a triangle with angles 65° and 48°.",
+    success: "Draws 65° within reasonable measuring tolerance and calculates 67° from 180°.",
+  },
+  m1012_circles: {
+    prerequisite: "Identify the centre of a shape and measure line segments.",
+    activity: "Use a compass or trace a lid, then label and compare lines from and through the centre.",
+    check: "Label the radius, diameter and circumference of a circle with radius 4 cm and find its diameter.",
+    success: "Labels all three correctly and gives an 8 cm diameter.",
+  },
+  m1012_coordinates_4: {
+    prerequisite: "Plot points in the first quadrant and recognise negative numbers.",
+    activity: "Plot map points across both axes and move or reflect them using grid squares.",
+    check: "Translate (−3, 2) four right and one down, then reflect the result across the y-axis.",
+    success: "Finds (1, 1), then (−1, 1), and explains which coordinate changes during reflection.",
+  },
+  m1012_line_graphs: {
+    prerequisite: "Read a regular scale and interpret paired values.",
+    activity: "Plot sample temperatures across a morning and describe the changes between readings.",
+    check: "Given graph readings of 14°C at 9:00, 18°C at 10:00 and 17°C at 11:00, describe both changes.",
+    success: "Uses the axes to identify a rise of 4°C followed by a drop of 1°C.",
+  },
+  m1012_mean_pie: {
+    prerequisite: "Share totals equally and recognise fractions of a full turn.",
+    activity: "Use counters to model the mean and use a circle to represent proportions in a small survey.",
+    check: "Find the mean of 4, 6, 8 and 10. Then find the sector angle for 6 out of 24 votes.",
+    success: "Gives mean 7 and sector angle 90°, with a calculation for each.",
   },
 }
 
