@@ -159,7 +159,7 @@ export default function PracticePage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          subject, track,
+          subject, track, child_id: child.id,
           child_name: child.name,
           age_group: child.age_group,
           city: child.city,

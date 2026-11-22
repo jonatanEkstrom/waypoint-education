@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { curriculumBand, CURRICULUM_SUBJECTS } from '@/app/lib/curriculum'
+import { nextGoal } from '@/app/lib/server/next-goal'
 import { requireAccess } from '@/app/lib/server/access'
 
 export const maxDuration = 60
@@ -38,9 +40,29 @@ export async function POST(req: NextRequest) {
 
   try {
     const {
-      subject, track, child_name, age_group, city, country,
+      subject, track, child_id,
       interests, previous_topics,
     } = await req.json()
+
+    const { data: child, error: childError } = await guard.admin.from('children')
+      .select('name, age_group, city, country').eq('id', child_id).eq('user_id', guard.user.id).maybeSingle()
+    if (childError) throw childError
+    if (!child) return NextResponse.json({ error: 'child_not_found' }, { status: 404 })
+    const { name: child_name, age_group, city, country } = child
+    let goal = ''
+    const slug = CURRICULUM_SUBJECTS[subject]
+    if (slug) {
+      const [{ data: age }, { data: course }] = await Promise.all([
+        guard.admin.from('age_groups').select('id').eq('label', curriculumBand(age_group)).maybeSingle(),
+        guard.admin.from('subjects').select('id').eq('slug', slug).maybeSingle(),
+      ])
+      if (age && course) {
+        const { concept, needsReview } = await nextGoal(guard.admin, child_id, age.id, course.id)
+        if (concept) {
+          goal = `This exercise must practise only this current learning goal: ${concept.concept_name}. ${concept.concept_description}. ${needsReview ? 'Include a worked example and a hint.' : ''}`
+        }
+      }
+    }
 
     const cfg = TRACK_CONFIG[track as keyof typeof TRACK_CONFIG] ?? TRACK_CONFIG.explorer
     const interestsStr = Array.isArray(interests) && interests.length ? interests.join(', ') : 'varied topics'
@@ -55,7 +77,7 @@ SUBJECT: ${subject}
 TRACK: ${track} (ages ${cfg.ages})
 STUDENT: ${child_name || 'the student'}, ${age_group}, currently in ${city}, ${country}
 INTERESTS: ${interestsStr}
-${prevStr}
+${goal || prevStr}
 
 EXERCISE TYPE GUIDANCE: ${cfg.typeGuidance}
 

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
+import { nextGoal } from '@/app/lib/server/next-goal'
 import { requireAccess } from '@/app/lib/server/access'
 
 import { curriculumBand, teachingGuidance } from '@/app/lib/curriculum'
@@ -49,39 +50,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'subject_not_found' }, { status: 404 })
     }
 
-    const { data: completedProgress, error: progressError } = await supabase
-      .from('child_progress')
-      .select('concept_id')
-      .eq('child_id', child_id)
-      .eq('status', 'completed')
-
-    if (progressError) throw progressError
-
-    const completedIds = (completedProgress ?? []).map((p) => p.concept_id)
-
-    let conceptQuery = supabase
-      .from('curriculum_concepts')
-      .select('id, concept_key, concept_name, concept_description, sequence_order')
-      .eq('subject_id', subject.id)
-      .eq('age_group_id', ageGroup.id)
-      .order('sequence_order', { ascending: true })
-      .limit(1)
-
-    if (completedIds.length > 0) {
-      conceptQuery = conceptQuery.not('id', 'in', `(${completedIds.join(',')})`)
-    }
-
-    const { data: concepts, error: conceptError } = await conceptQuery
-
-    if (conceptError) {
-      throw conceptError
-    }
-
-    const concept = concepts?.[0]
-
-    if (!concept) {
-      return NextResponse.json({ error: 'all_complete' }, { status: 200 })
-    }
+    const { concept, needsReview } = await nextGoal(supabase, child_id, ageGroup.id, subject.id)
+    if (!concept) return NextResponse.json({ error: 'all_complete' }, { status: 200 })
 
     const systemPrompt = `You are a children's lesson writer. Write a lesson that teaches EXACTLY one concept, and no other:
 
@@ -89,6 +59,7 @@ Concept: ${concept.concept_name}
 Description: ${concept.concept_description}
 Learner: ${child.age_group}
 Teaching guidance: ${teachingGuidance(child.age_group)}
+${needsReview ? 'This learner needs more support on this goal. Start with a simpler worked example and one scaffolded action, then fade the support for the check.' : ''}
 Reading level: ${child.reading_level || "unspecified"}
 Preferred focus time: ${child.focus_time || "unspecified"}. Use the shorter of this and the teaching guidance; split longer work into steps with movement breaks.
 
@@ -110,7 +81,8 @@ OUTPUT this exact JSON:
     "description": "3-4 sentences describing what to do."
   },
   "discussion_questions": ["One open-ended question about the topic."],
-  "check_for_understanding": "One quick task, with a separate note for the parent describing what a correct response demonstrates.",
+  "check_for_understanding": "One quick task or question the learner can answer orally, with objects, or in writing.",
+  "parent_success_criterion": "What the learner must independently show or explain before moving on.",
   "fun_fact": "One surprising fact in 1 sentence.",
   "parent_tip": "One practical tip for the parent."
 }`

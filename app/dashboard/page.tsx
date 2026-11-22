@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [lesson, setLesson] = useState<any>(null)
   const [lessonLoading, setLessonLoading] = useState(false)
   const [lessonError, setLessonError] = useState<'all_complete' | 'error' | null>(null)
+  const [progressError, setProgressError] = useState(false)
   const [markingComplete, setMarkingComplete] = useState(false)
   const [hover, setHover] = useState<string | null>(null)
   const [activeTab, setActiveTab] = useState<'plan' | 'language'>('plan')
@@ -184,19 +185,22 @@ export default function DashboardPage() {
     loadLesson(slug)
   }
 
-  async function markLessonComplete() {
+  async function saveLessonOutcome(status: 'needs_review' | 'completed') {
     if (!lesson?.concept_id || !child?.id || !selectedSubjectSlug) return
+    setProgressError(false)
     setMarkingComplete(true)
     try {
       const { error } = await supabase.from('child_progress').insert({
         child_id: child.id,
         concept_id: lesson.concept_id,
-        status: 'completed',
+        status,
+        completed_at: status === 'completed' ? new Date().toISOString() : null,
       })
       if (error) throw error
       await loadLesson(selectedSubjectSlug)
     } catch (e) {
-      console.error('[markLessonComplete] Failed:', e)
+      setProgressError(true)
+      console.error('[saveLessonOutcome] Failed:', e)
     } finally {
       setMarkingComplete(false)
     }
@@ -687,12 +691,14 @@ export default function DashboardPage() {
                       <section style={{ marginBottom: 16 }}>
                         <h3>Check understanding</h3>
                         <p>{lesson.check_for_understanding}</p>
-                        <button type="button" onClick={() => loadLesson(selectedSubjectSlug!)}>Try another example</button>
+                        {lesson.parent_success_criterion && <p><strong>What to look for</strong> {lesson.parent_success_criterion}</p>}
+                        <button type="button" disabled={markingComplete} onClick={() => saveLessonOutcome('needs_review')}>Needs more practice</button>
                         {' · '}
                         <a href={`/worksheets?concept=${encodeURIComponent(lesson.concept_id)}&subject=${encodeURIComponent(selectedSubjectSlug ?? '')}`}>Practise this goal</a>
                       </section>
                     )}
-                    <button className="tap-btn" onClick={markLessonComplete} disabled={markingComplete}
+                    {progressError && <p role="alert">Could not save progress. Please try again.</p>}
+                    <button className="tap-btn" onClick={() => saveLessonOutcome('completed')} disabled={markingComplete}
                       onMouseEnter={() => setHover('mark-complete')} onMouseLeave={() => setHover(null)}
                       style={btn('mark-complete', { width: '100%', padding: '13px 16px', minHeight: 48, borderRadius: 12, border: 'none', background: GREEN, color: GREEN_DARK, fontSize: 14, fontWeight: 700, fontFamily: 'inherit', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: markingComplete ? 0.7 : 1 }, { background: GREEN_DARK, color: 'white' })}>
                       {markingComplete ? (
