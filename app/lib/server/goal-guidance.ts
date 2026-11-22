@@ -1,7 +1,8 @@
+import { geographyBlueprintGuidance } from './geography-blueprint'
 import { englishBlueprintGuidance } from './english-blueprint'
 import { mathBlueprintGuidance } from './math-blueprint'
 import { scienceBlueprintGuidance } from './science-blueprint'
 
 export function goalGuidance(conceptKey: string) {
-  return mathBlueprintGuidance(conceptKey) || scienceBlueprintGuidance(conceptKey) || englishBlueprintGuidance(conceptKey)
+  return mathBlueprintGuidance(conceptKey) || scienceBlueprintGuidance(conceptKey) || englishBlueprintGuidance(conceptKey) || geographyBlueprintGuidance(conceptKey)
 }
