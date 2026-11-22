@@ -61,6 +61,7 @@ export default function DashboardPage() {
   const [feedbackSent, setFeedbackSent] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const [menuOpen, setMenuOpen] = useState(false)
+  const [accessConfirmed, setAccessConfirmed] = useState(false)
   const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null)
   const [bannerDismissed, setBannerDismissed] = useState(false)
   const router = useRouter()
@@ -73,27 +74,58 @@ export default function DashboardPage() {
   }, [])
 
   useEffect(() => {
-    async function fetchTrialStatus() {
+    let timer: ReturnType<typeof setTimeout>
+    let expires: ReturnType<typeof setTimeout>
+    let disposed = false
+    let checking = false
+
+    async function checkAccess() {
+      if (disposed || checking) return
+      checking = true
+      clearTimeout(timer)
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('subscription_status, trial_started_at')
-          .eq('id', user.id)
-          .single()
-        if (!profile || profile.subscription_status === 'active') return
-        if (!profile.trial_started_at) return
-        const daysSinceStart = Math.floor((Date.now() - new Date(profile.trial_started_at).getTime()) / (1000 * 60 * 60 * 24))
-        setTrialDaysLeft(Math.max(0, 10 - daysSinceStart))
-      } catch (e) {
-        console.error('[Dashboard] Failed to fetch trial status:', e)
+        const response = await fetch('/api/access', { cache: 'no-store' })
+        if (disposed) return
+        if (response.status === 401 || response.status === 402) {
+          setAccessConfirmed(false)
+          router.replace(response.status === 401 ? '/auth' : '/subscribe')
+          return
+        }
+        if (!response.ok) throw new Error('Could not verify access')
+        const { trialEndsAt } = await response.json()
+        if (disposed) return
+        const remaining = trialEndsAt ? new Date(trialEndsAt).getTime() - Date.now() : null
+        setTrialDaysLeft(remaining === null ? null : Math.max(1, Math.ceil(remaining / 86_400_000)))
+        setAccessConfirmed(true)
+        clearTimeout(expires)
+        if (remaining !== null) {
+          expires = setTimeout(() => {
+            setAccessConfirmed(false)
+            void checkAccess()
+          }, Math.max(1000, remaining))
+        }
+      } catch {
+        if (!disposed) setAccessConfirmed(false)
+      } finally {
+        checking = false
+        if (!disposed) timer = setTimeout(checkAccess, 30_000)
       }
     }
-    fetchTrialStatus()
-  }, [])
+
+    void checkAccess()
+    window.addEventListener('focus', checkAccess)
+    window.addEventListener('pageshow', checkAccess)
+    return () => {
+      disposed = true
+      clearTimeout(timer)
+      clearTimeout(expires)
+      window.removeEventListener('focus', checkAccess)
+      window.removeEventListener('pageshow', checkAccess)
+    }
+  }, [router])
 
   useEffect(() => {
+    if (!accessConfirmed) return
     const stored = localStorage.getItem('activeChild')
     if (!stored) { router.push('/dashboard/children'); return }
     const childData = JSON.parse(stored)
@@ -101,7 +133,7 @@ export default function DashboardPage() {
     if (!childData.language_learning) childData.language_learning = 'None'
     setChild(childData)
     refreshChild(childData.id, childData.user_id)
-  }, [])
+  }, [accessConfirmed, router])
 
   async function refreshChild(id: string, userId?: string) {
     try {
@@ -336,7 +368,7 @@ export default function DashboardPage() {
     ...base, ...(hover === id ? hoverStyle : {}), transition: 'all 0.15s ease', cursor: 'pointer'
   })
 
-  if (!child) return (
+  if (!accessConfirmed || !child) return (
     <div style={{ minHeight: '100vh', background: BEIGE, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
       <style>{`@keyframes spin { to { transform: rotate(360deg) } }`}</style>
       <div style={{ width: 48, height: 48, border: `5px solid ${PRIMARY_BORDER}`, borderTopColor: PRIMARY, borderRadius: '50%', animation: 'spin 1s linear infinite' }} />

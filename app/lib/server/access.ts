@@ -106,7 +106,10 @@ export async function syncCheckoutSession(admin: SupabaseClient, userId: string,
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
     const session = await stripe.checkout.sessions.retrieve(sessionId)
     const paid = session.status === 'complete' && (session.payment_status === 'paid' || session.payment_status === 'no_payment_required')
-    if (!paid || session.metadata?.user_id !== userId) return false
+    if (!paid || session.mode !== 'subscription' || session.metadata?.user_id !== userId) return false
+    if (typeof session.subscription !== 'string') return false
+    const subscription = await stripe.subscriptions.retrieve(session.subscription)
+    if (subscription.status !== 'active' || subscription.metadata.user_id !== userId) return false
     // Upsert: from the launch offer, new accounts may not have a profile row yet.
     const { error } = await admin.from('profiles').upsert({
       id: userId,
