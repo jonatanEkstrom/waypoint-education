@@ -150,6 +150,7 @@ export default function DashboardPage() {
     try {
       const res = await fetch('/api/generate-lesson', {
         method: 'POST',
+        signal: AbortSignal.timeout(35_000),
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ child_id: child.id, subject_slug: slug, city: child.city, country: child.country })
       })

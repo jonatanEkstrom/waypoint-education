@@ -88,6 +88,7 @@ const STEP_TITLES = [
 ]
 
 export default function ChildrenPage() {
+  const [accountId, setAccountId] = useState<string | null>(null)
   const [children, setChildren] = useState<Child[]>([])
   const [childrenLimit] = useState<number>(4)
   const [selected, setSelected] = useState<Child | null>(null)
@@ -112,18 +113,7 @@ export default function ChildrenPage() {
   const router = useRouter()
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      const uid = data?.user?.id
-      if (!uid) { router.push('/auth'); return }
-      const stored = localStorage.getItem('activeChild')
-      if (stored) {
-        try {
-          const active = JSON.parse(stored)
-          if (active.user_id && active.user_id !== uid) localStorage.clear()
-        } catch { localStorage.clear() }
-      }
-      loadChildren()
-    })
+    void loadChildren()
     const check = () => setIsMobile(window.innerWidth < 640)
     check()
     window.addEventListener('resize', check)
@@ -133,6 +123,16 @@ export default function ChildrenPage() {
   async function loadChildren() {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
+    setAccountId(user.id)
+    const active = localStorage.getItem('activeChild')
+    if (active) {
+      try {
+        const previousId = JSON.parse(active).user_id
+        if (previousId && previousId !== user.id) localStorage.clear()
+      } catch {
+        localStorage.clear()
+      }
+    }
     const { data } = await supabase.from('children').select('*').eq('user_id', user.id)
     if (data) {
       const mapped = data.map((c: any) => ({
@@ -250,9 +250,9 @@ export default function ChildrenPage() {
     loadChildren()
   }
 
-  async function openLessons(child: Child) {
-    const { data: { user } } = await supabase.auth.getUser()
-    localStorage.setItem('activeChild', JSON.stringify({ ...child, user_id: user?.id }))
+  function openLessons(child: Child) {
+    if (!accountId) return
+    localStorage.setItem('activeChild', JSON.stringify({ ...child, user_id: accountId }))
     localStorage.removeItem('cachedPlan')
     localStorage.removeItem('cachedPlanChild')
     localStorage.removeItem('cachedLessons')

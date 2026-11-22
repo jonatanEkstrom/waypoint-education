@@ -31,27 +31,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'child_not_found' }, { status: 404 })
     }
 
-    const { data: ageGroup, error: ageGroupError } = await supabase
-      .from('age_groups')
-      .select('id')
-      .eq('label', curriculumBand(child.age_group))
-      .single()
-
-    if (ageGroupError || !ageGroup) {
+    const [ageResult, subjectResult] = await Promise.all([
+      supabase.from('age_groups').select('id').eq('label', curriculumBand(child.age_group)).single(),
+      supabase.from('subjects').select('id').eq('slug', subject_slug).single(),
+    ])
+    if (ageResult.error || !ageResult.data) {
       return NextResponse.json({ error: 'age_group_not_found' }, { status: 200 })
     }
-
-    const { data: subject, error: subjectError } = await supabase
-      .from('subjects')
-      .select('id')
-      .eq('slug', subject_slug)
-      .single()
-
-    if (subjectError || !subject) {
+    if (subjectResult.error || !subjectResult.data) {
       return NextResponse.json({ error: 'subject_not_found' }, { status: 404 })
     }
 
-    const { concept, needsReview } = await nextGoal(supabase, child_id, ageGroup.id, subject.id)
+    const { concept, needsReview } = await nextGoal(supabase, child_id, ageResult.data.id, subjectResult.data.id)
     if (!concept) return NextResponse.json({ error: 'all_complete' }, { status: 200 })
 
     const systemPrompt = `You are a children's lesson writer. Write a lesson that teaches EXACTLY one concept, and no other:
@@ -95,7 +86,7 @@ OUTPUT this exact JSON:
       system: systemPrompt,
       stream: true,
       messages: [{ role: 'user', content: userPrompt }],
-    })
+    }, { signal: request.signal, timeout: 25_000, maxRetries: 0 })
 
     const readable = new ReadableStream({
       async start(controller) {
