@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { curriculumBand, CURRICULUM_SUBJECTS } from '@/app/lib/curriculum'
-import { mathBlueprintGuidance } from '@/app/lib/server/math-blueprint'
+import { goalGuidance } from '@/app/lib/server/goal-guidance'
 import { nextGoal } from '@/app/lib/server/next-goal'
 import { requireAccess } from '@/app/lib/server/access'
 
@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
         const { concept, needsReview } = await nextGoal(guard.admin, child_id, age.id, course.id)
         if (concept) {
           goal = `This exercise must practise only this current learning goal: ${concept.concept_name}. ${concept.concept_description}.
-${mathBlueprintGuidance(concept.concept_key)}
+${goalGuidance(concept.concept_key)}
 ${needsReview ? 'Include a worked example and a hint.' : ''}`
         }
       }

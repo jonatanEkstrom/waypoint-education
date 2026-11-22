@@ -1,4 +1,4 @@
-import { mathBlueprintGuidance } from '@/app/lib/server/math-blueprint'
+import { goalGuidance } from '@/app/lib/server/goal-guidance'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { nextGoal } from '@/app/lib/server/next-goal'
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
 
 Concept: ${concept.concept_name}
 Description: ${concept.concept_description}
-${mathBlueprintGuidance(concept.concept_key)}
+${goalGuidance(concept.concept_key)}
 Learner: ${child.age_group}
 Teaching guidance: ${teachingGuidance(child.age_group)}
 ${needsReview ? 'This learner needs more support on this goal. Start with a simpler worked example and one scaffolded action, then fade the support for the check.' : ''}

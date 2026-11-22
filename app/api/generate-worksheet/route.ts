@@ -1,4 +1,4 @@
-import { mathBlueprintGuidance } from '@/app/lib/server/math-blueprint'
+import { goalGuidance } from '@/app/lib/server/goal-guidance'
 import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireAccess } from '@/app/lib/server/access'
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
         .select('concept_key, concept_name, concept_description').eq('id', concept_id)
         .eq('age_group_id', band.id).eq('subject_id', course.id).maybeSingle()
       if (!concept) return NextResponse.json({ error: 'goal_not_found' }, { status: 404 })
-      goal = `Use only this learning goal for every question: ${concept.concept_name}. ${concept.concept_description}\n${mathBlueprintGuidance(concept.concept_key)}`
+      goal = `Use only this learning goal for every question: ${concept.concept_name}. ${concept.concept_description}\n${goalGuidance(concept.concept_key)}`
     }
 
     const prompt = `Create a worksheet for ${name}, ${age_group}, in ${city}.
