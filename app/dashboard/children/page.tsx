@@ -2,6 +2,7 @@
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../../lib/supabase'
+import { CURRICULUM_SUBJECTS } from '../../lib/curriculum'
 
 interface Child {
   id: string
@@ -490,6 +491,7 @@ export default function ChildrenPage() {
                           <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Interests</label>
                           <span style={{ fontSize: 12, color: editForm.subjects.length >= 8 ? '#E07575' : TEXT_MUTED, fontWeight: 600 }}>Max 8 ({editForm.subjects.length}/8)</span>
                         </div>
+                        <p style={{ color: TEXT_MUTED, fontSize: 13 }}>Choices marked “Lessons” open in the Lessons tab.</p>
                         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
                           {SUBJECT_OPTIONS.map(s => {
                             const on = editForm.subjects.includes(s)
@@ -498,7 +500,7 @@ export default function ChildrenPage() {
                               <button key={s} onClick={() => { if (on || !atMax) setEditForm(p => ({ ...p, subjects: on ? p.subjects.filter(x => x !== s) : [...p.subjects, s] })) }}
                                 onMouseEnter={() => setHover(`esubj-${s}`)} onMouseLeave={() => setHover(null)}
                                 style={btn(`esubj-${s}`, { padding: '6px 14px', borderRadius: 100, border: `2px solid ${on ? PRIMARY : BEIGE_BORDER}`, background: on ? PRIMARY_BG : BEIGE_CARD, color: on ? PRIMARY : TEXT_MUTED, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', opacity: !on && atMax ? 0.4 : 1, cursor: !on && atMax ? 'default' : 'pointer' }, { borderColor: PRIMARY, color: PRIMARY })}>
-                                {s}
+                                {s}{CURRICULUM_SUBJECTS[s] ? ' · Lessons' : ''}
                               </button>
                             )
                           })}
@@ -712,7 +714,7 @@ export default function ChildrenPage() {
                     <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 22 : 26, color: TEXT, marginBottom: 4 }}>
                       What does {form.name || 'your child'} love? 🌟
                     </h2>
-                    <p style={{ color: TEXT_MUTED, fontSize: 14, marginBottom: 24 }}>Pick up to 6 passions — we'll weave them into every lesson.</p>
+                    <p style={{ color: TEXT_MUTED, fontSize: 14, marginBottom: 24 }}>Pick up to 6 interests. Choices marked “Lessons” open in the Lessons tab.</p>
 
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
                       {PASSIONS.map(p => {
@@ -738,6 +740,7 @@ export default function ChildrenPage() {
                           >
                             <div style={{ fontSize: isMobile ? 24 : 28, marginBottom: 4 }}>{p.emoji}</div>
                             <div style={{ fontSize: 10, fontWeight: 700, color: selected ? PRIMARY : TEXT_MUTED, lineHeight: 1.2 }}>{p.label}</div>
+                            {CURRICULUM_SUBJECTS[p.label] && <div style={{ fontSize: 10, marginTop: 4, color: PRIMARY_DARK }}>Lessons</div>}
                           </button>
                         )
                       })}

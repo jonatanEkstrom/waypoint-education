@@ -1,7 +1,8 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireAccess } from '@/app/lib/server/access'
-import { swedishStarterWeek } from '@/app/lib/server/swedish-starter-week'
+import { curriculumBand } from '@/app/lib/curriculum'
+import { swedishStarterWeek, swedishTeenStarterWeek } from '@/app/lib/server/swedish-starter-week'
 
 export const maxDuration = 60
 
@@ -10,15 +11,21 @@ export async function POST(request: NextRequest) {
   if ('response' in guard) return guard.response
 
   const { language, age_group, child_name, language_week, previous_summary } = await request.json()
-  if (language === 'Swedish' && age_group === '7–9 years' && language_week === 1) {
-    return Response.json(swedishStarterWeek)
+  if (typeof age_group !== 'string') return Response.json({ error: 'invalid_age_group' }, { status: 400 })
+  const band = curriculumBand(age_group)
+  if (language === 'Swedish' && language_week === 1) {
+    if (band === '7-9') return Response.json(swedishStarterWeek)
+    if (band === '13+') return Response.json(swedishTeenStarterWeek)
   }
 
   const ageGuide: Record<string, string> = {
+    '3–4 years': 'Use adult-led listening and imitation. Teach at most 2 new spoken words per day, with pictures or gestures. No independent reading or writing.',
+    '5–6 years': 'Max 3 new words per day. Very simple phrases. Lots of repetition. No grammar rules.',
     '4–6 years': 'Max 3 new words per day. Very simple phrases. Lots of repetition. No grammar rules.',
     '7–9 years': '4–5 new words per day. Basic greetings and questions. Simple sentences.',
     '10–12 years': '6–8 new words per day. Introduce simple grammar patterns. Conversational phrases.',
     '13–15 years': '8–10 new words per day. Grammar rules, short reading, writing simple sentences.',
+    '13+ years': 'Use secondary-school examples, short independent reading and practical conversation. Explain one useful grammar pattern at a time.',
     '16–18 years': '10–15 new words per day. Complex grammar, idioms, cultural nuance, conversation skills.',
   }
 
@@ -62,7 +69,7 @@ Create Week ${language_week} of the ${language} curriculum. Return ONLY valid JS
 }
 
 Rules:
-- vocabulary = ALL new words from the full week combined (15–30 words total)
+- vocabulary = ALL new words from the full week combined (up to 25, respecting age guidance)
 - days = exactly 5 entries (Monday through Friday)
 - weekly_quiz = exactly 5 questions testing this week's vocabulary and phrases
 - Keep each field concise — displayed on a screen

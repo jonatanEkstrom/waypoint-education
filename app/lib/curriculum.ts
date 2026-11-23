@@ -17,6 +17,7 @@ export const CURRICULUM_SUBJECTS: Record<string, string> = {
   Languages: 'english',
   English: 'english',
   Geography: 'geography',
+  History: 'history',
 }
 
 export function teachingGuidance(age: string) {

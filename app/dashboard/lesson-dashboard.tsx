@@ -25,6 +25,7 @@ const SUBJECT_META: Record<string, { icon: string; bg: string; text: string; bor
   mathematics: { icon: '🔢', bg: '#FFF0F5', text: '#C4748E', border: '#F5C6D5' },
   science: { icon: '🔬', bg: GREEN_BG, text: GREEN_DARK, border: GREEN_BORDER },
   geography: { icon: '🗺️', bg: '#FFF8EC', text: '#96632B', border: '#F5DFC1' },
+  history: { icon: '🏛️', bg: '#F0EBF9', text: '#725698', border: '#DDD0F0' },
   english: { icon: '🗣️', bg: '#F0F5FF', text: '#6080C4', border: '#C6D5F5' },
 }
 
@@ -62,6 +63,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
   const [lesson, setLesson] = useState<any>(null)
   const [lessonLoading, setLessonLoading] = useState(false)
   const [lessonError, setLessonError] = useState<'all_complete' | 'error' | null>(null)
+  const lessonRequest = useRef<AbortController | null>(null)
   const [progressError, setProgressError] = useState(false)
   const [markingComplete, setMarkingComplete] = useState(false)
   const [hover, setHover] = useState<string | null>(null)
@@ -69,9 +71,12 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
   const [langPlan, setLangPlan] = useState<any>(null)
   const [langLoading, setLangLoading] = useState(false)
   const [langWeek, setLangWeek] = useState(1)
+  const [langCalendarWeek, setLangCalendarWeek] = useState<number | null>(null)
   const [langActiveDay, setLangActiveDay] = useState(getTodayName())
   const [langQuizAnswers, setLangQuizAnswers] = useState<{[key: number]: number}>({})
   const [langQuizSubmitted, setLangQuizSubmitted] = useState(false)
+  const [langQuizSaving, setLangQuizSaving] = useState(false)
+  const [langQuizSaveError, setLangQuizSaveError] = useState(false)
   const [showFeedback, setShowFeedback] = useState(false)
   const [feedbackRating, setFeedbackRating] = useState(0)
   const [feedbackMsg, setFeedbackMsg] = useState('')
@@ -214,10 +219,12 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
 
   async function loadLesson(slug: string) {
     if (!child) return
+    lessonRequest.current?.abort()
+    const controller = new AbortController()
+    lessonRequest.current = controller
     setLessonLoading(true)
     setLesson(null)
     setLessonError(null)
-    const controller = new AbortController()
     const timeout = setTimeout(() => controller.abort(), 35_000)
     try {
       const res = await fetch('/api/generate-lesson', {
@@ -236,6 +243,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
         fullText += decoder.decode(value, { stream: true })
       }
       fullText += decoder.decode()
+      if (lessonRequest.current !== controller) return
       const cleaned = fullText.replace(/```json|```/g, '').trim()
       const parsed = JSON.parse(cleaned)
       if (parsed.error === 'all_complete') {
@@ -246,30 +254,36 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
         setLesson(parsed)
       }
     } catch (e) {
+      if (lessonRequest.current !== controller) return
       console.error('[loadLesson] Failed:', e)
       setLessonError('error')
     } finally {
       clearTimeout(timeout)
-      setLessonLoading(false)
+      if (lessonRequest.current === controller) {
+        lessonRequest.current = null
+        setLessonLoading(false)
+      }
     }
   }
 
   function handleSubjectClick(slug: string) {
+    if (markingComplete) return
     setSelectedSubjectSlug(slug)
     loadLesson(slug)
   }
 
   async function saveLessonOutcome(status: 'needs_review' | 'completed') {
-    if (!lesson?.concept_id || !child?.id || !selectedSubjectSlug) return
+    if (!lesson?.concept_id || !child?.id || !selectedSubjectSlug || markingComplete) return
     setProgressError(false)
     setMarkingComplete(true)
     try {
-      const { error } = await supabase.from('child_progress').insert({
+      const { error } = await supabase.from('child_progress').upsert({
         child_id: child.id,
         concept_id: lesson.concept_id,
         status,
         completed_at: status === 'completed' ? new Date().toISOString() : null,
-      })
+      }, { onConflict: 'child_id,concept_id', ignoreDuplicates: status === 'needs_review' })
+        .abortSignal(AbortSignal.timeout(10_000))
       if (error) throw error
       await loadLesson(selectedSubjectSlug)
     } catch (e) {
@@ -281,6 +295,10 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
   }
 
   function closeLesson() {
+    if (markingComplete) return
+    lessonRequest.current?.abort()
+    lessonRequest.current = null
+    setLessonLoading(false)
     setSelectedSubjectSlug(null)
     setLesson(null)
     setLessonError(null)
@@ -290,23 +308,13 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
     if (!child || !child.language_learning || child.language_learning === 'None' || langLoading) return
     const language = child.language_learning
     const calendarWeek = getWeekNumber()
-    const cacheKey = `languagePlan:${accountId}:${child.id}:${language}:${calendarWeek}`
     const signal = AbortSignal.timeout(52_000)
 
     setLangLoading(true)
     try {
-      try {
-        const cached = JSON.parse(localStorage.getItem(cacheKey) ?? 'null')
-        if (cached) {
-          setLangPlan(cached)
-          setLangWeek(cached.week_number)
-          return
-        }
-      } catch { /* Fall back to the server when browser storage is unavailable. */ }
-
       const plans = () => supabase.from('language_plans')
       const { data: existing, error: findError } = await plans()
-        .select('plan, language_week')
+        .select('plan, language_week, quiz_answers')
         .eq('user_id', accountId)
         .eq('child_name', child.name)
         .eq('language', language)
@@ -355,7 +363,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
           calendar_week: calendarWeek,
           language_week: week,
           plan,
-        }, { onConflict: 'user_id,child_name,language,calendar_week' })
+        }, { onConflict: 'user_id,child_name,language,calendar_week', ignoreDuplicates: true })
           .abortSignal(AbortSignal.timeout(10_000))
           .then(({ error }) => {
             if (error) console.error('[Language] Could not save plan:', error.code)
@@ -364,13 +372,37 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
 
       setLangPlan(plan)
       setLangWeek(week)
-      try {
-        localStorage.setItem(cacheKey, JSON.stringify(plan))
-      } catch { /* Browser storage is optional. */ }
+      setLangCalendarWeek(calendarWeek)
+      setLangQuizAnswers(existing?.quiz_answers ?? {})
+      setLangQuizSubmitted(!!existing?.quiz_answers)
     } catch (error) {
       console.error('[Language] Could not load plan:', error instanceof Error ? error.name : 'DatabaseError')
     } finally {
       setLangLoading(false)
+    }
+  }
+
+  async function saveLanguageQuiz() {
+    if (!child || !langPlan || langCalendarWeek === null || langQuizSaving || langQuizSubmitted) return
+    setLangQuizSaving(true)
+    setLangQuizSaveError(false)
+    try {
+      const { error } = await supabase.from('language_plans').upsert({
+        user_id: accountId,
+        child_name: child.name,
+        language: child.language_learning,
+        calendar_week: langCalendarWeek,
+        language_week: langWeek,
+        plan: langPlan,
+        quiz_answers: langQuizAnswers,
+      }, { onConflict: 'user_id,child_name,language,calendar_week' })
+        .abortSignal(AbortSignal.timeout(10_000))
+      if (error) throw error
+      setLangQuizSubmitted(true)
+    } catch {
+      setLangQuizSaveError(true)
+    } finally {
+      setLangQuizSaving(false)
     }
   }
 
@@ -395,9 +427,14 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
-  const availableSubjects = ((child?.subjects || []) as string[])
-    .map(name => ({ name, slug: CURRICULUM_SUBJECTS[name] }))
-    .filter((s): s is { name: string; slug: string } => !!s.slug)
+  const chosenSubjects: string[] = child?.subjects ?? []
+  const availableSubjects = new Map<string, string>()
+  const interests = []
+  for (const name of chosenSubjects) {
+    const slug = CURRICULUM_SUBJECTS[name]
+    if (!Object.hasOwn(SUBJECT_META, slug)) interests.push(name)
+    else if (!availableSubjects.has(slug)) availableSubjects.set(slug, name)
+  }
 
   const btn = (id: string, base: React.CSSProperties, hoverStyle: React.CSSProperties): React.CSSProperties => ({
     ...base, ...(hover === id ? hoverStyle : {}), transition: 'all 0.15s ease', cursor: 'pointer'
@@ -585,17 +622,17 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
               <p style={{ color: TEXT_MUTED, fontSize: 14, margin: 0 }}>Pick a subject to start today's lesson.</p>
             </div>
 
-            {availableSubjects.length === 0 ? (
+            {availableSubjects.size === 0 ? (
               <div style={{ background: BEIGE_CARD, borderRadius: 16, padding: 24, border: `2px solid ${BEIGE_BORDER}`, textAlign: 'center' as const, color: TEXT_MUTED }}>
-                No lessons available for your subjects yet.
+                Choose a lesson subject in <Link href="/dashboard/children">Children</Link> to get started.
               </div>
             ) : (
               <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' as const, marginBottom: 24 }}>
-                {availableSubjects.map(({ name, slug }) => {
+                {Array.from(availableSubjects, ([slug, name]) => {
                   const meta = SUBJECT_META[slug]
                   const isActive = selectedSubjectSlug === slug
                   return (
-                    <button key={slug} className="tap-btn" onClick={() => handleSubjectClick(slug)}
+                    <button key={slug} className="tap-btn" disabled={markingComplete} onClick={() => handleSubjectClick(slug)}
                       onMouseEnter={() => setHover(`subj-${slug}`)} onMouseLeave={() => setHover(null)}
                       style={btn(`subj-${slug}`, {
                         display: 'flex', flexDirection: 'column' as const, alignItems: 'center', gap: 8,
@@ -612,11 +649,14 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
                 })}
               </div>
             )}
+            {interests.length > 0 && (
+              <p style={{ color: TEXT_MUTED, fontSize: 13 }}>Saved interests without dedicated lessons: {interests.join(', ')}.</p>
+            )}
 
             {selectedSubjectSlug && (
               <div className="lesson-card" style={{ background: BEIGE_CARD, borderRadius: 20, padding: 24, border: `2px solid ${BEIGE_BORDER}`, boxShadow: '0 1px 6px rgba(0,0,0,0.05)', animation: 'fadeIn 0.3s ease' }}>
                 <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 8 }}>
-                  <button onClick={closeLesson}
+                  <button onClick={closeLesson} disabled={markingComplete}
                     onMouseEnter={() => setHover('close-lesson')} onMouseLeave={() => setHover(null)}
                     style={btn('close-lesson', { background: 'none', border: 'none', color: TEXT_MUTED, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', padding: 0 }, { color: PRIMARY })}>
                     ✕ Close
@@ -908,7 +948,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
                               if (langQuizSubmitted && oi === q.correct) { bg = GREEN_BG; border = GREEN; color = GREEN_DARK }
                               if (langQuizSubmitted && userAnswer === oi && oi !== q.correct) { bg = '#FFF1F2'; border = '#F4A7A7'; color = '#E07575' }
                               return (
-                                <button key={oi} onClick={() => !langQuizSubmitted && setLangQuizAnswers(p => ({ ...p, [qi]: oi }))}
+                                <button key={oi} disabled={langQuizSaving || langQuizSubmitted} onClick={() => setLangQuizAnswers(p => ({ ...p, [qi]: oi }))}
                                   style={{ padding: '12px 16px', borderRadius: 12, border: `2px solid ${border}`, background: bg, color, fontSize: 14, fontWeight: 600, textAlign: 'left' as const, fontFamily: 'inherit', cursor: langQuizSubmitted ? 'default' : 'pointer', transition: 'all 0.15s' }}>
                                   {langQuizSubmitted && oi === q.correct && '✓ '}{langQuizSubmitted && userAnswer === oi && oi !== q.correct && '✗ '}{opt}
                                 </button>
@@ -919,9 +959,9 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
                       )
                     })}
                     {!langQuizSubmitted ? (
-                      <button onClick={() => setLangQuizSubmitted(true)}
+                      <button onClick={saveLanguageQuiz} disabled={langQuizSaving || Object.keys(langQuizAnswers).length < langPlan.weekly_quiz.length}
                         style={{ padding: '12px 24px', borderRadius: 100, border: 'none', background: '#6B8FD6', color: 'white', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
-                        Submit answers →
+                        {langQuizSaving ? 'Saving…' : 'Submit answers →'}
                       </button>
                     ) : (
                       <div style={{ background: GREEN_BG, borderRadius: 12, padding: 16, border: `2px solid ${GREEN}` }}>
@@ -931,6 +971,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
                         <p style={{ fontSize: 13, color: GREEN_DARK, margin: 0, opacity: 0.8 }}>Come back next week for Week {langPlan.week_number + 1}!</p>
                       </div>
                     )}
+                    {langQuizSaveError && <p role="alert">We couldn’t save your answers. Please try again.</p>}
                   </div>
                 )}
               </>
