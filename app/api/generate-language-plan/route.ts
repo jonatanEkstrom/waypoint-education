@@ -10,7 +10,18 @@ export async function POST(request: NextRequest) {
   const guard = await requireAccess()
   if ('response' in guard) return guard.response
 
-  const { language, age_group, child_name, language_week, previous_summary } = await request.json()
+  const body = await request.json().catch(() => null)
+  const { child_id, language_week, previous_summary } = body ?? {}
+  if (typeof child_id !== 'string' || !Number.isInteger(language_week) || language_week < 1) {
+    return Response.json({ error: 'invalid_language_request' }, { status: 400 })
+  }
+  const { data: child, error } = await guard.admin.from('children').select('age_group, language_learning')
+    .eq('id', child_id).eq('user_id', guard.user.id).maybeSingle()
+  if (error) return Response.json({ error: 'language_plan_unavailable' }, { status: 503 })
+  if (!child || !child.language_learning || child.language_learning === 'None') {
+    return Response.json({ error: 'language_profile_unavailable' }, { status: 404 })
+  }
+  const { age_group, language_learning: language } = child
   if (typeof age_group !== 'string') return Response.json({ error: 'invalid_age_group' }, { status: 400 })
   const band = curriculumBand(age_group)
   if (language === 'Swedish' && language_week === 1) {
@@ -33,9 +44,9 @@ export async function POST(request: NextRequest) {
 
   const context = language_week === 1
     ? 'This is Week 1. Start from absolute zero — assume no prior knowledge of this language.'
-    : `This is Week ${language_week}.\n\nPREVIOUSLY COVERED:\n${previous_summary || 'Earlier weeks of basics.'}\n\nBuild directly on these foundations. Introduce new vocabulary and slightly more complex grammar. Naturally reinforce previous words where possible.`
+    : `This is Week ${language_week}.\n\nPREVIOUSLY COVERED:\n${(typeof previous_summary === 'string' && previous_summary.slice(0, 5000)) || 'Earlier weeks of basics.'}\n\nBuild directly on these foundations. Introduce new vocabulary and slightly more complex grammar. Naturally reinforce previous words where possible.`
 
-  const prompt = `You are an expert ${language} language teacher creating a progressive weekly homeschool curriculum for ${child_name} (${age_group}).
+  const prompt = `You are an expert ${language} language teacher creating a progressive weekly homeschool curriculum for a learner aged ${age_group}.
 
 ${context}
 

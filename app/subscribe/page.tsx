@@ -68,6 +68,7 @@ export default function SubscribePage() {
   const offer = useOfferLive()
   const router = useRouter()
   const [loading, setLoading] = useState<string | null>(null)
+  const [checkoutError, setCheckoutError] = useState('')
   const [isMobile, setIsMobile] = useState(false)
   const [hover, setHover] = useState<string | null>(null)
 
@@ -80,6 +81,7 @@ export default function SubscribePage() {
 
   async function subscribe(priceId: string, planKey: string) {
     setLoading(planKey)
+    setCheckoutError('')
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) {
@@ -89,12 +91,15 @@ export default function SubscribePage() {
 
       const res = await fetch('/api/stripe/checkout', {
         method: 'POST',
+        signal: AbortSignal.timeout(20_000),
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ price_id: priceId, user_id: user.id, email: user.email, billing: planKey }),
+        body: JSON.stringify({ price_id: priceId, billing: planKey }),
       })
       const data = await res.json()
-      if (data.url) window.location.href = data.url
-      else console.error('[subscribe] checkout error:', data.error)
+      if (!res.ok || !data.url) throw new Error('Checkout unavailable')
+      window.location.assign(data.url)
+    } catch {
+      setCheckoutError('Could not open the payment page. Please try again.')
     } finally {
       setLoading(null)
     }
@@ -107,6 +112,7 @@ export default function SubscribePage() {
   return (
     <div style={{ minHeight: '100vh', fontFamily: 'system-ui, sans-serif', color: TEXT, background: BEIGE }}>
 
+      {checkoutError && <p role="alert" style={{ textAlign: 'center', padding: 12, margin: 0, background: '#FFF0F0' }}>{checkoutError}</p>}
       {/* Nav */}
       <nav style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: isMobile ? '12px 16px' : '16px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.05)' }}>
         <Link href="/landing" style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 15 : 20, fontWeight: 700, color: TEXT, textDecoration: 'none' }}>

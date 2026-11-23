@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { requireUser, getAccessProfile } from '@/app/lib/server/access'
+import { requireUser, getAccessProfile, hasAccess } from '@/app/lib/server/access'
 import { isOfferLive, ensureFirstPeriodCoupon } from '@/app/lib/server/offer'
 
 // Server-side allow-list. The client may only pick a plan, never an arbitrary price.
@@ -43,16 +43,24 @@ export async function POST(req: NextRequest) {
     if (!user.email) return NextResponse.json({ error: 'Account has no email' }, { status: 400 })
 
     const profile = await getAccessProfile(admin, user.id)
-    if (profile?.subscription_status === 'active') {
-      return NextResponse.json({ error: 'already_subscribed' }, { status: 409 })
-    }
-
     // Reuse the existing Stripe customer instead of creating duplicates.
     const { data: billingRow } = await admin
       .from('profiles').select('stripe_customer_id, stripe_subscription_id').eq('id', user.id).maybeSingle()
+    const base = 'https://www.waypointeducation.world'
+    if (billingRow?.stripe_subscription_id && billingRow.stripe_customer_id) {
+      const current = await stripe.subscriptions.retrieve(billingRow.stripe_subscription_id)
+      if (hasAccess(profile) && profile?.subscription_status === 'active' ||
+          !['canceled', 'incomplete_expired'].includes(current.status)) {
+        const portal = await stripe.billingPortal.sessions.create({
+          customer: billingRow.stripe_customer_id, return_url: `${base}/dashboard/children`,
+        })
+        return NextResponse.json({ url: portal.url })
+      }
+    }
+
     let customerId = billingRow?.stripe_customer_id as string | undefined
     if (!customerId) {
-      const customer = await stripe.customers.create({ email: user.email, metadata: { user_id: user.id } })
+      const customer = await stripe.customers.create({ email: user.email, metadata: { user_id: user.id } }, { idempotencyKey: `waypoint-customer-${user.id}` })
       customerId = customer.id
       await admin.from('profiles').upsert({ id: user.id, email: user.email, stripe_customer_id: customerId }, { onConflict: 'id' })
     }
@@ -65,8 +73,6 @@ export async function POST(req: NextRequest) {
 
     const extraChild = EXTRA_CHILD_PRICE[billing]
     const extra = children - INCLUDED_CHILDREN
-    const base = req.headers.get('origin') || process.env.NEXT_PUBLIC_APP_URL || 'https://www.waypointeducation.world'
-
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       customer: customerId,

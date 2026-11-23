@@ -4,23 +4,23 @@ import Anthropic from '@anthropic-ai/sdk'
 import { nextGoal } from '@/app/lib/server/next-goal'
 import { requireAccess } from '@/app/lib/server/access'
 
-import { curriculumBand, teachingGuidance } from '@/app/lib/curriculum'
+import { curriculumBand, teachingGuidance, CURRICULUM_SUBJECTS } from '@/app/lib/curriculum'
 
-export const maxDuration = 30
+export const maxDuration = 45
 
 export async function POST(request: NextRequest) {
   const guard = await requireAccess()
   if ('response' in guard) return guard.response
 
   try {
-    const { child_id, subject_slug, city, country } = await request.json()
+    const { child_id, subject_slug } = await request.json()
 
     const supabase = guard.admin
 
     // Service role bypasses RLS, so ownership must be checked explicitly.
     const { data: child, error: childError } = await supabase
       .from('children')
-      .select('name, age_group, focus_time, reading_level')
+      .select('age_group, focus_time, reading_level, city, country, subjects')
       .eq('id', child_id)
       .eq('user_id', guard.user.id)
       .single()
@@ -29,6 +29,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'child_not_found' }, { status: 404 })
     }
 
+    if (!(child.subjects ?? []).some((name: string) => CURRICULUM_SUBJECTS[name] === subject_slug)) {
+      return NextResponse.json({ error: 'subject_not_selected' }, { status: 404 })
+    }
+    const city = child.city || 'the local area'
+    const country = child.country || ''
     const [ageResult, subjectResult] = await Promise.all([
       supabase.from('age_groups').select('id').eq('label', curriculumBand(child.age_group)).single(),
       supabase.from('subjects').select('id').eq('slug', subject_slug).single(),
@@ -43,8 +48,26 @@ export async function POST(request: NextRequest) {
     const { concept, needsReview } = await nextGoal(supabase, child_id, ageResult.data.id, subjectResult.data.id)
     if (!concept) return NextResponse.json({ error: 'all_complete' }, { status: 200 })
 
+    const variant = needsReview ? 'review' : 'lesson'
+    const cache = () => supabase.from('saved_lessons')
+    const { data: existing, error: cacheError } = await cache().select('content')
+      .match({ child_id, concept_id: concept.id, variant }).maybeSingle()
+    if (cacheError) throw cacheError
+    if (existing) return NextResponse.json(existing.content)
+
+    async function saveLesson(content: Record<string, unknown>) {
+      const key = { child_id, concept_id: concept!.id, variant }
+      const { error } = await cache().upsert({ ...key, content }, {
+        onConflict: 'child_id,concept_id,variant', ignoreDuplicates: true,
+      })
+      if (error) throw error
+      const { data, error: readError } = await cache().select('content').match(key).single()
+      if (readError) throw readError
+      return NextResponse.json(data.content)
+    }
+
     if (concept.concept_key === 'hist_13plus_source_claim') {
-      return NextResponse.json({
+      return saveLesson({
         concept_id: concept.id,
         reading_title: 'What can a source prove?',
         introduction: 'A historical source can support part of a claim without proving every part of it. Compare two fictional practice sources about a bridge opening in 1910.',
@@ -78,7 +101,7 @@ Preferred focus time: ${child.focus_time || "unspecified"}. Use the shorter of t
 
 Do not introduce, explain, or drift into any other topic or concept, even if it seems related. The child's city (${city}, ${country}) may only be used as a backdrop or setting for examples — it must never change the subject matter or pull in unrelated topics. Stay strictly within the bounds of the concept above for the entire lesson.`
 
-    const userPrompt = `Create a short lesson for ${child.name} on the concept "${concept.concept_name}". Return ONLY valid JSON, no markdown.
+    const userPrompt = `Create a short lesson for this learner on the concept "${concept.concept_name}". Return ONLY valid JSON, no markdown.
 
 OUTPUT this exact JSON:
 {
@@ -101,32 +124,23 @@ OUTPUT this exact JSON:
 }`
 
     const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
-    const stream = await anthropic.messages.create({
+    const response = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
       max_tokens: 800,
       system: systemPrompt,
-      stream: true,
       messages: [{ role: 'user', content: userPrompt }],
-    }, { signal: request.signal, timeout: 25_000, maxRetries: 0 })
+    }, { signal: AbortSignal.any([request.signal, AbortSignal.timeout(26_000)]), maxRetries: 0 })
 
-    const readable = new ReadableStream({
-      async start(controller) {
-        const encoder = new TextEncoder()
-        for await (const event of stream) {
-          if (event.type === 'content_block_delta' && event.delta.type === 'text_delta') {
-            controller.enqueue(encoder.encode(event.delta.text))
-          }
-        }
-        controller.close()
-      },
-    })
-
-    return new Response(readable, {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    })
+    const raw = response.content.flatMap(block => block.type === 'text' ? [block.text] : []).join('')
+    const lesson = JSON.parse(raw.replace(/^```(?:json)?\s*|\s*```\s*$/g, '').trim())
+    if (typeof lesson?.reading_title !== 'string' || typeof lesson.main_content !== 'string' ||
+        typeof lesson.activity?.description !== 'string' || typeof lesson.check_for_understanding !== 'string') {
+      throw new Error('Incomplete lesson')
+    }
+    return await saveLesson({ ...lesson, concept_id: concept.id })
   } catch (error: any) {
-    console.error('Generate lesson error:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    console.error('[generate-lesson] Failed:', error?.code || error?.name)
+    return new Response(JSON.stringify({ error: 'lesson_unavailable' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     })

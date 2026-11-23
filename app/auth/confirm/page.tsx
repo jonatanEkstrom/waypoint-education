@@ -29,7 +29,8 @@ function ConfirmHandler() {
           setStatus('error')
           return
         }
-        localStorage.clear()
+        try { localStorage.removeItem('activeChild') } catch { /* Browser storage is optional. */ }
+        void fetch('/api/welcome-email', { method: 'POST', keepalive: true }).catch(() => {})
         router.replace('/dashboard/children')
         return
       }
@@ -48,8 +49,9 @@ function ConfirmHandler() {
             setStatus('error')
             return
           }
-          localStorage.clear()
-          router.replace('/dashboard/children')
+          try { localStorage.removeItem('activeChild') } catch { /* Browser storage is optional. */ }
+          void fetch('/api/welcome-email', { method: 'POST', keepalive: true }).catch(() => {})
+        router.replace('/dashboard/children')
           return
         }
       }
@@ -63,7 +65,8 @@ function ConfirmHandler() {
           setStatus('error')
           return
         }
-        localStorage.clear()
+        try { localStorage.removeItem('activeChild') } catch { /* Browser storage is optional. */ }
+        void fetch('/api/welcome-email', { method: 'POST', keepalive: true }).catch(() => {})
         router.replace('/dashboard/children')
         return
       }

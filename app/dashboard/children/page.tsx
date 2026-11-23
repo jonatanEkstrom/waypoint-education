@@ -91,7 +91,7 @@ const STEP_TITLES = [
 export default function ChildrenPage() {
   const [accountId, setAccountId] = useState<string | null>(null)
   const [children, setChildren] = useState<Child[]>([])
-  const [childrenLimit] = useState<number>(4)
+  const [childrenLimit, setChildrenLimit] = useState<number>(4)
   const [selected, setSelected] = useState<Child | null>(null)
   const [adding, setAdding] = useState(false)
   const [wizardStep, setWizardStep] = useState(1)
@@ -134,7 +134,11 @@ export default function ChildrenPage() {
         localStorage.clear()
       }
     }
-    const { data } = await supabase.from('children').select('*').eq('user_id', user.id)
+    const [{ data }, { data: billing }] = await Promise.all([
+      supabase.from('children').select('*').eq('user_id', user.id),
+      supabase.from('profiles').select('children_count').eq('id', user.id).maybeSingle(),
+    ])
+    setChildrenLimit(Math.max(4, billing?.children_count ?? 0))
     if (data) {
       const mapped = data.map((c: any) => ({
         id: c.id, name: c.name, age: c.age_group, age_group: c.age_group,
@@ -230,16 +234,6 @@ export default function ChildrenPage() {
           }
         }
       } catch { /* ignore */ }
-    }
-
-    if (langChanged || subjectsChanged) {
-      try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (user) {
-          await supabase.from('weekly_plans').delete().eq('user_id', user.id).eq('child_name', selected.name)
-          if (langChanged) await supabase.from('language_plans').delete().eq('user_id', user.id).eq('child_name', selected.name)
-        }
-      } catch (e) { console.error('[saveEdit] cache invalidation error:', e) }
     }
 
     setEditing(false)

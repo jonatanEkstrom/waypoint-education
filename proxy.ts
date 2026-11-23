@@ -3,7 +3,7 @@ import { createServerClient } from '@supabase/ssr'
 import { adminClient, ensureTrial, hasAccess, syncCheckoutSession } from './app/lib/server/access'
 
 const AUTH_ONLY_ROUTES: string[] = []
-const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community', '/practice', '/little-readers']
+const PROTECTED_ROUTES = ['/dashboard', '/onboarding', '/worksheets', '/journal', '/community', '/practice', '/little-readers', '/portfolio', '/la-report']
 
 export async function proxy(req: NextRequest) {
   const { pathname } = req.nextUrl
@@ -73,5 +73,7 @@ export const config = {
     '/community/:path*',
     '/little-readers/:path*',
     '/practice/:path*',
+    '/portfolio/:path*',
+    '/la-report/:path*',
   ],
 }

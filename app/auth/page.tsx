@@ -21,6 +21,7 @@ function AuthForm() {
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [checkEmail, setCheckEmail] = useState(false)
   const [agreedToTerms, setAgreedToTerms] = useState(false)
   const [isMobile, setIsMobile] = useState(false)
   const offer = useOfferLive()
@@ -53,12 +54,10 @@ function AuthForm() {
         // Do NOT clear localStorage here — it wipes the Supabase session token and
         // triggers the client's storage listener, nullifying the session before the
         // redirect lands. Cross-user cleanup is handled by /dashboard/children.
-        const returnTo = decodeURIComponent(params.get('returnTo') || '/dashboard/children')
-        // Always go through child selection first — strip bare /dashboard to /dashboard/children
-        const destination = returnTo === '/dashboard' || returnTo.startsWith('/dashboard?')
-          ? '/dashboard/children'
-          : returnTo
-        router.push(destination)
+        const returnTo = params.get('returnTo')
+        const destination = returnTo?.startsWith('/') && !returnTo.startsWith('//') && !returnTo.includes('\\')
+          ? returnTo : '/dashboard/children'
+        router.replace(destination === '/dashboard' ? '/dashboard/children' : destination)
       } else {
         const { data, error } = await supabase.auth.signUp({
           email,
@@ -66,30 +65,12 @@ function AuthForm() {
           options: { emailRedirectTo: `${window.location.origin}/auth/confirm` },
         })
         if (error) throw error
-        console.log('[signup] signUp succeeded, data.session:', !!data.session, '| data.user:', data.user?.id)
-        // Fire welcome email regardless of whether confirmation is required
-        console.log('[signup] firing welcome-email fetch for:', email)
-        try {
-          const res = await fetch('/api/welcome-email', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email }),
-          })
-          const json = await res.json()
-          console.log('[welcome-email] status:', res.status, '| response:', json)
-        } catch (e) {
-          console.error('[welcome-email] fetch failed:', e)
+        if (!data.session) {
+          setCheckEmail(true)
+          return
         }
-        console.log('[signup] welcome-email fetch complete')
-
-        if (data.user) {
-          await fetch('/api/start-trial', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ user_id: data.user.id, email: data.user.email }),
-          })
-        }
-        router.push(offer ? '/subscribe' : '/onboarding')
+        void fetch('/api/welcome-email', { method: 'POST', keepalive: true }).catch(() => {})
+        router.replace(offer ? '/subscribe' : '/onboarding')
       }
     } catch (e: any) {
       setError(e.message)
@@ -97,6 +78,14 @@ function AuthForm() {
       setLoading(false)
     }
   }
+
+  if (checkEmail) return (
+    <main style={{ maxWidth: 480, margin: '64px auto', padding: 24 }}>
+      <h1>Check your email</h1>
+      <p>Open the confirmation link sent to {email} to finish setting up Waypoint.</p>
+      <button type="button" onClick={() => { setCheckEmail(false); setIsLogin(true) }}>Back to sign in</button>
+    </main>
+  )
 
   const inputStyle = {
     width: '100%', padding: '13px 16px', borderRadius: 14,

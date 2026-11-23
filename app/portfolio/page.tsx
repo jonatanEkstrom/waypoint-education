@@ -54,12 +54,15 @@ export default function PortfolioPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem('activeChild')
-    if (!stored) { router.push('/onboarding'); return }
-    setChild(JSON.parse(stored))
+    if (!stored) { router.replace('/dashboard/children'); return }
+    let selected
+    try { selected = JSON.parse(stored) } catch { router.replace('/dashboard/children'); return }
     supabase.auth.getUser().then(({ data }) => {
       const uid = data?.user?.id
       if (!uid) { router.push('/auth'); return }
-      loadEntries(uid)
+      if (selected?.user_id !== uid || !selected.id) { router.replace('/dashboard/children'); return }
+      setChild(selected)
+      void loadEntries(uid, selected.id)
     })
     const check = () => setIsMobile(window.innerWidth < 640)
     check()
@@ -67,13 +70,14 @@ export default function PortfolioPage() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  async function loadEntries(uid: string) {
+  async function loadEntries(uid: string, childId: string) {
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('journal_entries')
         .select('*')
         .eq('user_id', uid)
+        .eq('child_id', childId)
         .order('created_at', { ascending: false })
       if (error) throw error
       setEntries(data || [])

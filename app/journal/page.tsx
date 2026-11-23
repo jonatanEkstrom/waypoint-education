@@ -30,7 +30,8 @@ const SUBJECTS = [
 
 export default function JournalPage() {
   const [child, setChild] = useState<any>(null)
-  const [userId, setUserId] = useState<string>('guest')
+  const [userId, setUserId] = useState<string | null>(null)
+  const [error, setError] = useState('')
   const [entries, setEntries] = useState<any[]>([])
   const [text, setText] = useState('')
   const [loading, setLoading] = useState(false)
@@ -41,12 +42,16 @@ export default function JournalPage() {
 
   useEffect(() => {
     const stored = localStorage.getItem('activeChild')
-    if (!stored) { router.push('/onboarding'); return }
-    setChild(JSON.parse(stored))
+    let selected: { id: string; user_id: string; name: string; city: string; country: string } | null = null
+    try { selected = JSON.parse(stored ?? 'null') } catch { /* Choose a profile below. */ }
+    if (!selected || !/^[a-f0-9-]{36}$/i.test(selected?.id ?? '')) { router.replace('/dashboard/children'); return }
     supabase.auth.getUser().then(({ data }) => {
-      const id = data?.user?.id || 'guest'
+      const id = data.user?.id
+      if (!id) { router.replace('/auth'); return }
+      if (id !== selected.user_id) { router.replace('/dashboard/children'); return }
+      setChild(selected)
       setUserId(id)
-      loadEntries(id)
+      void loadEntries(id, selected.id)
     })
     const check = () => setIsMobile(window.innerWidth < 640)
     check()
@@ -54,13 +59,14 @@ export default function JournalPage() {
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  async function loadEntries(uid: string) {
+  async function loadEntries(uid: string, childId: string) {
     setLoading(true)
     try {
       const { data, error } = await supabase
         .from('journal_entries')
         .select('*')
         .eq('user_id', uid)
+        .or(`child_id.eq.${childId},child_id.is.null`)
         .order('created_at', { ascending: false })
       if (error) throw error
       setEntries(data || [])
@@ -72,11 +78,13 @@ export default function JournalPage() {
   }
 
   async function saveEntry() {
-    if (!text.trim()) return
+    if (!text.trim() || !userId || !child?.id) return
+    setError('')
     setSaving(true)
     try {
       const entry = {
         user_id: userId,
+        child_id: child.id,
         city: child?.city,
         country: child?.country,
         date: new Date().toLocaleDateString(),
@@ -93,16 +101,29 @@ export default function JournalPage() {
       setEntries(prev => [data, ...prev])
       setText('')
       setSelectedTags([])
-    } catch (e) {
-      console.error(e)
+    } catch {
+      setError('Could not save this entry. Your text is still here.')
     } finally {
       setSaving(false)
     }
   }
 
+  async function assignEntry(id: string) {
+    if (!child?.id || !userId) return
+    setError('')
+    const { data, error: assignError } = await supabase.from('journal_entries')
+      .update({ child_id: child.id }).eq('id', id).is('child_id', null).select().maybeSingle()
+    if (assignError || !data) {
+      setError('Could not assign this entry. Refresh the journal and try again.')
+      return
+    }
+    setEntries(prev => prev.map(entry => entry.id === id ? data : entry))
+  }
+
   async function deleteEntry(id: string) {
     try {
-      await supabase.from('journal_entries').delete().eq('id', id)
+      const { error } = await supabase.from('journal_entries').delete().eq('id', id).select('id').single()
+      if (error) throw error
       setEntries(prev => prev.filter(e => e.id !== id))
     } catch (e) {
       console.error(e)
@@ -169,6 +190,8 @@ export default function JournalPage() {
           </button>
         </div>
 
+        {error && <p role="alert">{error}</p>}
+
         {/* Entries */}
         {loading ? (
           <div style={{ textAlign: 'center', padding: 40 }}>
@@ -192,6 +215,9 @@ export default function JournalPage() {
                   style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 16, color: BEIGE_BORDER, padding: 4 }}>🗑</button>
               </div>
               <p style={{ fontSize: 15, color: TEXT, lineHeight: 1.7, margin: 0 }}>{entry.text}</p>
+              {!entry.child_id && (
+                <p>Unassigned entry · <button type="button" onClick={() => assignEntry(entry.id)}>Assign to {child?.name}</button></p>
+              )}
               {entry.tags?.length > 0 && (
                 <div style={{ display: 'flex', flexWrap: 'wrap' as const, gap: 6, marginTop: 12 }}>
                   {(entry.tags as string[]).map(tag => {

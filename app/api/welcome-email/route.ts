@@ -1,27 +1,20 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { Resend } from 'resend'
-import { adminClient } from '@/app/lib/server/access'
+import { requireUser } from '@/app/lib/server/access'
 import { isOfferLive } from '@/app/lib/server/offer'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const { email } = await request.json()
-    if (!email || typeof email !== 'string') return NextResponse.json({ error: 'Missing email' }, { status: 400 })
+    const auth = await requireUser()
+    if ('response' in auth) return auth.response
+    const { email, email_confirmed_at, created_at, id } = auth.user
+    if (!email || !email_confirmed_at || Date.now() - Date.parse(created_at) > 24 * 60 * 60 * 1000) {
+      return NextResponse.json({ success: true })
+    }
 
-    // Only send to an account that signed up in the last 15 minutes, so this
-    // endpoint cannot be used to send mail to arbitrary addresses.
-    const { data: list, error: listError } = await adminClient().auth.admin.listUsers({ page: 1, perPage: 1000 })
-    if (listError) throw listError
-    const target = email.trim().toLowerCase()
-    const recent = list.users.find(u =>
-      u.email?.toLowerCase() === target &&
-      Date.now() - new Date(u.created_at).getTime() < 15 * 60 * 1000
-    )
-    if (!recent) return NextResponse.json({ success: true })
-
-    const offer = isOfferLive()
+    const offer = isOfferLive(new Date(created_at))
 
     const { data, error } = await resend.emails.send({
       from: 'Waypoint Education <noreply@waypointeducation.world>',
@@ -52,13 +45,13 @@ export async function POST(request: NextRequest) {
       <p style="font-size:15px;line-height:1.7;color:#2D2D2D;margin:0 0 24px">
         ${offer
           ? 'Your account is ready. Choose a plan to get started — <strong>your first billing period is 50% off</strong>, and you can cancel anytime.'
-          : "Your <strong>10-day free trial has started.</strong> Explore everything at your own pace — no card needed, and nothing is charged unless you choose a plan."}
+          : "Your <strong>10-day free trial starts when you first open Waypoint.</strong> Explore everything at your own pace — no card needed, and nothing is charged unless you choose a plan."}
       </p>
 
       <div style="background:#F0EBF9;border-radius:14px;padding:20px 24px;border:1px solid #DDD0F0;margin-bottom:28px">
         <p style="font-size:15px;font-weight:700;color:#9B8EC4;margin:0 0 8px">👉 Your first stop: the dashboard</p>
         <p style="font-size:14px;line-height:1.6;color:#2D2D2D;margin:0">
-          Add your child's profile — age, current location, and learning style — and Waypoint will generate a personalised lesson plan in seconds. Your adventure begins right there.
+          Add your child's profile — age, current location, and learning style — and Waypoint will prepare lessons matched to their current learning goals. Your adventure begins right there.
         </p>
       </div>
 
@@ -76,7 +69,7 @@ export async function POST(request: NextRequest) {
       <p style="font-size:14px;font-weight:700;color:#2D2D2D;margin:0 0 12px">Here's what's waiting for you:</p>
       <div style="display:flex;flex-direction:column;gap:10px">
         ${[
-          ['🗺️', 'Generate a location-based lesson plan in 30 seconds'],
+          ['🗺️', 'Open a lesson matched to your child’s next goal'],
           ['📄', 'Create printable worksheets your kids will actually enjoy'],
           ['📖', 'Start a travel journal — capture your family\'s adventures'],
           ['🧠', 'Run a quick quiz to see what sticks'],
@@ -102,7 +95,7 @@ export async function POST(request: NextRequest) {
   </div>
 </body>
 </html>`,
-    })
+    }, { idempotencyKey: `waypoint-welcome-${id}` })
 
     if (error) {
       console.error('[welcome-email] Resend API error:', JSON.stringify(error))

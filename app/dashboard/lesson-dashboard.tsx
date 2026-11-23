@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../lib/supabase'
 
-import { CURRICULUM_SUBJECTS } from '../lib/curriculum'
+import { curriculumBand, CURRICULUM_SUBJECTS } from '../lib/curriculum'
 
 const PRIMARY = '#9B8EC4'
 const PRIMARY_DARK = '#7B6BAA'
@@ -59,6 +59,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
   selectedChild: LessonChild | null
 }) {
   const [child, setChild] = useState<any>(selectedChild)
+  const [resumeSubject, setResumeSubject] = useState<string | null>(null)
   const [selectedSubjectSlug, setSelectedSubjectSlug] = useState<string | null>(null)
   const [lesson, setLesson] = useState<any>(null)
   const [lessonLoading, setLessonLoading] = useState(false)
@@ -217,6 +218,20 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
     } catch (e) { console.error('[Dashboard] Failed to refresh child:', e) }
   }
 
+  useEffect(() => {
+    if (!child?.id) return
+    try {
+      setResumeSubject(localStorage.getItem(`waypoint.resume:${accountId}:${child.id}`))
+    } catch { /* Browser storage is optional. */ }
+  }, [accountId, child?.id])
+
+  function rememberSubject(slug: string) {
+    setResumeSubject(slug)
+    try {
+      localStorage.setItem(`waypoint.resume:${accountId}:${child.id}`, slug)
+    } catch { /* Lessons remain available through the subject menu. */ }
+  }
+
   async function loadLesson(slug: string) {
     if (!child) return
     lessonRequest.current?.abort()
@@ -252,6 +267,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
         setLessonError('error')
       } else {
         setLesson(parsed)
+        rememberSubject(slug)
       }
     } catch (e) {
       if (lessonRequest.current !== controller) return
@@ -316,7 +332,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
       const { data: existing, error: findError } = await plans()
         .select('plan, language_week, quiz_answers')
         .eq('user_id', accountId)
-        .eq('child_name', child.name)
+        .eq('child_id', child.id)
         .eq('language', language)
         .eq('calendar_week', calendarWeek)
         .abortSignal(signal)
@@ -329,7 +345,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
         const { data: previous, count, error: historyError } = await plans()
           .select('plan', { count: 'exact' })
           .eq('user_id', accountId)
-          .eq('child_name', child.name)
+          .eq('child_id', child.id)
           .eq('language', language)
           .order('language_week', { ascending: false })
           .limit(3)
@@ -343,9 +359,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
           signal,
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            language,
-            age_group: child.age_group,
-            child_name: child.name,
+            child_id: child.id,
             language_week: week,
             previous_summary: previous
               ?.map(({ plan }) => `Week ${plan.week_number} (${plan.week_theme}): ${plan.weekly_summary}`)
@@ -359,11 +373,12 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
         void plans().upsert({
           user_id: accountId,
           child_name: child.name,
+          child_id: child.id,
           language,
           calendar_week: calendarWeek,
           language_week: week,
           plan,
-        }, { onConflict: 'user_id,child_name,language,calendar_week', ignoreDuplicates: true })
+        }, { onConflict: 'child_id,language,calendar_week', ignoreDuplicates: true })
           .abortSignal(AbortSignal.timeout(10_000))
           .then(({ error }) => {
             if (error) console.error('[Language] Could not save plan:', error.code)
@@ -390,12 +405,13 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
       const { error } = await supabase.from('language_plans').upsert({
         user_id: accountId,
         child_name: child.name,
+        child_id: child.id,
         language: child.language_learning,
         calendar_week: langCalendarWeek,
         language_week: langWeek,
         plan: langPlan,
         quiz_answers: langQuizAnswers,
-      }, { onConflict: 'user_id,child_name,language,calendar_week' })
+      }, { onConflict: 'child_id,language,calendar_week' })
         .abortSignal(AbortSignal.timeout(10_000))
       if (error) throw error
       setLangQuizSubmitted(true)
@@ -427,6 +443,8 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
+  const band = child?.age_group ? curriculumBand(child.age_group) : ''
+  const colouringMode = band === '13+' ? 'algebra' : band === '7-9' || band === '10-12' ? 'sums' : 'numbers'
   const chosenSubjects: string[] = child?.subjects ?? []
   const availableSubjects = new Map<string, string>()
   const interests = []
@@ -619,8 +637,15 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
           <div>
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 22, color: TEXT, margin: '0 0 4px 0' }}>Hi {child?.name}! 👋</h2>
-              <p style={{ color: TEXT_MUTED, fontSize: 14, margin: 0 }}>Pick a subject to start today's lesson.</p>
+              <p style={{ color: TEXT_MUTED, fontSize: 14, margin: 0 }}>Choose one subject to get started. You can pause whenever you need.</p>
             </div>
+
+            {!selectedSubjectSlug && resumeSubject && availableSubjects.has(resumeSubject) && (
+              <button type="button" className="tap-btn" onClick={() => handleSubjectClick(resumeSubject)}
+                style={{ background: PRIMARY_DARK, color: 'white', border: 0, borderRadius: 14, padding: '12px 18px', marginBottom: 16, fontWeight: 700 }}>
+                Continue {availableSubjects.get(resumeSubject)}
+              </button>
+            )}
 
             {availableSubjects.size === 0 ? (
               <div style={{ background: BEIGE_CARD, borderRadius: 16, padding: 24, border: `2px solid ${BEIGE_BORDER}`, textAlign: 'center' as const, color: TEXT_MUTED }}>
@@ -659,7 +684,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
                   <button onClick={closeLesson} disabled={markingComplete}
                     onMouseEnter={() => setHover('close-lesson')} onMouseLeave={() => setHover(null)}
                     style={btn('close-lesson', { background: 'none', border: 'none', color: TEXT_MUTED, fontSize: 13, fontWeight: 700, fontFamily: 'inherit', padding: 0 }, { color: PRIMARY })}>
-                    ✕ Close
+                    Pause for now
                   </button>
                 </div>
 
@@ -779,7 +804,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
 
                     {selectedSubjectSlug === 'mathematics' && (
                       <p className="no-print">
-                        <a href={`/worksheets/colour-by-number?mode=${child.age_group === '7–9 years' ? 'sums' : 'numbers'}&motif=${child.age_group === '7–9 years' ? 'market' : 'boat'}`}>
+                        <a href={`/worksheets/colour-by-number?mode=${colouringMode}`}>
                           Print a colouring activity
                         </a>
                       </p>
@@ -788,6 +813,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
                     {lesson.check_for_understanding && (
                       <section style={{ marginBottom: 16 }}>
                         <h3>Check understanding</h3>
+                        <p>Say your answer aloud, show it with objects or write it down.</p>
                         <p>{lesson.check_for_understanding}</p>
                         <button type="button" disabled={markingComplete} onClick={() => saveLessonOutcome('needs_review')}>Needs more practice</button>
                         {' · '}

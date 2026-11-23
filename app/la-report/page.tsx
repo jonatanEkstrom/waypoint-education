@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import { supabase } from '../lib/supabase'
 
@@ -37,26 +37,10 @@ interface JournalEntry {
   story?: string
 }
 
-interface Lesson {
-  subject: string
-  title: string
-  duration: string
-  activity: string
-  goal?: string
-}
-
-interface DayPlan {
-  day: string
-  focus: string
-  lessons: Lesson[]
-}
-
 interface WeekPlan {
-  child_name: string
-  week_number: number
-  city: string
-  country: string
-  plan: { week_theme: string; days: DayPlan[] }
+  language: string
+  calendar_week: number
+  plan: { days?: Array<{ day: string; focus: string; activity: string }> }
 }
 
 const PHILOSOPHY: Record<string, string> = {
@@ -145,6 +129,8 @@ export default function LAReportPage() {
   const [selected, setSelected] = useState<Child | null>(null)
   const [journal, setJournal] = useState<JournalEntry[]>([])
   const [completedGoals, setCompletedGoals] = useState<{ id: string; name: string }[]>([])
+  const reportRequest = useRef(0)
+  const [reportError, setReportError] = useState(false)
   const [plans, setPlans] = useState<WeekPlan[]>([])
   const [isMobile, setIsMobile] = useState(false)
 
@@ -186,27 +172,36 @@ export default function LAReportPage() {
   }
 
   async function fetchData(userId: string, child: Child) {
+    const request = ++reportRequest.current
     setFetching(true)
+    setReportError(false)
+    setJournal([])
+    setPlans([])
+    setCompletedGoals([])
     const [journalRes, plansRes, progressRes] = await Promise.all([
       supabase
         .from('journal_entries')
         .select('id, date, city, country, text, story')
         .eq('user_id', userId)
+        .eq('child_id', child.id)
         .order('created_at', { ascending: true }),
       supabase
-        .from('weekly_plans')
-        .select('child_name, week_number, city, country, plan')
+        .from('language_plans')
+        .select('language, calendar_week, plan')
         .eq('user_id', userId)
-        .eq('child_name', child.name)
-        .order('week_number', { ascending: true }),
+        .eq('child_id', child.id)
+        .order('calendar_week', { ascending: true }),
       supabase.from('child_progress').select('concept_id').eq('child_id', child.id).eq('status', 'completed'),
     ])
-    if (journalRes.data) setJournal(journalRes.data)
-    if (plansRes.data) setPlans(plansRes.data)
+    if (request !== reportRequest.current) return
     const ids = [...new Set((progressRes.data ?? []).map(row => row.concept_id))]
-    const { data: goals } = ids.length
+    const { data: goals, error: goalsError } = ids.length
       ? await supabase.from('curriculum_concepts').select('id, concept_name').in('id', ids).order('concept_name')
-      : { data: [] }
+      : { data: [], error: null }
+    if (request !== reportRequest.current) return
+    setReportError(!!(journalRes.error || plansRes.error || progressRes.error || goalsError))
+    setJournal(journalRes.data ?? [])
+    setPlans(plansRes.data ?? [])
     setCompletedGoals((goals ?? []).map(goal => ({ id: goal.id, name: goal.concept_name })))
     setFetching(false)
   }
@@ -231,7 +226,7 @@ export default function LAReportPage() {
     if (!maxDate || d > maxDate) maxDate = d
   })
   plans.forEach(wp => {
-    const d = weekNumberToDate(wp.week_number)
+    const d = weekNumberToDate(wp.calendar_week)
     if (!minDate || d < minDate) minDate = d
     if (!maxDate || d > maxDate) maxDate = d
   })
@@ -249,14 +244,11 @@ export default function LAReportPage() {
   // Group lessons by subject across all weekly plans
   const bySubject: Record<string, Array<{ week: string; day: string; title: string; duration: string; activity: string }>> = {}
   plans.forEach(wp => {
-    const weekStr = weekNumberToDate(wp.week_number)
+    const weekStr = weekNumberToDate(wp.calendar_week)
       .toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
     wp.plan?.days?.forEach(day => {
-      day.lessons?.forEach(l => {
-        const subj = l.subject || 'General'
-        if (!bySubject[subj]) bySubject[subj] = []
-        bySubject[subj].push({ week: `w/c ${weekStr}`, day: day.day, title: l.title, duration: l.duration, activity: l.activity })
-      })
+      if (!bySubject[wp.language]) bySubject[wp.language] = []
+      bySubject[wp.language].push({ week: weekStr, day: day.day, title: day.focus, duration: '—', activity: day.activity })
     })
   })
 
@@ -437,11 +429,13 @@ export default function LAReportPage() {
 
         <Divider />
 
+        {reportError && <p role="alert">Some records could not be loaded. Select the child again to retry before printing.</p>}
+
         {/* ── Section 3: Lesson Plans ── */}
         <div className="page-break" style={{ paddingTop: 44, marginBottom: 8 }}>
-          <SectionHeader number="3" title="Structured Lesson Plans" subtitle={selected ? `${selected.name}'s Weekly Plans` : ''} />
+          <SectionHeader number="3" title="Learning goals and language plans" subtitle={selected ? `${selected.name}'s Weekly Plans` : ''} />
           <p style={{ fontSize: 13, color: TEXT_MUTED, marginTop: -8, marginBottom: 24, fontStyle: 'italic' }}>
-            AI-generated lesson plans tailored to the child's age group, current location, and educational approach, grouped by subject area.
+            Completed goals and saved language plans for this child.
           </p>
 
           {completedGoals.length > 0 && (
@@ -494,7 +488,7 @@ export default function LAReportPage() {
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr 1fr' : 'repeat(4, 1fr)', gap: 14, marginBottom: 28 }}>
             {[
               { label: 'Journal Entries', value: journal.length, icon: '📖' },
-              { label: 'Weeks Planned', value: plans.length, icon: '📅' },
+              { label: 'Language Plans', value: plans.length, icon: '📅' },
               { label: 'Subjects', value: allSubjects.length, icon: '📚' },
               { label: 'Locations', value: locations.length, icon: '🌍' },
             ].map(s => (

@@ -1,138 +1,56 @@
 import { NextRequest, NextResponse } from 'next/server'
 import Stripe from 'stripe'
-import { createClient } from '@supabase/supabase-js'
+import { adminClient } from '@/app/lib/server/access'
+import { fulfillWaypointCheckout, isWaypointBilling, syncWaypointSubscription } from '@/app/lib/server/stripe-access'
 
 export const maxDuration = 30
 
-async function getSupabase() {
-  return createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-  )
-}
-
-async function updateByUserId(
-  supabase: Awaited<ReturnType<typeof getSupabase>>,
-  userId: string,
-  fields: Record<string, unknown>,
-  context: string
-): Promise<boolean> {
-  const { error } = await supabase.from('profiles').update(fields).eq('id', userId)
-  if (error) { console.error(`[webhook] Supabase error (${context}):`, error); return false }
-  return true
-}
-
-async function updateByCustomerId(
-  supabase: Awaited<ReturnType<typeof getSupabase>>,
-  customerId: string,
-  fields: Record<string, unknown>,
-  context: string
-): Promise<boolean> {
-  const { error } = await supabase
-    .from('profiles')
-    .update(fields)
-    .eq('stripe_customer_id', customerId)
-  if (error) { console.error(`[webhook] Supabase error (${context}):`, error); return false }
-  return true
-}
-
-// The Stripe account is shared with other Haijja products (e.g. IntentTrail),
-// so every event arrives here. Only act on Waypoint objects.
-const WAYPOINT_BILLING = new Set(['monthly', 'quarterly', 'yearly'])
-function isWaypoint(metadata: Stripe.Metadata | null | undefined): boolean {
-  if (!metadata) return false
-  if (metadata.app) return metadata.app === 'waypoint'
-  // Legacy Waypoint checkouts had no app tag but always set user_id + billing.
-  return !!metadata.user_id && WAYPOINT_BILLING.has(metadata.billing ?? '')
-}
-
 export async function POST(req: NextRequest) {
   const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
-  const body = await req.text()
-  const sig = req.headers.get('stripe-signature')!
-
-  const webhookSecret = (process.env.STRIPE_WEBHOOK_SECRET ?? '').trim()
-  if (!webhookSecret) {
-    console.error('[webhook] STRIPE_WEBHOOK_SECRET is not set')
-    return NextResponse.json({ error: 'Webhook secret not configured' }, { status: 500 })
-  }
+  const signature = req.headers.get('stripe-signature')
+  const secret = process.env.STRIPE_WEBHOOK_SECRET?.trim()
+  if (!secret) return NextResponse.json({ error: 'webhook_not_configured' }, { status: 500 })
+  if (!signature) return NextResponse.json({ error: 'invalid_signature' }, { status: 400 })
 
   let event: Stripe.Event
   try {
-    event = stripe.webhooks.constructEvent(body, sig, webhookSecret)
-  } catch (err: any) {
-    console.error('[webhook] Signature verification failed:', err.message)
-    return NextResponse.json({ error: 'Webhook signature verification failed' }, { status: 400 })
+    event = stripe.webhooks.constructEvent(await req.text(), signature, secret)
+  } catch {
+    return NextResponse.json({ error: 'invalid_signature' }, { status: 400 })
   }
 
-  const supabase = await getSupabase()
-  console.log('[webhook] Received event:', event.type)
-
-  // ── checkout.session.completed ────────────────────────────────────────────
-  if (event.type === 'checkout.session.completed') {
-    const session = event.data.object as Stripe.Checkout.Session
-    if (!isWaypoint(session.metadata)) return NextResponse.json({ received: true, ignored: true })
-    const userId = session.metadata?.user_id
-    if (!userId) {
-      console.error('[webhook] checkout.session.completed missing user_id in metadata')
-      return NextResponse.json({ error: 'Missing user_id' }, { status: 400 })
+  const admin = adminClient()
+  try {
+    switch (event.type) {
+      case 'checkout.session.completed':
+      case 'checkout.session.async_payment_succeeded': {
+        const session = event.data.object
+        if (session.metadata?.user_id && isWaypointBilling(session.metadata)) {
+          await fulfillWaypointCheckout(admin, stripe, session, session.metadata.user_id)
+        }
+        break
+      }
+      case 'customer.subscription.updated':
+      case 'customer.subscription.deleted': {
+        const subscription = event.data.object
+        if (isWaypointBilling(subscription.metadata)) {
+          await syncWaypointSubscription(admin, stripe, subscription.id)
+        }
+        break
+      }
+      case 'invoice.paid':
+      case 'invoice.payment_failed': {
+        const invoice = event.data.object
+        const legacyInvoice = invoice as Stripe.Invoice & { subscription?: string | Stripe.Subscription | null }
+        const reference = invoice.parent?.subscription_details?.subscription ?? legacyInvoice.subscription
+        const subscriptionId = typeof reference === 'string' ? reference : reference?.id
+        if (subscriptionId) await syncWaypointSubscription(admin, stripe, subscriptionId)
+        break
+      }
     }
-    const children = parseInt(session.metadata?.children || '1')
-    const { error } = await supabase.from('profiles').upsert({
-      id: userId,
-      subscription_status: 'active',
-      stripe_customer_id: session.customer as string,
-      stripe_subscription_id: session.subscription as string ?? null,
-      children_count: children,
-    }, { onConflict: 'id' })
-    if (error) {
-      console.error('[webhook] Supabase error (checkout.session.completed):', error)
-      return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
-    }
+    return NextResponse.json({ received: true })
+  } catch (error) {
+    console.error('[stripe webhook] sync failed:', event.type, error instanceof Error ? error.name : 'DatabaseError')
+    return NextResponse.json({ error: 'billing_sync_failed' }, { status: 500 })
   }
-
-  // ── customer.subscription.updated ────────────────────────────────────────
-  if (event.type === 'customer.subscription.updated') {
-    const sub = event.data.object as Stripe.Subscription
-    const userId = isWaypoint(sub.metadata) ? sub.metadata?.user_id : undefined
-    if (userId) {
-      const status = sub.status === 'active' || sub.status === 'trialing' ? 'active'
-        : sub.status === 'past_due' ? 'past_due'
-        : 'expired'
-      const ok = await updateByUserId(supabase, userId, { subscription_status: status }, event.type)
-      if (!ok) return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
-    }
-  }
-
-  // ── customer.subscription.deleted ────────────────────────────────────────
-  if (event.type === 'customer.subscription.deleted') {
-    const sub = event.data.object as Stripe.Subscription
-    const userId = isWaypoint(sub.metadata) ? sub.metadata?.user_id : undefined
-    if (userId) {
-      const ok = await updateByUserId(supabase, userId, { subscription_status: 'expired' }, event.type)
-      if (!ok) return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
-    }
-  }
-
-  // ── invoice.paid ─────────────────────────────────────────────────────────
-  if (event.type === 'invoice.paid') {
-    const invoice = event.data.object as Stripe.Invoice
-    const customerId = invoice.customer as string
-    if (customerId) {
-      const ok = await updateByCustomerId(supabase, customerId, { subscription_status: 'active' }, event.type)
-      if (!ok) return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
-    }
-  }
-
-  // ── invoice.payment_failed ────────────────────────────────────────────────
-  if (event.type === 'invoice.payment_failed') {
-    const invoice = event.data.object as Stripe.Invoice
-    const customerId = invoice.customer as string
-    if (customerId) {
-      const ok = await updateByCustomerId(supabase, customerId, { subscription_status: 'past_due' }, event.type)
-      if (!ok) return NextResponse.json({ error: 'Database update failed' }, { status: 500 })
-    }
-  }
-
-  return NextResponse.json({ received: true })
 }

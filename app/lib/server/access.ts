@@ -4,6 +4,7 @@ import { createServerClient } from '@supabase/ssr'
 import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
 import Stripe from 'stripe'
 import { isOfferLive } from './offer'
+import { fulfillWaypointCheckout } from './stripe-access'
 
 export const TRIAL_DAYS = 10
 
@@ -43,11 +44,12 @@ export type AccessProfile = {
   subscription_status: string | null
   trial_end_date: string | null
   trial_started_at: string | null
+  billing_access_until?: string | null
 }
 
 export function hasAccess(p: AccessProfile | null | undefined): boolean {
   if (!p) return false
-  if (p.subscription_status === 'active') return true
+  if (p.subscription_status === 'active') return !p.billing_access_until || new Date(p.billing_access_until) > new Date()
   if (p.subscription_status === 'trial') {
     return !!p.trial_end_date && new Date(p.trial_end_date) > new Date()
   }
@@ -57,7 +59,7 @@ export function hasAccess(p: AccessProfile | null | undefined): boolean {
 export async function getAccessProfile(admin: SupabaseClient, userId: string): Promise<AccessProfile | null> {
   const { data } = await admin
     .from('profiles')
-    .select('subscription_status, trial_end_date, trial_started_at')
+    .select('subscription_status, trial_end_date, trial_started_at, billing_access_until')
     .eq('id', userId)
     .maybeSingle()
   return data
@@ -74,7 +76,7 @@ export async function ensureTrial(admin: SupabaseClient, user: User): Promise<Ac
   if (!neverTrialed || !noSubscriptionHistory) return existing
   // From the launch offer date, new accounts get 50% off the first period at
   // checkout instead of a free trial.
-  if (isOfferLive()) return existing
+  if (isOfferLive(new Date(user.created_at))) return existing
 
   const now = new Date()
   const trialEnd = new Date(now.getTime() + TRIAL_DAYS * 24 * 60 * 60 * 1000)
@@ -105,19 +107,7 @@ export async function syncCheckoutSession(admin: SupabaseClient, userId: string,
   try {
     const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!)
     const session = await stripe.checkout.sessions.retrieve(sessionId)
-    const paid = session.status === 'complete' && (session.payment_status === 'paid' || session.payment_status === 'no_payment_required')
-    if (!paid || session.mode !== 'subscription' || session.metadata?.user_id !== userId) return false
-    if (typeof session.subscription !== 'string') return false
-    const subscription = await stripe.subscriptions.retrieve(session.subscription)
-    if (subscription.status !== 'active' || subscription.metadata.user_id !== userId) return false
-    // Upsert: from the launch offer, new accounts may not have a profile row yet.
-    const { error } = await admin.from('profiles').upsert({
-      id: userId,
-      subscription_status: 'active',
-      stripe_customer_id: session.customer as string,
-      stripe_subscription_id: (session.subscription as string) ?? null,
-    }, { onConflict: 'id' })
-    return !error
+    return await fulfillWaypointCheckout(admin, stripe, session, userId)
   } catch (e: any) {
     console.error('[syncCheckoutSession] error:', e.message)
     return false
