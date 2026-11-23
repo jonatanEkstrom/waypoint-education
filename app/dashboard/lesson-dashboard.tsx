@@ -19,6 +19,7 @@ const GREEN_BG = '#EDF7F2'
 const GREEN_BORDER = '#D5F0E3'
 const TEXT = '#2D2D2D'
 const TEXT_MUTED = '#9E9188'
+const MAX_TIMEOUT_MS = 2_147_483_647
 
 const SUBJECT_META: Record<string, { icon: string; bg: string; text: string; border: string }> = {
   mathematics: { icon: '🔢', bg: '#FFF0F5', text: '#C4748E', border: '#F5C6D5' },
@@ -141,12 +142,18 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
 
     function scheduleExpiry(end: string | null) {
       clearTimeout(expires)
-      if (end) {
-        expires = setTimeout(() => {
-          setAccessConfirmed(false)
-          void checkAccess()
-        }, Math.max(0, Date.parse(end) - Date.now()))
-      }
+      if (!end) return
+
+      const deadline = Date.parse(end)
+      const remaining = deadline - Date.now()
+      expires = setTimeout(() => {
+        if (Date.now() < deadline) {
+          scheduleExpiry(end)
+          return
+        }
+        setAccessConfirmed(false)
+        void checkAccess()
+      }, Math.min(MAX_TIMEOUT_MS, Math.max(0, remaining)))
     }
 
     if (accessAttempt > 0) void checkAccess()
