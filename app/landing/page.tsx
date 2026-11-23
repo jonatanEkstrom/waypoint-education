@@ -121,7 +121,7 @@ export default function LandingPage() {
     '@type': 'SoftwareApplication',
     name: 'Waypoint Education',
     description: 'Short AI-generated lessons for home-educating and travelling families, with practical activities, worksheets and learning records.',
-    url: 'https://waypointeducation.world',
+    url: 'https://www.waypointeducation.world/landing',
     applicationCategory: 'EducationApplication',
     operatingSystem: 'Web browser',
     offers: {
@@ -215,7 +215,7 @@ export default function LandingPage() {
             School that follows your family
           </h2>
           <p style={{ textAlign: 'center', color: TEXT_MUTED, fontSize: isMobile ? 15 : 17, marginBottom: isMobile ? 36 : 52 }}>
-            Waypoint prepares the lesson. You help your child try it.
+            Waypoint prepares the lesson. You help your child try it. <Link href="/sample-lesson">See a sample lesson</Link>
           </p>
           <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: isMobile ? 20 : 28 }}>
             {[

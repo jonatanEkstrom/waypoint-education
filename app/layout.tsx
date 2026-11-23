@@ -12,7 +12,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const BASE_URL = "https://waypointeducation.world";
+const BASE_URL = "https://www.waypointeducation.world";
 
 export const metadata: Metadata = {
   title: {
@@ -36,19 +36,16 @@ export const metadata: Metadata = {
   authors: [{ name: "Waypoint Education" }],
   creator: "Waypoint Education",
   metadataBase: new URL(BASE_URL),
-  alternates: {
-    canonical: "/",
-  },
   openGraph: {
     type: "website",
-    url: BASE_URL,
+    url: `${BASE_URL}/landing`,
     siteName: "Waypoint Education",
     title: "Waypoint Education — AI Homeschooling for Traveling Families",
     description:
       "Short lessons for travelling and home-educating families, with practical activities, interactive worksheets and learning records.",
     images: [
       {
-        url: `${BASE_URL}/og-image.png`,
+        url: `${BASE_URL}/opengraph-image`,
         width: 1200,
         height: 630,
         alt: "Waypoint Education — AI Homeschooling for Traveling Families",
@@ -61,7 +58,7 @@ export const metadata: Metadata = {
     title: "Waypoint Education — AI Homeschooling for Traveling Families",
     description:
       "Short lessons for travelling and home-educating families, with practical activities, interactive worksheets and learning records.",
-    images: [`${BASE_URL}/og-image.png`],
+    images: [`${BASE_URL}/opengraph-image`],
   },
   robots: {
     index: true,
