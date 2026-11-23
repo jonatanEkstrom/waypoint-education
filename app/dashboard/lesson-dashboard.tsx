@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../lib/supabase'
@@ -40,8 +40,23 @@ function remainingTrialDays(trialEndsAt: string | null) {
   return trialEndsAt ? Math.max(1, Math.ceil((Date.parse(trialEndsAt) - Date.now()) / 86_400_000)) : null
 }
 
-export default function LessonDashboard({ accountId, trialEndsAt }: { accountId: string; trialEndsAt: string | null }) {
-  const [child, setChild] = useState<any>(null)
+type LessonChild = {
+  id: string
+  user_id: string
+  name: string
+  age_group: string
+  city: string | null
+  country: string | null
+  language_learning: string | null
+  subjects: string[] | null
+}
+
+export default function LessonDashboard({ accountId, trialEndsAt, selectedChild }: {
+  accountId: string
+  trialEndsAt: string | null
+  selectedChild: LessonChild | null
+}) {
+  const [child, setChild] = useState<any>(selectedChild)
   const [selectedSubjectSlug, setSelectedSubjectSlug] = useState<string | null>(null)
   const [lesson, setLesson] = useState<any>(null)
   const [lessonLoading, setLessonLoading] = useState(false)
@@ -64,6 +79,8 @@ export default function LessonDashboard({ accountId, trialEndsAt }: { accountId:
   const [menuOpen, setMenuOpen] = useState(false)
   const [accessConfirmed, setAccessConfirmed] = useState(true)
   const [accessError, setAccessError] = useState(false)
+  const verifiedUntil = useRef(trialEndsAt ? Date.parse(trialEndsAt) : Infinity)
+  const lastVerifiedAt = useRef(Date.now())
   const [accessAttempt, setAccessAttempt] = useState(0)
   const [selectionError, setSelectionError] = useState(false)
   const [trialDaysLeft, setTrialDaysLeft] = useState(() => remainingTrialDays(trialEndsAt))
@@ -82,14 +99,17 @@ export default function LessonDashboard({ accountId, trialEndsAt }: { accountId:
     let expires: ReturnType<typeof setTimeout>
     let disposed = false
     let checking = false
+    let controller: AbortController | undefined
 
     async function checkAccess() {
       if (disposed || checking) return
       checking = true
       clearTimeout(timer)
       setAccessError(false)
+      controller = new AbortController()
+      const timeout = setTimeout(() => controller?.abort(), 10_000)
       try {
-        const response = await fetch('/api/access', { cache: 'no-store', signal: AbortSignal.timeout(10_000) })
+        const response = await fetch('/api/access', { cache: 'no-store', signal: controller.signal })
         if (disposed) return
         if (response.status === 401 || response.status === 402) {
           setAccessConfirmed(false)
@@ -101,15 +121,19 @@ export default function LessonDashboard({ accountId, trialEndsAt }: { accountId:
         if (!response.ok) throw new Error('Could not verify access')
         const { trialEndsAt } = await response.json()
         if (disposed) return
+        lastVerifiedAt.current = Date.now()
+        verifiedUntil.current = trialEndsAt ? Date.parse(trialEndsAt) : Infinity
         setTrialDaysLeft(remainingTrialDays(trialEndsAt))
         scheduleExpiry(trialEndsAt)
         setAccessConfirmed(true)
       } catch {
-        if (!disposed) {
+        const now = Date.now()
+        if (!disposed && (now >= verifiedUntil.current || now - lastVerifiedAt.current >= 60_000)) {
           setAccessConfirmed(false)
           setAccessError(true)
         }
       } finally {
+        clearTimeout(timeout)
         checking = false
         if (!disposed) timer = setTimeout(checkAccess, 30_000)
       }
@@ -130,19 +154,31 @@ export default function LessonDashboard({ accountId, trialEndsAt }: { accountId:
       scheduleExpiry(trialEndsAt)
       timer = setTimeout(checkAccess, 30_000)
     }
-    window.addEventListener('focus', checkAccess)
-    window.addEventListener('pageshow', checkAccess)
+    function recheckOnReturn() {
+      if (Date.now() - lastVerifiedAt.current >= 30_000 || Date.now() >= verifiedUntil.current) void checkAccess()
+    }
+    window.addEventListener('focus', recheckOnReturn)
+    window.addEventListener('pageshow', recheckOnReturn)
     return () => {
       disposed = true
       clearTimeout(timer)
       clearTimeout(expires)
-      window.removeEventListener('focus', checkAccess)
-      window.removeEventListener('pageshow', checkAccess)
+      controller?.abort()
+      window.removeEventListener('focus', recheckOnReturn)
+      window.removeEventListener('pageshow', recheckOnReturn)
     }
   }, [accessAttempt, router, trialEndsAt])
 
   useEffect(() => {
     if (!accessConfirmed) return
+    if (selectedChild) {
+      try {
+        const stored = JSON.parse(localStorage.getItem('activeChild') ?? 'null')
+        const existing = stored?.id === selectedChild.id && stored?.user_id === accountId ? stored : {}
+        localStorage.setItem('activeChild', JSON.stringify({ ...existing, ...selectedChild }))
+      } catch { /* Optional for lessons. */ }
+      return
+    }
     try {
       const stored = localStorage.getItem('activeChild')
       const childData = stored ? JSON.parse(stored) : null
@@ -156,7 +192,7 @@ export default function LessonDashboard({ accountId, trialEndsAt }: { accountId:
     } catch {
       setSelectionError(true)
     }
-  }, [accessConfirmed, accountId, router])
+  }, [accessConfirmed, accountId, router, selectedChild])
 
   async function refreshChild(id: string, userId?: string) {
     try {
@@ -174,10 +210,12 @@ export default function LessonDashboard({ accountId, trialEndsAt }: { accountId:
     setLessonLoading(true)
     setLesson(null)
     setLessonError(null)
+    const controller = new AbortController()
+    const timeout = setTimeout(() => controller.abort(), 35_000)
     try {
       const res = await fetch('/api/generate-lesson', {
         method: 'POST',
-        signal: AbortSignal.timeout(35_000),
+        signal: controller.signal,
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ child_id: child.id, subject_slug: slug, city: child.city, country: child.country })
       })
@@ -204,6 +242,7 @@ export default function LessonDashboard({ accountId, trialEndsAt }: { accountId:
       console.error('[loadLesson] Failed:', e)
       setLessonError('error')
     } finally {
+      clearTimeout(timeout)
       setLessonLoading(false)
     }
   }

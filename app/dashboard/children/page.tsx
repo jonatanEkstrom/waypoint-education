@@ -250,15 +250,15 @@ export default function ChildrenPage() {
     loadChildren()
   }
 
-  function openLessons(child: Child) {
+  function rememberLessonChild(child: Child) {
     if (!accountId) return
-    localStorage.setItem('activeChild', JSON.stringify({ ...child, user_id: accountId }))
-    localStorage.removeItem('cachedPlan')
-    localStorage.removeItem('cachedPlanChild')
-    localStorage.removeItem('cachedLessons')
-    localStorage.removeItem('cachedLangPlan')
-    localStorage.removeItem('cachedLangPlanKey')
-    router.push('/dashboard')
+    try {
+      localStorage.setItem('activeChild', JSON.stringify({ ...child, user_id: accountId }))
+      localStorage.removeItem('cachedLangPlan')
+      localStorage.removeItem('cachedLangPlanKey')
+    } catch {
+      // The lesson page also loads the selected profile directly.
+    }
   }
 
   async function handleManageSubscription() {
@@ -574,11 +574,11 @@ export default function ChildrenPage() {
                         </div>
                       )}
 
-                      <button onClick={() => openLessons(selected)}
+                      <a href={`/dashboard?child=${encodeURIComponent(selected.id)}`} onClick={() => rememberLessonChild(selected)}
                         onMouseEnter={() => setHover('open-lessons')} onMouseLeave={() => setHover(null)}
-                        style={btn('open-lessons', { width: '100%', padding: '16px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY_DARK })}>
+                        style={btn('open-lessons', { display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%', padding: '16px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY_DARK })}>
                         Open lessons for {selected.name} →
-                      </button>
+                      </a>
 
                       <div style={{ display: 'flex', gap: 10 }}>
                         <button onClick={() => {
