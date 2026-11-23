@@ -58,7 +58,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
   trialEndsAt: string | null
   selectedChild: LessonChild | null
 }) {
-  const [child, setChild] = useState<any>(selectedChild)
+  const child = selectedChild
   const [resumeSubject, setResumeSubject] = useState<string | null>(null)
   const [selectedSubjectSlug, setSelectedSubjectSlug] = useState<string | null>(null)
   const [lesson, setLesson] = useState<any>(null)
@@ -199,24 +199,11 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
         router.replace('/dashboard/children')
         return
       }
-      if (!childData.language_learning) childData.language_learning = 'None'
-      setChild(childData)
-      void refreshChild(childData.id, accountId)
+      router.replace(`/dashboard?child=${encodeURIComponent(childData.id)}`)
     } catch {
       setSelectionError(true)
     }
   }, [accessConfirmed, accountId, router, selectedChild])
-
-  async function refreshChild(id: string, userId?: string) {
-    try {
-      const { data } = await supabase.from('children').select('*').eq('id', id).single()
-      if (data) {
-        const fresh = { ...data, user_id: userId }
-        setChild(fresh)
-        localStorage.setItem('activeChild', JSON.stringify(fresh))
-      }
-    } catch (e) { console.error('[Dashboard] Failed to refresh child:', e) }
-  }
 
   useEffect(() => {
     if (!child?.id) return
@@ -228,7 +215,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
   function rememberSubject(slug: string) {
     setResumeSubject(slug)
     try {
-      localStorage.setItem(`waypoint.resume:${accountId}:${child.id}`, slug)
+      localStorage.setItem(`waypoint.resume:${accountId}:${child?.id}`, slug)
     } catch { /* Lessons remain available through the subject menu. */ }
   }
 
@@ -638,6 +625,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
             <div style={{ marginBottom: 20 }}>
               <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 22, color: TEXT, margin: '0 0 4px 0' }}>Hi {child?.name}! 👋</h2>
               <p style={{ color: TEXT_MUTED, fontSize: 14, margin: 0 }}>Choose one subject to get started. You can pause whenever you need.</p>
+              <Link href={`/dashboard/children?edit=${encodeURIComponent(child.id)}`} style={{ display: 'inline-block', marginTop: 8, color: PRIMARY_DARK, fontWeight: 700 }}>Edit lesson subjects</Link>
             </div>
 
             {!selectedSubjectSlug && resumeSubject && availableSubjects.has(resumeSubject) && (

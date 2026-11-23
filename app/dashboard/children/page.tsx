@@ -84,9 +84,44 @@ const STEP_TITLES = [
   'Name & Age',
   'Reading Level',
   'Focus & Learning',
-  'Passions',
+  'Subjects & Interests',
   'Location & Language',
 ]
+
+function SubjectChoices({ choices, value, limit, onChange }: {
+  choices: string[]
+  value: string[]
+  limit: number
+  onChange: (value: string[]) => void
+}) {
+  const options = Array.from(new Set([...choices, ...value]))
+  return (
+    <>
+      <p style={{ color: TEXT_MUTED, fontSize: 13 }}>Choose up to {limit} in total ({value.length} selected).</p>
+      {[
+        { title: 'Lesson subjects', description: 'These open in the Lessons tab.', lessons: true },
+        { title: 'Interests', description: 'These stay on the profile.', lessons: false },
+      ].map(({ title, description, lessons }) => (
+        <fieldset key={title} style={{ border: 0, padding: 0, margin: '0 0 16px', minWidth: 0 }}>
+          <legend style={{ color: TEXT, fontSize: 14, fontWeight: 700 }}>{title}</legend>
+          <p style={{ color: TEXT_MUTED, fontSize: 13, margin: '4px 0 10px' }}>{description}</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+            {options.filter(name => Object.hasOwn(CURRICULUM_SUBJECTS, name) === lessons).map(name => {
+              const checked = value.includes(name)
+              return (
+                <button key={name} type="button" aria-pressed={checked} disabled={!checked && value.length >= limit}
+                  onClick={() => onChange(checked ? value.filter(item => item !== name) : [...value, name])}
+                  style={{ padding: '8px 14px', borderRadius: 100, border: `2px solid ${checked ? PRIMARY_DARK : BEIGE_BORDER}`, background: checked ? PRIMARY_BG : BEIGE_CARD, color: TEXT, minHeight: 40, fontWeight: 600 }}>
+                  {checked ? '✓ ' : ''}{name}
+                </button>
+              )
+            })}
+          </div>
+        </fieldset>
+      ))}
+    </>
+  )
+}
 
 export default function ChildrenPage() {
   const [accountId, setAccountId] = useState<string | null>(null)
@@ -97,6 +132,9 @@ export default function ChildrenPage() {
   const [wizardStep, setWizardStep] = useState(1)
   const [saving, setSaving] = useState(false)
   const [limitError, setLimitError] = useState(false)
+  const [savingEdit, setSavingEdit] = useState(false)
+  const [editError, setEditError] = useState('')
+  const [editSaved, setEditSaved] = useState(false)
   const [editing, setEditing] = useState(false)
   const [editForm, setEditForm] = useState({
     age_group: '7–9 years', city: '', country: '',
@@ -114,14 +152,14 @@ export default function ChildrenPage() {
   const router = useRouter()
 
   useEffect(() => {
-    void loadChildren()
+    void loadChildren(true)
     const check = () => setIsMobile(window.innerWidth < 640)
     check()
     window.addEventListener('resize', check)
     return () => window.removeEventListener('resize', check)
   }, [])
 
-  async function loadChildren() {
+  async function loadChildren(openRequested = false) {
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { router.push('/auth'); return }
     setAccountId(user.id)
@@ -148,6 +186,11 @@ export default function ChildrenPage() {
         reading_level: c.reading_level || '', focus_time: c.focus_time || '',
       }))
       setChildren(mapped)
+      if (openRequested) {
+        const editId = new URLSearchParams(window.location.search).get('edit')
+        const child = mapped.find(c => c.id === editId)
+        if (child) openEdit(child)
+      }
       const stored = localStorage.getItem('activeChild')
       if (stored) {
         try {
@@ -191,52 +234,53 @@ export default function ChildrenPage() {
     }
   }
 
-  async function saveEdit() {
-    if (!selected) return
-    const payload = {
-      age_group: editForm.age_group, city: editForm.city, country: editForm.country,
-      curriculum: editForm.curriculum, learn_style: editForm.learn_style,
-      subjects: editForm.subjects, notes: editForm.notes,
-      language_learning: editForm.language_learning,
-      reading_level: editForm.reading_level, focus_time: editForm.focus_time,
-    }
-    const { data, error } = await supabase.from('children').update(payload).eq('id', selected.id).select().single()
-    if (error) { console.error('saveEdit error:', error); return }
-    const updatedChild: Child = {
-      ...selected,
-      age_group: data.age_group, age: data.age_group,
-      city: data.city, country: data.country || '',
-      curriculum: data.curriculum, learn_style: data.learn_style,
-      subjects: data.subjects || [], notes: data.notes || '',
-      language_learning: data.language_learning || 'None',
-      reading_level: data.reading_level || '', focus_time: data.focus_time || '',
-    }
-    setSelected(updatedChild)
-    setChildren(prev => prev.map(c => c.id === selected.id ? updatedChild : c))
+  function openEdit(child: Child) {
+    setSelected(child)
+    setEditForm({
+      age_group: child.age_group, city: child.city, country: child.country || '',
+      curriculum: child.curriculum || 'Eclectic', learn_style: child.learn_style || 'Visual',
+      subjects: child.subjects || [], notes: child.notes || '',
+      language_learning: child.language_learning || 'None',
+      reading_level: child.reading_level || '', focus_time: child.focus_time || '',
+    })
+    setEditError('')
+    setEditSaved(false)
+    setEditing(true)
+  }
 
-    const langChanged = selected.language_learning !== updatedChild.language_learning
-    const subjectsChanged = JSON.stringify((selected.subjects || []).sort()) !== JSON.stringify((updatedChild.subjects || []).sort())
-
-    const stored = localStorage.getItem('activeChild')
-    if (stored) {
-      try {
-        const active = JSON.parse(stored)
-        if (active.id === selected.id) {
-          localStorage.setItem('activeChild', JSON.stringify({ ...updatedChild, user_id: active.user_id }))
-          if (langChanged || subjectsChanged) {
-            localStorage.removeItem('cachedPlan')
-            localStorage.removeItem('cachedPlanChild')
-            localStorage.removeItem('cachedLessons')
-          }
-          if (langChanged) {
-            localStorage.removeItem('cachedLangPlan')
-            localStorage.removeItem('cachedLangPlanKey')
-          }
-        }
-      } catch { /* ignore */ }
+  async function saveEdit(openLessons = false) {
+    if (!selected || !accountId || savingEdit) return
+    setSavingEdit(true)
+    setEditError('')
+    try {
+      const { data, error } = await supabase.from('children').update({
+        ...editForm,
+        subjects: Array.from(new Set(editForm.subjects)),
+      }).eq('id', selected.id).eq('user_id', accountId).select().abortSignal(AbortSignal.timeout(12_000)).single()
+      if (error || !data) throw error || new Error('Profile not saved')
+      const updatedChild: Child = {
+        ...selected, ...data, age: data.age_group,
+        country: data.country || '', subjects: data.subjects || [],
+        language_learning: data.language_learning || 'None',
+      }
+      setSelected(updatedChild)
+      setChildren(prev => prev.map(c => c.id === updatedChild.id ? updatedChild : c))
+      setEditing(false)
+      setEditSaved(true)
+      if (openLessons) {
+        rememberLessonChild(updatedChild)
+        window.location.assign(`/dashboard?child=${encodeURIComponent(updatedChild.id)}`)
+      } else {
+        try {
+          const active = JSON.parse(localStorage.getItem('activeChild') ?? 'null')
+          if (active?.id === updatedChild.id && active.user_id === accountId) rememberLessonChild(updatedChild)
+        } catch { /* The saved profile is loaded from the server. */ }
+      }
+    } catch {
+      setEditError('Could not save the changes. Your selections are still here. Please try again.')
+    } finally {
+      setSavingEdit(false)
     }
-
-    setEditing(false)
   }
 
   async function removeChild(id: string) {
@@ -327,7 +371,7 @@ export default function ChildrenPage() {
       <div style={{ background: BEIGE_CARD, borderBottom: `2px solid ${BEIGE_BORDER}`, padding: '14px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: '0 1px 4px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           {isMobile && showDetail && (
-            <button onClick={() => { setSelected(null); setAdding(false); setWizardStep(1) }}
+            <button disabled={savingEdit} onClick={() => { setSelected(null); setAdding(false); setWizardStep(1) }}
               style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', padding: '0 8px 0 0', color: TEXT_MUTED }}>←</button>
           )}
           <span style={{ fontSize: 20 }}>🧭</span>
@@ -340,7 +384,14 @@ export default function ChildrenPage() {
               style={btn('portal', { padding: '8px 18px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
               Manage subscription
             </button>
-            <button onClick={() => router.push('/dashboard')}
+            <button disabled={editing || savingEdit} onClick={() => {
+              if (selected) {
+                rememberLessonChild(selected)
+                window.location.assign(`/dashboard?child=${encodeURIComponent(selected.id)}`)
+              } else {
+                router.push('/dashboard')
+              }
+            }}
               onMouseEnter={() => setHover('back')} onMouseLeave={() => setHover(null)}
               style={btn('back', { padding: '8px 18px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
               ← Dashboard
@@ -359,7 +410,7 @@ export default function ChildrenPage() {
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
               {children.map(child => (
-                <button key={child.id} onClick={() => { setSelected(child); setAdding(false); setEditing(false) }}
+                <button key={child.id} disabled={savingEdit} onClick={() => { setSelected(child); setAdding(false); setEditing(false); setEditSaved(false) }}
                   onMouseEnter={() => setHover(`child-${child.id}`)} onMouseLeave={() => setHover(null)}
                   style={btn(`child-${child.id}`,
                     { display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px', borderRadius: 16, border: `2px solid ${selected?.id === child.id && !isMobile ? PRIMARY : BEIGE_BORDER}`, background: selected?.id === child.id && !isMobile ? PRIMARY_BG : BEIGE_CARD, cursor: 'pointer', textAlign: 'left' as const, fontFamily: 'inherit', width: '100%' },
@@ -376,7 +427,7 @@ export default function ChildrenPage() {
                 </button>
               ))}
 
-              <button onClick={openAdding}
+              <button onClick={openAdding} disabled={savingEdit}
                 onMouseEnter={() => setHover('add')} onMouseLeave={() => setHover(null)}
                 style={btn('add', { padding: '14px 16px', borderRadius: 16, border: `2px dashed ${children.length >= childrenLimit ? '#F4A7A7' : BEIGE_BORDER}`, background: 'transparent', fontSize: 14, fontWeight: 700, color: children.length >= childrenLimit ? '#E07575' : TEXT_MUTED, fontFamily: 'inherit', width: '100%' }, { borderColor: PRIMARY, color: PRIMARY })}>
                 + Add child
@@ -413,7 +464,7 @@ export default function ChildrenPage() {
 
                 <div style={{ padding: 24 }}>
                   {editing ? (
-                    <div style={{ display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
+                    <fieldset disabled={savingEdit} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: 'flex', flexDirection: 'column' as const, gap: 14 }}>
                       <div>
                         <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Age group</label>
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 8 }}>
@@ -480,26 +531,8 @@ export default function ChildrenPage() {
                         </select>
                       </div>
 
-                      <div>
-                        <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 8 }}>
-                          <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em' }}>Interests</label>
-                          <span style={{ fontSize: 12, color: editForm.subjects.length >= 8 ? '#E07575' : TEXT_MUTED, fontWeight: 600 }}>Max 8 ({editForm.subjects.length}/8)</span>
-                        </div>
-                        <p style={{ color: TEXT_MUTED, fontSize: 13 }}>Choices marked “Lessons” open in the Lessons tab.</p>
-                        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
-                          {SUBJECT_OPTIONS.map(s => {
-                            const on = editForm.subjects.includes(s)
-                            const atMax = editForm.subjects.length >= 8
-                            return (
-                              <button key={s} onClick={() => { if (on || !atMax) setEditForm(p => ({ ...p, subjects: on ? p.subjects.filter(x => x !== s) : [...p.subjects, s] })) }}
-                                onMouseEnter={() => setHover(`esubj-${s}`)} onMouseLeave={() => setHover(null)}
-                                style={btn(`esubj-${s}`, { padding: '6px 14px', borderRadius: 100, border: `2px solid ${on ? PRIMARY : BEIGE_BORDER}`, background: on ? PRIMARY_BG : BEIGE_CARD, color: on ? PRIMARY : TEXT_MUTED, fontSize: 13, fontWeight: 600, fontFamily: 'inherit', opacity: !on && atMax ? 0.4 : 1, cursor: !on && atMax ? 'default' : 'pointer' }, { borderColor: PRIMARY, color: PRIMARY })}>
-                                {s}{CURRICULUM_SUBJECTS[s] ? ' · Lessons' : ''}
-                              </button>
-                            )
-                          })}
-                        </div>
-                      </div>
+                      <SubjectChoices choices={SUBJECT_OPTIONS} value={editForm.subjects} limit={8}
+                        onChange={subjects => setEditForm(prev => ({ ...prev, subjects }))} />
 
                       <div>
                         <label style={{ fontSize: 12, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', display: 'block', marginBottom: 6 }}>Notes (optional)</label>
@@ -513,19 +546,24 @@ export default function ChildrenPage() {
                         </select>
                       </div>
 
-                      <div style={{ display: 'flex', gap: 10 }}>
-                        <button onClick={saveEdit}
+                      {editError && <p role="alert">{editError}</p>}
+                      <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+                        <button onClick={() => saveEdit()} disabled={savingEdit}
                           onMouseEnter={() => setHover('saveedit')} onMouseLeave={() => setHover(null)}
                           style={btn('saveedit', { flex: 1, padding: '14px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
-                          Save changes
+                          {savingEdit ? 'Saving…' : 'Save changes'}
                         </button>
-                        <button onClick={() => setEditing(false)}
+                        <button type="button" onClick={() => saveEdit(true)} disabled={savingEdit}
+                          style={{ padding: 12, borderRadius: 14, border: `2px solid ${PRIMARY_DARK}`, background: PRIMARY_BG, color: TEXT, fontWeight: 700 }}>
+                          Save and open lessons
+                        </button>
+                        <button onClick={() => setEditing(false)} disabled={savingEdit}
                           onMouseEnter={() => setHover('canceledit')} onMouseLeave={() => setHover(null)}
                           style={btn('canceledit', { padding: '14px 20px', borderRadius: 14, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, color: TEXT_MUTED, fontSize: 15, fontWeight: 700, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
                           Cancel
                         </button>
                       </div>
-                    </div>
+                    </fieldset>
                   ) : (
                     <>
                       {/* Profile chips */}
@@ -549,13 +587,13 @@ export default function ChildrenPage() {
 
                       {selected.subjects?.length > 0 && (
                         <div style={{ marginBottom: 20 }}>
-                          <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>Passions</div>
+                          <div style={{ fontSize: 11, fontWeight: 700, color: TEXT_MUTED, textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 10 }}>Subjects & interests</div>
                           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' as const }}>
                             {selected.subjects.map((s: string) => {
                               const passion = PASSIONS.find(p => p.label === s)
                               return (
                                 <span key={s} style={{ padding: '4px 12px', borderRadius: 100, background: PRIMARY_BG, color: PRIMARY, fontSize: 13, fontWeight: 600, border: `1px solid ${PRIMARY_BORDER}` }}>
-                                  {passion ? `${passion.emoji} ` : ''}{s}
+                                  {passion ? `${passion.emoji} ` : ''}{s} · {Object.hasOwn(CURRICULUM_SUBJECTS, s) ? 'Lesson' : 'Interest'}
                                 </span>
                               )
                             })}
@@ -570,6 +608,7 @@ export default function ChildrenPage() {
                         </div>
                       )}
 
+                      {editSaved && <p role="status">Changes saved for {selected.name}.</p>}
                       <a href={`/dashboard?child=${encodeURIComponent(selected.id)}`} onClick={() => rememberLessonChild(selected)}
                         onMouseEnter={() => setHover('open-lessons')} onMouseLeave={() => setHover(null)}
                         style={btn('open-lessons', { display: 'block', textAlign: 'center', textDecoration: 'none', width: '100%', padding: '16px', borderRadius: 14, border: 'none', background: PRIMARY, color: 'white', fontSize: 15, fontWeight: 700, fontFamily: 'inherit', marginBottom: 10 }, { background: PRIMARY_DARK })}>
@@ -577,16 +616,7 @@ export default function ChildrenPage() {
                       </a>
 
                       <div style={{ display: 'flex', gap: 10 }}>
-                        <button onClick={() => {
-                          setEditForm({
-                            age_group: selected.age_group, city: selected.city, country: selected.country || '',
-                            curriculum: selected.curriculum || 'Eclectic', learn_style: selected.learn_style || 'Visual',
-                            subjects: selected.subjects || [], notes: selected.notes || '',
-                            language_learning: selected.language_learning || 'None',
-                            reading_level: selected.reading_level || '', focus_time: selected.focus_time || '',
-                          })
-                          setEditing(true)
-                        }}
+                        <button onClick={() => openEdit(selected)}
                           onMouseEnter={() => setHover('edit')} onMouseLeave={() => setHover(null)}
                           style={btn('edit', { flex: 1, padding: '12px', borderRadius: 14, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, color: TEXT_MUTED, fontSize: 14, fontWeight: 700, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY, background: PRIMARY_BG })}>
                           ✏️ Edit
@@ -702,47 +732,12 @@ export default function ChildrenPage() {
                   </div>
                 )}
 
-                {/* ── Step 4: Passions ── */}
+                {/* ── Step 4: Subjects and interests ── */}
                 {wizardStep === 4 && (
                   <div style={{ animation: 'slideIn 0.2s ease' }}>
-                    <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 22 : 26, color: TEXT, marginBottom: 4 }}>
-                      What does {form.name || 'your child'} love? 🌟
-                    </h2>
-                    <p style={{ color: TEXT_MUTED, fontSize: 14, marginBottom: 24 }}>Pick up to 6 interests. Choices marked “Lessons” open in the Lessons tab.</p>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 10 }}>
-                      {PASSIONS.map(p => {
-                        const selected = form.subjects.includes(p.label)
-                        const atMax = form.subjects.length >= 6
-                        return (
-                          <button
-                            key={p.label}
-                            type="button"
-                            onClick={() => {
-                              if (selected || !atMax)
-                                setForm(prev => ({ ...prev, subjects: selected ? prev.subjects.filter(s => s !== p.label) : [...prev.subjects, p.label] }))
-                            }}
-                            style={{
-                              padding: '14px 8px', borderRadius: 16, border: `2px solid ${selected ? PRIMARY : BEIGE_BORDER}`,
-                              background: selected ? PRIMARY_BG : atMax && !selected ? BEIGE : BEIGE_CARD,
-                              cursor: !selected && atMax ? 'not-allowed' : 'pointer',
-                              opacity: !selected && atMax ? 0.4 : 1,
-                              fontFamily: 'inherit', textAlign: 'center' as const,
-                              transition: 'all 0.15s ease',
-                              boxShadow: selected ? `0 4px 14px ${PRIMARY}22` : 'none',
-                            }}
-                          >
-                            <div style={{ fontSize: isMobile ? 24 : 28, marginBottom: 4 }}>{p.emoji}</div>
-                            <div style={{ fontSize: 10, fontWeight: 700, color: selected ? PRIMARY : TEXT_MUTED, lineHeight: 1.2 }}>{p.label}</div>
-                            {CURRICULUM_SUBJECTS[p.label] && <div style={{ fontSize: 10, marginTop: 4, color: PRIMARY_DARK }}>Lessons</div>}
-                          </button>
-                        )
-                      })}
-                    </div>
-
-                    <div style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>
-                      {form.subjects.length}/6 selected
-                    </div>
+                    <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 22 : 26, color: TEXT }}>Subjects for {form.name || 'your child'}</h2>
+                    <SubjectChoices choices={Array.from(new Set([...SUBJECT_OPTIONS, ...PASSIONS.map(({ label }) => label)]))}
+                      value={form.subjects} limit={6} onChange={subjects => setForm(prev => ({ ...prev, subjects }))} />
                   </div>
                 )}
 
