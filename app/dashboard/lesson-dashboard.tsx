@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import QuickCheck from './lesson-quick-check'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '../lib/supabase'
@@ -804,9 +805,11 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
                       </p>
                     )}
 
+                    {lesson.quick_check && <QuickCheck check={lesson.quick_check} />}
+
                     {lesson.check_for_understanding && (
                       <section style={{ marginBottom: 16 }}>
-                        <h3>Check understanding</h3>
+                        <h3>{lesson.quick_check ? 'Check one more word together' : 'Check understanding'}</h3>
                         <p>{readTogether ? 'Point, show or say your answer out loud.' : 'Say your answer aloud, show it with objects or write it down.'}</p>
                         <p>{lesson.check_for_understanding}</p>
                         <button type="button" disabled={markingComplete} onClick={() => saveLessonOutcome('needs_review')}>Needs more practice</button>

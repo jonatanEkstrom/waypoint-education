@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { nextGoal } from '@/app/lib/server/next-goal'
 import { requireAccess } from '@/app/lib/server/access'
+import { quickCheckForGoal } from '@/app/lib/lesson-quick-check'
 import { earlyLearningStarter } from '@/app/lib/server/early-learning-starters'
 
 import { curriculumBand, teachingGuidance, CURRICULUM_SUBJECTS } from '@/app/lib/curriculum'
@@ -52,11 +53,15 @@ export async function POST(request: NextRequest) {
     if (!concept) return NextResponse.json({ error: 'all_complete' }, { status: 200 })
 
     const variant = needsReview ? 'review' : 'lesson'
+    const quickCheck = quickCheckForGoal(concept.concept_key, needsReview)
+    function lessonResponse(content: Record<string, unknown>) {
+      return NextResponse.json(quickCheck ? { ...content, quick_check: quickCheck } : content)
+    }
     const cache = () => supabase.from('saved_lessons')
     const { data: existing, error: cacheError } = await cache().select('content')
       .match({ child_id, concept_id: concept.id, variant }).maybeSingle()
     if (cacheError) throw cacheError
-    if (existing) return NextResponse.json(existing.content)
+    if (existing) return lessonResponse(existing.content)
 
     async function saveLesson(content: Record<string, unknown>) {
       const key = { child_id, concept_id: concept!.id, variant }
@@ -66,7 +71,7 @@ export async function POST(request: NextRequest) {
       if (error) throw error
       const { data, error: readError } = await cache().select('content').match(key).single()
       if (readError) throw readError
-      return NextResponse.json(data.content)
+      return lessonResponse(data.content)
     }
 
     const starter = earlyLearningStarter(concept.concept_key, needsReview)
