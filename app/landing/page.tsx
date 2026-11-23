@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useState, useEffect } from 'react'
-import { useOfferLive, halfPrice, OFFER_TAGLINE, TRIAL_TAGLINE } from '../lib/offer'
+import { useOfferLive, halfPrice, OFFER_TAGLINE } from '../lib/offer'
 
 const PRIMARY = '#9B8EC4'
 const PRIMARY_DARK = '#7B6BAA'
@@ -86,6 +86,8 @@ const FAQS = [
   },
 ]
 
+const NEW_ACCOUNT_OFFER = 'New accounts before 1 December: 10 days free, no card required'
+
 const TRIAL_FAQ = {
   q: 'What happens after the 10-day free trial?',
   a: "After your 10-day trial, you'll be invited to choose a plan to continue. No payment card is required to start the trial — you only enter payment details when you're ready to subscribe. There's no automatic charge at the end of the trial.",
@@ -162,7 +164,7 @@ export default function LandingPage() {
             style={btn('signin', { padding: isMobile ? '7px 12px' : '8px 20px', borderRadius: 100, border: `2px solid ${BEIGE_BORDER}`, background: BEIGE_CARD, fontSize: 13, fontWeight: 700, color: TEXT_MUTED, fontFamily: 'inherit' }, { borderColor: PRIMARY, color: PRIMARY })}>
             Sign in
           </button>
-          <button onClick={() => router.push('/auth')}
+          <button onClick={() => router.push('/auth?mode=signup')}
             onMouseEnter={() => setHover('navtrial')} onMouseLeave={() => setHover(null)}
             style={btn('navtrial', { padding: isMobile ? '7px 12px' : '8px 20px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 13, fontWeight: 700, fontFamily: 'inherit' }, { background: PRIMARY_DARK })}>
             {offer ? (isMobile ? 'Get started →' : 'See introductory offer →') : (isMobile ? 'Try free →' : 'Start free trial →')}
@@ -174,7 +176,7 @@ export default function LandingPage() {
       <div style={{ background: `linear-gradient(135deg, ${PRIMARY_BG} 0%, #EDF7F2 50%, #FFF8EC 100%)`, padding: isMobile ? '64px 16px 52px' : '108px 24px 96px' }}>
         <div style={{ maxWidth: 740, margin: '0 auto', textAlign: 'center' }}>
           <div style={{ display: 'inline-block', background: '#FFF8EC', color: ORANGE, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 28, border: '1px solid #FBDFA3' }}>
-            ✈️ {offer ? '50% off your first billing period' : TRIAL_TAGLINE}
+            ✈️ {offer ? '50% off your first billing period' : NEW_ACCOUNT_OFFER}
           </div>
           <h1 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 34 : 56, lineHeight: isMobile ? 1.2 : 1.1, marginBottom: 22, color: TEXT }}>
             Less planning.<br />
@@ -184,7 +186,7 @@ export default function LandingPage() {
             Waypoint picks your child's next learning goal. AI prepares a short lesson, a hands-on activity and a quick check. Read it through, help your child get started and see what they understood.
           </p>
           <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexDirection: isMobile ? 'column' as const : 'row' as const, alignItems: 'center', marginBottom: 20 }}>
-            <button onClick={() => router.push('/auth')}
+            <button onClick={() => router.push('/auth?mode=signup')}
               onMouseEnter={() => setHover('herocta')} onMouseLeave={() => setHover(null)}
               style={btn('herocta', { padding: isMobile ? '16px 28px' : '18px 44px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: isMobile ? 16 : 18, fontWeight: 800, fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(155,142,196,0.35)', width: isMobile ? '100%' : 'auto' }, { background: PRIMARY_DARK })}>
               {offer ? 'Start for half price →' : 'Start your free trial →'}
@@ -195,7 +197,7 @@ export default function LandingPage() {
               See how it works
             </button>
           </div>
-          <p style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>{offer ? OFFER_TAGLINE : `${TRIAL_TAGLINE} · Cancel anytime`}</p>
+          <p style={{ fontSize: 13, color: TEXT_MUTED, fontWeight: 600 }}>{offer ? OFFER_TAGLINE : `${NEW_ACCOUNT_OFFER}`}</p>
         </div>
       </div>
 
@@ -275,7 +277,7 @@ export default function LandingPage() {
         <div style={{ maxWidth: 960, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: isMobile ? 36 : 52 }}>
             <div style={{ display: 'inline-block', background: '#EDF7F2', color: GREEN_DARK, padding: '6px 16px', borderRadius: 100, fontSize: 13, fontWeight: 700, marginBottom: 16, border: `1px solid ${GREEN}` }}>
-              🎁 {offer ? 'First billing period 50% off' : TRIAL_TAGLINE}
+              🎁 {offer ? 'First billing period 50% off' : NEW_ACCOUNT_OFFER}
             </div>
             <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 26 : 38, marginBottom: 12, color: TEXT }}>
               Simple, transparent pricing
@@ -332,7 +334,7 @@ export default function LandingPage() {
                 </ul>
 
                 <button
-                  onClick={() => router.push('/auth')}
+                  onClick={() => router.push('/auth?mode=signup')}
                   onMouseEnter={() => setHover(`plan-${plan.key}`)} onMouseLeave={() => setHover(null)}
                   style={btn(`plan-${plan.key}`,
                     { width: '100%', padding: '14px', borderRadius: 100, border: 'none', background: plan.highlight ? PRIMARY : BEIGE_BORDER, color: plan.highlight ? 'white' : TEXT, fontSize: 14, fontWeight: 800, fontFamily: 'inherit' },
@@ -345,7 +347,7 @@ export default function LandingPage() {
           </div>
 
           <p style={{ textAlign: 'center', fontSize: 13, color: TEXT_MUTED, marginTop: 24, fontWeight: 600 }}>
-            {offer ? OFFER_TAGLINE : `${TRIAL_TAGLINE} · Cancel anytime`}
+            {offer ? OFFER_TAGLINE : `${NEW_ACCOUNT_OFFER}`}
           </p>
         </div>
       </div>
@@ -360,12 +362,12 @@ export default function LandingPage() {
           <p style={{ color: 'rgba(255,255,255,0.88)', fontSize: isMobile ? 15 : 17, lineHeight: 1.7, marginBottom: 32, maxWidth: 440, margin: '0 auto 32px' }}>
             Try a lesson with your family and see how it fits into your day.
           </p>
-          <button onClick={() => router.push('/auth')}
+          <button onClick={() => router.push('/auth?mode=signup')}
             onMouseEnter={() => setHover('midcta')} onMouseLeave={() => setHover(null)}
             style={btn('midcta', { padding: '16px 40px', borderRadius: 100, border: 'none', background: 'white', color: PRIMARY, fontSize: 16, fontWeight: 800, fontFamily: 'inherit', boxShadow: '0 8px 24px rgba(0,0,0,0.12)' }, { background: '#f5f0ff' })}>
             {offer ? 'Create an account →' : 'Start your free trial →'}
           </button>
-          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 14, fontWeight: 600 }}>{offer ? OFFER_TAGLINE : 'No card required · 10 days free'}</p>
+          <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: 13, marginTop: 14, fontWeight: 600 }}>{offer ? OFFER_TAGLINE : NEW_ACCOUNT_OFFER}</p>
         </div>
       </div>
 

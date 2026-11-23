@@ -19,7 +19,6 @@ const TEXT_MUTED = '#9E9188'
 function AuthForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [isLogin, setIsLogin] = useState(true)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
   const [agreedToTerms, setAgreedToTerms] = useState(false)
@@ -27,6 +26,7 @@ function AuthForm() {
   const offer = useOfferLive()
   const router = useRouter()
   const params = useSearchParams()
+  const [isLogin, setIsLogin] = useState(() => params.get('mode') !== 'signup' && !params.get('email'))
 
   useEffect(() => {
     const check = () => setIsMobile(window.innerWidth < 640)
