@@ -50,7 +50,7 @@ export default function ColourByNumberPage() {
   return (
     <main className={styles.page}>
       <div className={styles.controls}>
-        <a href="/dashboard">← Back to lessons</a>
+        <a href="/worksheets">← Back to worksheets</a>
         <label>Picture
           <select value={motif} onChange={event => setMotif(event.target.value === 'market' ? 'market' : 'boat')}>
             <option value="boat">Sailing boat</option>

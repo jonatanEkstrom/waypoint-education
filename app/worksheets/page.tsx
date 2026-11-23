@@ -75,6 +75,10 @@ export default function WorksheetsPage() {
   }, [])
 
   async function generateWorksheet() {
+    if (/^(?:colou?r|paint)[\s-]+by[\s-]+numbers?$/i.test(theme.trim())) {
+      router.push('/worksheets/colour-by-number')
+      return
+    }
     if (!subject) return
     setError('')
     setLoading(true)
@@ -300,9 +304,16 @@ export default function WorksheetsPage() {
 
       <div style={{ maxWidth: 700, margin: '0 auto', padding: isMobile ? '16px 12px' : 24 }}>
 
+        <section style={{ ...sectionStyle, background: PRIMARY_BG, borderColor: PRIMARY_BORDER }}>
+          <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 22, color: TEXT, margin: '0 0 8px' }}>Colour by number</h2>
+          <p style={{ margin: '0 0 14px', color: TEXT }}>Choose a picture and print it or save it as a PDF.</p>
+          <a href="/worksheets/colour-by-number" style={{ display: 'inline-flex', alignItems: 'center', minHeight: 44, padding: '0 18px', borderRadius: 100, background: '#654c91', color: 'white', fontWeight: 750, textDecoration: 'none' }}>
+            Open colouring sheet →
+          </a>
+        </section>
+
         {/* Generator */}
         <div style={sectionStyle}>
-          <p><a href="/worksheets/colour-by-number">Printable colour-by-number activity →</a></p>
           <h2 style={{ fontFamily: 'Georgia,serif', fontSize: 19, color: TEXT, marginBottom: 6 }}>Create a worksheet ✨</h2>
           <p style={{ color: TEXT_MUTED, fontSize: 13, marginBottom: 20 }}>An interactive worksheet made just for {child?.name}.</p>
 
