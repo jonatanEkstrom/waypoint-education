@@ -1,8 +1,8 @@
 import { NextRequest } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { requireAccess } from '@/app/lib/server/access'
+import { swedishStarterWeek } from '@/app/lib/server/swedish-starter-week'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
 export const maxDuration = 60
 
 export async function POST(request: NextRequest) {
@@ -10,7 +10,9 @@ export async function POST(request: NextRequest) {
   if ('response' in guard) return guard.response
 
   const { language, age_group, child_name, language_week, previous_summary } = await request.json()
-  console.log('[generate-language-plan] Received:', { language, age_group, child_name, language_week })
+  if (language === 'Swedish' && age_group === '7–9 years' && language_week === 1) {
+    return Response.json(swedishStarterWeek)
+  }
 
   const ageGuide: Record<string, string> = {
     '4–6 years': 'Max 3 new words per day. Very simple phrases. Lots of repetition. No grammar rules.',
@@ -66,33 +68,24 @@ Rules:
 - Keep each field concise — displayed on a screen
 - ONLY return JSON`
 
-  const stream = await client.messages.stream({
-    model: 'claude-sonnet-4-5',
-    max_tokens: 4000,
-    messages: [{ role: 'user', content: prompt }]
-  })
-
-  const encoder = new TextEncoder()
-  const readable = new ReadableStream({
-    async start(controller) {
-      try {
-        for await (const chunk of stream) {
-          if (chunk.type === 'content_block_delta' && chunk.delta.type === 'text_delta') {
-            controller.enqueue(encoder.encode(chunk.delta.text))
-          }
-        }
-        controller.close()
-      } catch (e) {
-        controller.error(e)
-      }
+  try {
+    const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, maxRetries: 0 })
+    const message = await client.messages.create({
+      model: 'claude-sonnet-4-5',
+      max_tokens: 4000,
+      messages: [{ role: 'user', content: prompt }]
+    }, { signal: AbortSignal.any([request.signal, AbortSignal.timeout(40_000)]) })
+    const text = message.content.flatMap(block => block.type === 'text' ? [block.text] : []).join('')
+    const plan = JSON.parse(text.replace(/^```(?:json)?\s*|\s*```\s*$/g, '').trim())
+    if (plan?.week_number !== language_week || typeof plan.week_theme !== 'string' ||
+        typeof plan.weekly_summary !== 'string' || !Array.isArray(plan.vocabulary) ||
+        !Array.isArray(plan.days) || plan.days.length !== 5 ||
+        !Array.isArray(plan.weekly_quiz) || plan.weekly_quiz.length !== 5) {
+      throw new Error('Incomplete language plan')
     }
-  })
-
-  return new Response(readable, {
-    headers: {
-      'Content-Type': 'text/plain; charset=utf-8',
-      'Transfer-Encoding': 'chunked',
-      'X-Accel-Buffering': 'no',
-    }
-  })
+    return Response.json(plan)
+  } catch (error) {
+    console.error('[generate-language-plan] Failed:', error instanceof Error ? error.name : 'UnknownError')
+    return Response.json({ error: 'language_plan_unavailable' }, { status: 503 })
+  }
 }

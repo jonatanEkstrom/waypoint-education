@@ -287,128 +287,88 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
   }
 
   async function loadLanguagePlan() {
-    if (!child || !child.language_learning || child.language_learning === 'None') return
+    if (!child || !child.language_learning || child.language_learning === 'None' || langLoading) return
     const language = child.language_learning
     const calendarWeek = getWeekNumber()
-    const langKey = `${child.name}-${language}-${calendarWeek}`
-
-    // Check localStorage
-    const cached = localStorage.getItem('cachedLangPlan')
-    const cachedKey = localStorage.getItem('cachedLangPlanKey')
-    if (cached && cachedKey === langKey) {
-      console.log('[Language] Serving from localStorage cache')
-      setLangPlan(JSON.parse(cached))
-      return
-    }
+    const cacheKey = `languagePlan:${accountId}:${child.id}:${language}:${calendarWeek}`
+    const signal = AbortSignal.timeout(52_000)
 
     setLangLoading(true)
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      try {
+        const cached = JSON.parse(localStorage.getItem(cacheKey) ?? 'null')
+        if (cached) {
+          setLangPlan(cached)
+          setLangWeek(cached.week_number)
+          return
+        }
+      } catch { /* Fall back to the server when browser storage is unavailable. */ }
 
-      // Check if this calendar week already has a plan
-      const { data: existing } = await supabase
-        .from('language_plans')
+      const plans = () => supabase.from('language_plans')
+      const { data: existing, error: findError } = await plans()
         .select('plan, language_week')
-        .eq('user_id', user.id)
+        .eq('user_id', accountId)
         .eq('child_name', child.name)
         .eq('language', language)
         .eq('calendar_week', calendarWeek)
-        .single()
+        .abortSignal(signal)
+        .maybeSingle()
+      if (findError) throw findError
 
-      if (existing?.plan) {
-        console.log('[Language] Serving from Supabase cache, language_week:', existing.language_week)
-        setLangPlan(existing.plan)
-        setLangWeek(existing.language_week)
-        localStorage.setItem('cachedLangPlan', JSON.stringify(existing.plan))
-        localStorage.setItem('cachedLangPlanKey', langKey)
-        setLangLoading(false)
-        return
-      }
-
-      // Count previous plans to determine progressive week number
-      const { count } = await supabase
-        .from('language_plans')
-        .select('*', { count: 'exact', head: true })
-        .eq('user_id', user.id)
-        .eq('child_name', child.name)
-        .eq('language', language)
-
-      const currentLangWeek = (count || 0) + 1
-      setLangWeek(currentLangWeek)
-      console.log('[Language] Generating week', currentLangWeek, 'for', language)
-
-      // Fetch last 3 weeks of summaries for progressive context
-      let previousSummary = ''
-      if (currentLangWeek > 1) {
-        const { data: prev } = await supabase
-          .from('language_plans')
-          .select('plan')
-          .eq('user_id', user.id)
+      let plan = existing?.plan
+      let week = existing?.language_week ?? 1
+      if (!plan) {
+        const { data: previous, count, error: historyError } = await plans()
+          .select('plan', { count: 'exact' })
+          .eq('user_id', accountId)
           .eq('child_name', child.name)
           .eq('language', language)
           .order('language_week', { ascending: false })
           .limit(3)
-        if (prev?.length) {
-          previousSummary = prev
-            .map((p: any) => `Week ${p.plan.week_number} (${p.plan.week_theme}): ${p.plan.weekly_summary}`)
-            .join('\n')
-        }
-      }
+          .abortSignal(signal)
+        if (historyError) throw historyError
 
-      generateLanguagePlan(language, currentLangWeek, previousSummary, user.id, calendarWeek, langKey)
-    } catch (e) {
-      console.error('Language plan load error:', e)
-      setLangLoading(false)
-    }
-  }
-
-  async function generateLanguagePlan(
-    language: string, langWeekNum: number, previousSummary: string,
-    userId: string, calendarWeek: number, langKey: string
-  ) {
-    try {
-      const res = await fetch('/api/generate-language-plan', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          language,
-          age_group: child?.age_group,
-          child_name: child?.name,
-          language_week: langWeekNum,
-          previous_summary: previousSummary,
+        week = (count ?? 0) + 1
+        setLangWeek(week)
+        const response = await fetch('/api/generate-language-plan', {
+          method: 'POST',
+          signal,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            language,
+            age_group: child.age_group,
+            child_name: child.name,
+            language_week: week,
+            previous_summary: previous
+              ?.map(({ plan }) => `Week ${plan.week_number} (${plan.week_theme}): ${plan.weekly_summary}`)
+              .join('\n'),
+          }),
         })
-      })
-      if (!res.ok || !res.body) throw new Error('Failed to generate language plan')
+        if (!response.ok) throw new Error(`Language plan request failed (${response.status})`)
+        plan = await response.json()
 
-      const reader = res.body.getReader()
-      const decoder = new TextDecoder()
-      let fullText = ''
-      while (true) {
-        const { done, value } = await reader.read()
-        if (done) break
-        fullText += decoder.decode(value, { stream: true })
+        // The lesson is ready. Saving it must not keep the loading screen visible.
+        void plans().upsert({
+          user_id: accountId,
+          child_name: child.name,
+          language,
+          calendar_week: calendarWeek,
+          language_week: week,
+          plan,
+        }, { onConflict: 'user_id,child_name,language,calendar_week' })
+          .abortSignal(AbortSignal.timeout(10_000))
+          .then(({ error }) => {
+            if (error) console.error('[Language] Could not save plan:', error.code)
+          }, () => console.error('[Language] Could not save plan'))
       }
 
-      const cleaned = fullText.replace(/```json|```/g, '').trim()
-      const p = JSON.parse(cleaned)
-      setLangPlan(p)
-      setLangWeek(langWeekNum)
-
-      localStorage.setItem('cachedLangPlan', JSON.stringify(p))
-      localStorage.setItem('cachedLangPlanKey', langKey)
-
-      // Save to Supabase language_plans table
-      await supabase.from('language_plans').upsert({
-        user_id: userId,
-        child_name: child?.name,
-        language,
-        calendar_week: calendarWeek,
-        language_week: langWeekNum,
-        plan: p,
-      }, { onConflict: 'user_id,child_name,language,calendar_week' })
-    } catch (e) {
-      console.error('Language plan generate error:', e)
+      setLangPlan(plan)
+      setLangWeek(week)
+      try {
+        localStorage.setItem(cacheKey, JSON.stringify(plan))
+      } catch { /* Browser storage is optional. */ }
+    } catch (error) {
+      console.error('[Language] Could not load plan:', error instanceof Error ? error.name : 'DatabaseError')
     } finally {
       setLangLoading(false)
     }
@@ -979,7 +939,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
             {!langLoading && !langPlan && (
               <div style={{ textAlign: 'center' as const, padding: '60px 20px', color: TEXT_MUTED }}>
                 <div style={{ fontSize: 40, marginBottom: 16 }}>🗣️</div>
-                <p style={{ fontSize: 16, fontWeight: 600 }}>Something went wrong loading your language plan.</p>
+                <p role="alert" style={{ fontSize: 16, fontWeight: 600 }}>We couldn’t load your language plan. Please try again.</p>
                 <button onClick={loadLanguagePlan} style={{ marginTop: 12, padding: '10px 24px', borderRadius: 100, border: 'none', background: PRIMARY, color: 'white', fontSize: 14, fontWeight: 700, fontFamily: 'inherit', cursor: 'pointer' }}>
                   Try again
                 </button>
