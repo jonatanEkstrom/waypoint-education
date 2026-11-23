@@ -22,8 +22,8 @@ export const CURRICULUM_SUBJECTS: Record<string, string> = {
 
 export function teachingGuidance(age: string) {
   const band = curriculumBand(age)
-  if (band === '3-4') return 'Adult-led play for 3–5 minutes. Use objects, movement and spoken answers. No independent reading or writing.'
-  if (band === '5-6') return 'Use concrete objects or drawing, one instruction at a time and a 5–8 minute activity. Offer oral or hands-on answers.'
+  if (band === '3-4') return 'Adult-led play for 3–5 minutes. Write for an adult to read aloud, with at most 8 words per child-facing sentence. Use familiar words, real objects, gestures or movement. Give one instruction at a time. Keep the teaching to at most 3 one-sentence paragraphs. Accept pointing, showing or spoken answers. No independent reading or writing.'
+  if (band === '5-6') return 'Adult-supported lesson with a 5–8 minute activity. Write for an adult to read aloud, with at most 10 words per child-facing sentence. Keep the teaching to at most 3 one-sentence paragraphs. Give one instruction at a time and use concrete objects or drawing. Accept oral or hands-on answers. Ask the child to read independently only when reading is the lesson goal.'
   if (band === '7-9') return 'Use a worked example and a 5–10 minute activity. Move from objects or drawings to simple notation when the concept calls for it.'
   if (band === '10-12') return 'Use a 10–15 minute activity. Ask for a short explanation and connect representations without introducing a new concept.'
   if (/16\s*[–-]\s*18/.test(age)) return 'Use independent reasoning, precise vocabulary and evidence or justification, while keeping the selected concept fixed.'

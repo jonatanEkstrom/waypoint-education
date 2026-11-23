@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import Anthropic from '@anthropic-ai/sdk'
 import { nextGoal } from '@/app/lib/server/next-goal'
 import { requireAccess } from '@/app/lib/server/access'
+import { earlyLearningStarter } from '@/app/lib/server/early-learning-starters'
 
 import { curriculumBand, teachingGuidance, CURRICULUM_SUBJECTS } from '@/app/lib/curriculum'
 
@@ -34,12 +35,14 @@ export async function POST(request: NextRequest) {
     }
     const city = child.city || 'the local area'
     const country = child.country || ''
+    const band = curriculumBand(child.age_group)
+    const readTogether = band === '3-4' || band === '5-6'
     const [ageResult, subjectResult] = await Promise.all([
-      supabase.from('age_groups').select('id').eq('label', curriculumBand(child.age_group)).single(),
+      supabase.from('age_groups').select('id').eq('label', band).single(),
       supabase.from('subjects').select('id').eq('slug', subject_slug).single(),
     ])
     if (ageResult.error || !ageResult.data) {
-      return NextResponse.json({ error: 'age_group_not_found' }, { status: 200 })
+      return NextResponse.json({ error: 'age_group_not_found' }, { status: 422 })
     }
     if (subjectResult.error || !subjectResult.data) {
       return NextResponse.json({ error: 'subject_not_found' }, { status: 404 })
@@ -65,6 +68,9 @@ export async function POST(request: NextRequest) {
       if (readError) throw readError
       return NextResponse.json(data.content)
     }
+
+    const starter = earlyLearningStarter(concept.concept_key, needsReview)
+    if (starter) return await saveLesson({ ...starter, concept_id: concept.id })
 
     if (concept.concept_key === 'hist_13plus_source_claim') {
       return saveLesson({
@@ -98,6 +104,7 @@ Teaching guidance: ${teachingGuidance(child.age_group)}
 ${needsReview ? 'This learner needs more support on this goal. Start with a simpler worked example and one scaffolded action, then fade the support for the check.' : ''}
 Reading level: ${child.reading_level || "unspecified"}
 Preferred focus time: ${child.focus_time || "unspecified"}. Use the shorter of this and the teaching guidance; split longer work into steps with movement breaks.
+${readTogether ? 'The age guidance takes priority over any example length or format below. The adult-facing tip or success criterion may use fuller sentences.' : ''}
 
 Do not introduce, explain, or drift into any other topic or concept, even if it seems related. The child's city (${city}, ${country}) may only be used as a backdrop or setting for examples — it must never change the subject matter or pull in unrelated topics. Stay strictly within the bounds of the concept above for the entire lesson.`
 
@@ -114,10 +121,10 @@ OUTPUT this exact JSON:
     "title": "Activity name",
     "materials": "Materials or 'None needed'",
     "time": "Short duration consistent with the teaching guidance",
-    "description": "3-4 sentences describing what to do."
+    "description": "${readTogether ? 'At most 3 short steps. One action in each step.' : '3-4 sentences describing what to do.'}"
   },
   "discussion_questions": ["One open-ended question about the topic."],
-  "check_for_understanding": "One quick task or question the learner can answer orally, with objects, or in writing.",
+  "check_for_understanding": "${readTogether ? 'One quick task the child can answer by speaking, pointing or showing.' : 'One quick task or question the learner can answer orally, with objects, or in writing.'}",
   "parent_success_criterion": "What the learner must independently show or explain before moving on.",
   "fun_fact": "One surprising fact in 1 sentence.",
   "parent_tip": "One practical action the parent can take to help the learner start the activity, in one or two short sentences. Do not give away the answer to the understanding check."

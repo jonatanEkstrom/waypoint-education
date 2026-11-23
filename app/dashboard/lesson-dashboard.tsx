@@ -431,6 +431,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
   const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 
   const band = child?.age_group ? curriculumBand(child.age_group) : ''
+  const readTogether = band === '3-4' || band === '5-6'
   const colouringMode = band === '13+' ? 'algebra' : band === '7-9' || band === '10-12' ? 'sums' : 'numbers'
   const chosenSubjects: string[] = child?.subjects ?? []
   const availableSubjects = new Map<string, string>()
@@ -704,12 +705,17 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
                   <div>
                     <h2 style={{ fontFamily: 'Georgia,serif', fontSize: isMobile ? 20 : 24, color: TEXT, marginBottom: 20 }}>{lesson.reading_title}</h2>
 
-                    {(lesson.activity?.materials || lesson.parent_tip || lesson.parent_success_criterion) && (
+                    {(readTogether || lesson.activity?.materials || lesson.parent_tip || lesson.parent_success_criterion) && (
                       <section aria-labelledby="parent-guide-title" className="lesson-card"
                         style={{ background: '#FFF8EC', border: '1px solid #E8D6AE', borderRadius: 14, padding: 16, marginBottom: 20 }}>
                         <h3 id="parent-guide-title" style={{ color: TEXT, margin: '0 0 12px', fontSize: 17 }}>
                           Parent guide
                         </h3>
+                        {readTogether && (
+                          <p style={{ color: TEXT, margin: '0 0 10px', lineHeight: 1.6 }}>
+                            <strong>Read this aloud together.</strong> Give one instruction at a time. Let your child point, show you or answer out loud.
+                          </p>
+                        )}
                         {lesson.activity?.materials && (
                           <p style={{ color: TEXT, margin: '0 0 10px', lineHeight: 1.6 }}>
                             <strong>What you need</strong><br />
@@ -801,7 +807,7 @@ export default function LessonDashboard({ accountId, trialEndsAt, selectedChild 
                     {lesson.check_for_understanding && (
                       <section style={{ marginBottom: 16 }}>
                         <h3>Check understanding</h3>
-                        <p>Say your answer aloud, show it with objects or write it down.</p>
+                        <p>{readTogether ? 'Point, show or say your answer out loud.' : 'Say your answer aloud, show it with objects or write it down.'}</p>
                         <p>{lesson.check_for_understanding}</p>
                         <button type="button" disabled={markingComplete} onClick={() => saveLessonOutcome('needs_review')}>Needs more practice</button>
                         {' · '}
